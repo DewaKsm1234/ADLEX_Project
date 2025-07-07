@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Logs - ADLEX EMS</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body, html { background: #e5e7eb; margin: 0; padding: 0; }
+    .dashboard-body { min-height: 100vh; }
+    .sidebar { width: 200px; padding: 20px 10px; }
+    .sidebar ul { list-style: none; padding: 0; margin: 0; }
+    .sidebar li { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
+    .sidebar li.active, .sidebar li:hover { background-color: #007bff; color: white; }
+    .main-content { margin-left: 200px; margin-top: 60px; padding: 40px 30px 0 30px; background: #e5e7eb; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
+    .topbar { background: #007bff; color: #fff; border-radius: 0; }
+    .topbar h2 { margin: 0; font-size: 2em; letter-spacing: 1px; text-align: center; }
+    .logs-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .logs-header-title { display: flex; align-items: center; gap: 10px; font-size: 1.3em; font-weight: 600; }
+    .logs-table-container { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 32px 28px; max-width: 900px; margin: 0 auto; border: 2px solid #2196f3; }
+    .logs-table { width: 100%; border-collapse: collapse; }
+    .logs-table th, .logs-table td { border: 1px solid #bbb; padding: 14px 18px; text-align: left; font-size: 1em; }
+    .logs-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+    .logs-table tr:last-child td { border-bottom: none; }
+    .logs-table tr { background: #fff; }
+    .logs-table tr:hover { background: #e3f0ff; }
+    .logs-table .download-btn { background: #6c63ff; color: #fff; border: none; padding: 7px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .logs-table .download-btn:hover { background: #4f46e5; }
+    .logs-table th, .logs-table td { border-right: none; }
+    .logs-table th:last-child, .logs-table td:last-child { border-right: none; }
+    .logs-table th:first-child, .logs-table td:first-child { border-left: none; }
+    .logs-table th, .logs-table td { border-top: none; }
+    .logs-table th { border-bottom: 2px solid #2196f3; }
+    .logs-table tr:last-child td { border-bottom: none; }
+    .logs-table th, .logs-table td { background: #fff; }
+    .logs-table th { font-size: 1.05em; }
+    .logs-table td { font-size: 1em; }
+    .logs-table .download-btn { margin-left: 8px; }
+    .logs-select { padding: 8px 16px; border-radius: 6px; border: 1px solid #bbb; font-size: 1em; }
+    @media (max-width: 900px) {
+      .main-content { padding: 20px 4vw 0 4vw; }
+      .logs-table-container { padding: 16px 4vw; }
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+  <header class="topbar">
+    <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Logs</h2>
+      <span style="width:48px;"></span>
+    </div>
+  </header>
+  <aside class="sidebar" id="sidebar">
+    <div class="menu-title">Menu</div>
+    <ul>
+      <li class="nav-link" onclick="navigate('users.html')">Users</li>
+      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+      <li class="nav-link active" onclick="navigate('logs.html')">Logs</li>
+      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    </ul>
+    <div class="logout-link" onclick="logout()">Logout</div>
+    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  </aside>
+  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+  <main class="main-content">
+    <div class="table-container">
+      <h3>User Logs</h3>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Devices Used</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="log-table-body">
+          <!-- Filled by script.js -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <script src="js/script.js"></script>
+</body>
+</html>

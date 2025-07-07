@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devices Overview - Supervisor</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .main-panel { background: #fff; border-radius: 8px; margin: 0 0 0 0; }
+        .topbar { background: #007bff; color: #fff; border-radius: 0 0 8px 8px; }
+        .topbar h2 { margin: 0; font-size: 2em; letter-spacing: 1px; }
+        .search-panel { display: flex; align-items: center; gap: 10px; }
+        .search-box { background: #fff; border-radius: 20px; padding: 5px 10px; display: flex; align-items: center; }
+        .search-box input { border: none; outline: none; background: transparent; padding: 5px; min-width: 180px; }
+        .search-icon { margin-left: 5px; color: #007bff; }
+        .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+        .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
+        .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+        .user-table tr:last-child td { border-bottom: none; }
+        .user-table tr { cursor: pointer; transition: background 0.2s; }
+        .user-table tr:hover { background: #007bff !important; color: #fff; }
+        .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
+        .user-table td a { color: inherit; text-decoration: none; font-weight: 500; pointer-events: none; }
+        @media (max-width: 900px) {
+            .main-panel, .table-container { margin: 0; }
+            .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
+        }
+        th.action-col, td.action-col { display: none; }
+        .show-action-col th.action-col, .show-action-col td.action-col { display: table-cell !important; }
+        #delete-all-btn { display: none; margin: 10px 0; background: #e74c3c; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; }
+        #delete-all-btn:hover { background: #c0392b; }
+        .confirm-delete-btn, .cancel-delete-btn { display: inline-block; border: none; background: none; font-size: 1.2em; cursor: pointer; margin-left: 4px; }
+        .confirm-delete-btn { color: #28a745; }
+        .cancel-delete-btn { color: #e74c3c; }
+    </style>
+</head>
+<body class="dashboard-body">
+    <header class="topbar">
+        <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+            <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+            <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices Overview</h2>
+            <span style="width:48px;"></span>
+        </div>
+    </header>
+    <aside class="sidebar" id="sidebar">
+        <div class="menu-title">Menu</div>
+        <ul>
+            <li class="nav-link" onclick="navigate('users.html')">Users</li>
+            <li class="nav-link active" onclick="navigate('supervisors.html')">Supervisors</li>
+            <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+            <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+        </ul>
+        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    </aside>
+    <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+    <main class="main-content">
+        <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
+            <div class="search-panel">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search" oninput="filterUsers()" />
+                    <span class="search-icon">🔍</span>
+                </div>
+            </div>
+        </div>
+        <div class="table-container">
+            <button id="delete-all-btn">Delete All</button>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all-super-device" /></th>
+                        <th>Assigned User</th>
+                        <th>Assigned Device</th>
+                        <th class="action-col">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const supervisor_id = urlParams.get('supervisor_id');
+        let allUserDevices = [];
+        async function loadUserDevices() {
+            if (!supervisor_id) return;
+            try {
+                const res = await fetch(`/api/supervisor-users-devices/${supervisor_id}`);
+                const userDevices = await res.json();
+                allUserDevices = userDevices;
+                renderUserDevices(userDevices);
+            } catch {
+                document.getElementById('user-table-body').innerHTML = '<tr><td colspan="3">Error loading data</td></tr>';
+            }
+        }
+        function renderUserDevices(userDevices) {
+            const table = document.getElementById('user-table-body');
+            table.innerHTML = '';
+            userDevices.forEach(ud => {
+                const user = ud.user;
+                const devices = ud.devices;
+                const row = document.createElement('tr');
+                row.onclick = () => goToUserDevices(user.username);
+                row.innerHTML = `
+                    <td><input type="checkbox" class="super-device-row-checkbox" /></td>
+                    <td>${user.username}</td>
+                    <td>${devices.length}</td>
+                    <td class="action-col">
+                      <button class="delete-super-device-btn" style="display:none;" title="Delete User Device">🗑️</button>
+                      <span class="delete-confirmation" style="display:none;">
+                        <button class="confirm-delete-btn" title="Confirm">✔️</button>
+                        <button class="cancel-delete-btn" title="Cancel">❌</button>
+                      </span>
+                    </td>
+                `;
+                row.querySelector('.super-device-row-checkbox').addEventListener('click', e => e.stopPropagation());
+                row.querySelector('.delete-super-device-btn').addEventListener('click', e => {
+                    e.stopPropagation();
+                    hideAllDeleteConfirmations();
+                    row.querySelector('.delete-super-device-btn').style.display = 'none';
+                    row.querySelector('.delete-confirmation').style.display = '';
+                });
+                row.querySelector('.confirm-delete-btn').addEventListener('click', e => {
+                    e.stopPropagation();
+                    row.remove();
+                    updateActionColumnVisibility();
+                });
+                row.querySelector('.cancel-delete-btn').addEventListener('click', e => {
+                    e.stopPropagation();
+                    row.querySelector('.delete-confirmation').style.display = 'none';
+                    row.querySelector('.delete-super-device-btn').style.display = '';
+                });
+                row.querySelector('.super-device-row-checkbox').addEventListener('change', function() {
+                    row.querySelector('.delete-super-device-btn').style.display = this.checked ? '' : 'none';
+                    if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
+                    updateActionColumnVisibility();
+                });
+                table.appendChild(row);
+            });
+            updateActionColumnVisibility();
+        }
+        function hideAllDeleteConfirmations() {
+            document.querySelectorAll('.delete-confirmation').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.delete-super-device-btn').forEach(btn => btn.style.display = 'none');
+            document.querySelectorAll('.super-device-row-checkbox:checked').forEach(cb => {
+                const row = cb.closest('tr');
+                if (row) row.querySelector('.delete-super-device-btn').style.display = '';
+            });
+        }
+        function goToUserDevices(username) {
+            window.location.href = `user_device_overview.html?username=${username}`;
+        }
+        function navigate(page) {
+            window.location.href = page;
+        }
+        function filterUsers() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allUserDevices.filter(ud =>
+                ud.user.username.toLowerCase().includes(val)
+            );
+            renderUserDevices(filtered);
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('select-all-super-device');
+            const deleteAllBtn = document.getElementById('delete-all-btn');
+            selectAll && selectAll.addEventListener('change', function() {
+                document.querySelectorAll('.super-device-row-checkbox').forEach(cb => {
+                    cb.checked = selectAll.checked;
+                    cb.dispatchEvent(new Event('change'));
+                });
+                updateActionColumnVisibility();
+            });
+            deleteAllBtn.addEventListener('click', function() {
+                document.querySelectorAll('.super-device-row-checkbox:checked').forEach(cb => {
+                    const row = cb.closest('tr');
+                    if (row) {
+                        row.querySelector('.delete-super-device-btn').style.display = 'none';
+                        row.querySelector('.delete-confirmation').style.display = '';
+                    }
+                });
+            });
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.action-col')) hideAllDeleteConfirmations();
+            });
+        });
+        function updateActionColumnVisibility() {
+            const anyChecked = Array.from(document.querySelectorAll('.super-device-row-checkbox')).some(cb => cb.checked);
+            const allChecked = Array.from(document.querySelectorAll('.super-device-row-checkbox')).length > 0 && Array.from(document.querySelectorAll('.super-device-row-checkbox')).every(cb => cb.checked);
+            document.querySelector('.user-table').classList.toggle('show-action-col', anyChecked);
+            document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
+        }
+        loadUserDevices();
+    </script>
+</body>
+</html>

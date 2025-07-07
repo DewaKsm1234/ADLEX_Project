@@ -1,0 +1,204 @@
+<!-- register.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register User</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      min-height: 100vh;
+      background: #f7f8fa;
+      margin: 0;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .register-bg-shape {
+      position: absolute;
+      z-index: 0;
+      border-radius: 24% 76% 70% 30% / 30% 30% 70% 70%;
+      background: #cce3ff;
+      opacity: 0.5;
+    }
+    .register-bg-shape.left {
+      width: 320px; height: 320px; left: -120px; top: 30%;
+    }
+    .register-bg-shape.right {
+      width: 300px; height: 300px; right: -100px; top: -60px;
+    }
+    .register-container {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .register-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      padding: 36px 32px 28px 32px;
+      max-width: 400px;
+      width: 100%;
+      margin: 40px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .register-card h2 {
+      margin: 0 0 24px 0;
+      font-size: 1.6em;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #222;
+      text-align: center;
+    }
+    .register-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .register-form-row {
+      display: flex;
+      gap: 10px;
+    }
+    .register-form-row > * { flex: 1; }
+    .register-form input, .register-form select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid #d0d7e2;
+      font-size: 1em;
+      background: #f8fafd;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .register-form input:focus, .register-form select:focus {
+      border: 1.5px solid #007bff;
+      background: #fff;
+    }
+    .register-form label {
+      font-size: 0.98em;
+      color: #333;
+      margin-bottom: 3px;
+      font-weight: 500;
+    }
+    .register-btn {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 0;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    .register-btn:hover {
+      background: #0056b3;
+    }
+    @media (max-width: 600px) {
+      .register-card { padding: 18px 6vw; }
+      .register-bg-shape.left { width: 180px; height: 180px; left: -60px; }
+      .register-bg-shape.right { width: 160px; height: 160px; right: -50px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-bg-shape left"></div>
+  <div class="register-bg-shape right"></div>
+  <div class="register-container">
+    <div class="register-card">
+      <h2>Register User</h2>
+      <form id="registerForm" class="register-form">
+        <div class="register-form-row">
+          <input type="text" name="first_name" placeholder="First Name*" required>
+          <input type="text" name="last_name" placeholder="Last Name*" required>
+        </div>
+        <input type="email" name="email" placeholder="Email ID*" required>
+        <input type="text" name="phone" placeholder="Mobile Number*" required>
+        <input type="text" name="address" placeholder="Address*" required>
+        <div class="register-form-row">
+          <select name="device_id" id="deviceDropdown" required>
+            <option value="">Assign Device</option>
+          </select>
+          <select name="supervisor_id" id="supervisorDropdown">
+            <option value="">Assign Supervisor (optional)</option>
+          </select>
+        </div>
+        <input type="text" id="elevatorNumber" placeholder="Elevator Number" readonly>
+        <input type="text" id="serialNumber" placeholder="Serial Number" readonly>
+        <input type="text" id="macAddress" placeholder="MAC Address" readonly>
+        <button type="submit" class="register-btn">Register</button>
+      </form>
+    </div>
+  </div>
+  <script>
+    async function loadSupervisors() {
+      const res = await fetch('/api/supervisors');
+      const supervisors = await res.json();
+      const dropdown = document.getElementById('supervisorDropdown');
+      dropdown.innerHTML = '<option value="">Assign Supervisor (optional)</option>';
+      for (const sup of supervisors) {
+        const opt = document.createElement('option');
+        opt.value = sup.supervisor_id;
+        opt.textContent = sup.first_name + ' ' + sup.last_name;
+        dropdown.appendChild(opt);
+      }
+    }
+    async function loadDevices() {
+      const res = await fetch('/api/unassigned-devices');
+      const devices = await res.json();
+      const dropdown = document.getElementById('deviceDropdown');
+      dropdown.innerHTML = '<option value="">Assign Device</option>';
+      for (const dev of devices) {
+        const opt = document.createElement('option');
+        opt.value = dev.device_id;
+        opt.textContent = dev.device_id;
+        opt.dataset.elevator = dev.elevator_number;
+        opt.dataset.serial = dev.serial_number;
+        opt.dataset.mac = dev.mac_address;
+        dropdown.appendChild(opt);
+      }
+    }
+    document.getElementById('deviceDropdown').addEventListener('change', function() {
+      const selected = this.options[this.selectedIndex];
+      document.getElementById('elevatorNumber').value = selected.dataset.elevator || '';
+      document.getElementById('serialNumber').value = selected.dataset.serial || '';
+      document.getElementById('macAddress').value = selected.dataset.mac || '';
+    });
+    loadSupervisors();
+    loadDevices();
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const payload = Object.fromEntries(formData);
+      payload.username = (payload.first_name + payload.last_name).replace(/\s+/g, '').toLowerCase();
+      payload.password = 'default123';
+      // Only send required fields
+      const reqPayload = {
+        username: payload.username,
+        password: payload.password,
+        email: payload.email,
+        phone: payload.phone,
+        address: payload.address,
+        device_id: payload.device_id,
+        supervisor_id: payload.supervisor_id || null
+      };
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reqPayload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = 'users.html';
+      } else alert('Registration failed');
+    });
+  </script>
+</body>
+</html>

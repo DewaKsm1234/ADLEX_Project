@@ -1,0 +1,7 @@
+1)when adding new device it should show connection offline
+2)clicking main check box from column should select all below entries check boxes.
+3)when check box clicked delete the entire row only from frontend and supervisor database as it shows the count.
+4)logout button at the end on each and every page containing menu.(with image)
+
+
+create specific_userdevice show image

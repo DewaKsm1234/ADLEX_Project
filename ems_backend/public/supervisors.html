@@ -1,0 +1,193 @@
+<!--
+  supervisors.html - Supervisor Management Dashboard
+  - Displays all supervisors, their assigned users and devices
+  - Allows deleting supervisors and navigating to supervisor device details
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Supervisor - ADLEX EMS</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Table and layout styles for supervisor management */
+    .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+    .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
+    .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+    .user-table tr:last-child td { border-bottom: none; }
+    .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; cursor: pointer; }
+    .user-table td a:hover { text-decoration: underline; }
+    th.action-col, td.action-col { display: none; }
+    .show-action-col th.action-col, .show-action-col td.action-col { display: table-cell !important; }
+    #delete-all-btn { display: none; margin: 10px 0; background: #e74c3c; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; }
+    #delete-all-btn:hover { background: #c0392b; }
+    .confirm-delete-btn, .cancel-delete-btn { display: inline-block; border: none; background: none; font-size: 1.2em; cursor: pointer; margin-left: 4px; }
+    .confirm-delete-btn { color: #28a745; }
+    .cancel-delete-btn { color: #e74c3c; }
+    @media (max-width: 900px) {
+      .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+  <!-- Topbar/Header -->
+  <header class="topbar">
+    <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Supervisor</h2>
+      <span style="width:48px;"></span>
+    </div>
+  </header>
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar" id="sidebar">
+    <div class="menu-title">Menu</div>
+    <ul>
+      <li class="nav-link" onclick="navigate('users.html')">Users</li>
+      <li class="nav-link active" onclick="navigate('supervisors.html')">Supervisors</li>
+      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    </ul>
+    <div class="logout-link" onclick="logout()">Logout</div>
+    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  </aside>
+  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+  <main class="main-content">
+    <!-- Top actions: search and register -->
+    <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
+      <div class="search-panel">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search" oninput="filterSupervisors()" />
+          <span class="search-icon">🔍</span>
+        </div>
+      </div>
+      <button class="register-btn" onclick="navigate('register_super.html')">Register Supervisor</button>
+    </div>
+    <!-- Supervisor table -->
+    <div class="table-container">
+      <button id="delete-all-btn">Delete All</button>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all-supervisors" /></th>
+            <th>Supervisor ID</th>
+            <th>Name</th>
+            <th>Contact Details</th>
+            <th>Assigned User</th>
+            <th>Assigned Device</th>
+            <th class="action-col">Action</th>
+          </tr>
+        </thead>
+        <tbody id="supervisor-table-body">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <script>
+    // State for all supervisors
+    let allSupervisors = [];
+
+    // Fetch supervisors summary and render the table
+    async function loadSupervisors() {
+      try {
+        const res = await fetch('/api/supervisors-summary', { cache: 'no-store' });
+        const supervisors = await res.json();
+        console.log('Supervisors fetched in frontend:', supervisors);
+        allSupervisors = supervisors;
+        renderSupervisors(supervisors);
+      } catch (err) {
+        console.error('Fetch failed:', err);
+        document.getElementById('supervisor-table-body').innerHTML = '<tr><td colspan="7" style="color:red;text-align:center;font-weight:bold;">Error loading supervisors. Please check your connection or contact support.</td></tr>';
+      }
+    }
+    
+
+    // Render the supervisor table rows
+    function renderSupervisors(supervisors) {
+      const table = document.getElementById('supervisor-table-body');
+      table.innerHTML = '';
+      supervisors.forEach(sup => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input type="checkbox" class="supervisor-row-checkbox" /></td>
+          <td>${sup.supervisor_id}</td>
+          <td><a onclick="goToSupervisor('${sup.supervisor_id}')">${sup.name}</a></td>
+          <td>${sup.contact || ''}</td>
+          <td>${sup.assigned_users}</td>
+          <td>${sup.assigned_devices}</td>
+          <td class="action-col">
+            <button class="delete-supervisor-btn" style="display:none;" title="Delete Supervisor">🗑️</button>
+            <span class="delete-confirmation" style="display:none;">
+              <button class="confirm-delete-btn" title="Confirm">✔️</button>
+              <button class="cancel-delete-btn" title="Cancel">❌</button>
+            </span>
+          </td>
+        `;
+        // Checkbox and delete logic
+        row.querySelector('.supervisor-row-checkbox').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.delete-supervisor-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          hideAllDeleteConfirmations();
+          row.querySelector('.delete-supervisor-btn').style.display = 'none';
+          row.querySelector('.delete-confirmation').style.display = '';
+        });
+        row.querySelector('.confirm-delete-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          row.remove();
+          updateActionColumnVisibility();
+        });
+        row.querySelector('.cancel-delete-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          row.querySelector('.delete-confirmation').style.display = 'none';
+          row.querySelector('.delete-supervisor-btn').style.display = '';
+        });
+        row.querySelector('.supervisor-row-checkbox').addEventListener('change', function() {
+          row.querySelector('.delete-supervisor-btn').style.display = this.checked ? '' : 'none';
+          if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
+          updateActionColumnVisibility();
+        });
+        table.appendChild(row);
+      });
+      updateActionColumnVisibility();
+    }
+
+    // Hide all delete confirmations
+    function hideAllDeleteConfirmations() {
+      document.querySelectorAll('.delete-confirmation').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.delete-supervisor-btn').forEach(btn => btn.style.display = 'none');
+      document.querySelectorAll('.supervisor-row-checkbox:checked').forEach(cb => {
+        const row = cb.closest('tr');
+        if (row) row.querySelector('.delete-supervisor-btn').style.display = '';
+      });
+    }
+
+    // Navigation and search helpers
+    function goToSupervisor(supervisor_id) {
+      window.location.href = `super_device_overview.html?supervisor_id=${supervisor_id}`;
+    }
+    function navigate(page) {
+      window.location.href = page;
+    }
+    function filterSupervisors() {
+      const val = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allSupervisors.filter(s =>
+        (s.name && s.name.toLowerCase().includes(val)) ||
+        (s.supervisor_id && s.supervisor_id.toLowerCase().includes(val))
+      );
+      renderSupervisors(filtered);
+    }
+
+    // Update action column visibility for supervisor table
+    function updateActionColumnVisibility() {
+      const anyChecked = Array.from(document.querySelectorAll('.supervisor-row-checkbox')).some(cb => cb.checked);
+      const allChecked = Array.from(document.querySelectorAll('.supervisor-row-checkbox')).length > 0 && Array.from(document.querySelectorAll('.supervisor-row-checkbox')).every(cb => cb.checked);
+      document.querySelector('.user-table').classList.toggle('show-action-col', anyChecked);
+      document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
+    }
+
+    // Initial load
+    loadSupervisors();
+  </script>
+</body>
+</html>

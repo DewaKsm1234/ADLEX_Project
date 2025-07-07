@@ -1,0 +1,210 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Total Device Stats | EMS</title>
+      <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet" />
+      <link rel="stylesheet" href="css/style.css" />
+      <style>
+        body, html { margin:0; padding:0;; background:#f5f7fa; }
+        .dashboard-body { display:flex; }
+        .main-content { flex:1; padding:20px 30px 30px 30px; transition:margin-left 0.3s; margin-left:200px; }
+        .sidebar { width: 200px; padding: 20px 10px; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
+        .sidebar li.active, .sidebar li:hover { background-color: #007bff; color: white; }     
+        .device-header-card { background: #2196f3; color: #fff; border-radius: 10px; margin: 30px 0 20px 0; padding: 24px 32px 18px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 10px; }
+        .device-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+        .device-card-body {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          justify-content: space-between;
+          width: 100%;
+        }
+        
+        .device-field {
+          flex: 1 1 180px;
+          min-width: 160px;
+          color: #fff;
+        }
+        
+        .device-field span {
+          font-weight: 600;
+          display: inline-block;
+          margin-top: 4px;
+        }
+        
+        .device-info-panel { background: #fff; border-radius: 0 0 8px 8px; margin: 0 0 30px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 28px 32px; }
+        .device-info-title { font-size: 1.2em; font-weight: 600; margin-bottom: 18px; color: #43a047; display: flex; align-items: center; }
+        .device-info-content { display: flex; flex-wrap: wrap; gap: 60px; }
+        .device-header-row { display:flex; flex-wrap:wrap; gap:40px; }
+        .device-header-col { min-width:120px; }
+        .device-header-label { font-size:0.95em; opacity:0.85; font-weight:500; }
+        .device-header-value { font-size:1.1em; font-weight:600; }
+        .device-tabs { display:flex; gap:2px; margin:20px 0; } -->
+        .device-tab-btn { flex:1; padding:12px; font-weight:600; cursor:pointer; border:none; border-radius:8px 8px 0 0; background:#f1f1f1; color:#333; transition:0.3s; }
+        .device-tab-btn:hover, .device-tab-btn.active { background:#28a745; color:#fff; }
+        .device-map iframe { width:100%; height:250px; border-radius:12px; border:none; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:20px; }
+        .stat-item { background:#fff; border-radius:12px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+        .stat-icon { width:32px; height:32px; background:#007bff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:16px; margin-right:12px; }    
+        .stat-label { font-size:0.9em; color:#555; }
+        .stat-value { font-size:1.3em; font-weight:600; color:#000; }
+        .sidebar-hamburger { display:none; position:fixed; top:15px; left:15px; z-index:1001; background:#2396f3; border:none; font-size:28px; color:#fff; cursor:pointer; }
+        @media(max-width:768px){ .sidebar{ position:fixed; top:0; left:-220px; z-index:1000; transition:left 0.3s ease; } .sidebar.show{ left:0; } .main-content{ margin-left:0; } .sidebar-hamburger{ display:block; } }
+      </style>
+    </head>
+    <body class="dashboard-body">
+        <header class="topbar">
+            <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                <img src="assets\adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+                <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
+                <span style="width:48px;"></span>
+            </div>
+        </header>
+        <aside class="sidebar" id="sidebar">
+            <div class="menu-title">Menu</div>
+            <ul>
+                <li class="nav-link active" onclick="navigate('users.html')">Users</li>
+                <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+                <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+                <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+            </ul>
+            <div class="logout-link" onclick="logout()">Logout</div>
+            <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+        </aside>
+        <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+        
+      <div class="main-content">
+        <section class="device-detail-section">
+          <div class="device-card" id="deviceCard" style="background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;">
+              <div class="device-card-header" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+                  <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">E006074</div>
+                  <!-- <div class="device-serial" id="deviceSerial">PMRLR24001</div> -->
+              </div>
+              <div class="device-card-body" style="display:flex;flex-wrap:wrap;gap:40px;">
+                <div class="device-card-body">
+                  <div class="device-field">
+                    User Name<br>
+                    <span id="deviceUser">Ravi Kumar</span>
+                  </div>
+                  <div class="device-field">
+                    MAC Address<br>
+                    <span id="deviceMac">b8:27:eb:c4:31:cf</span>
+                  </div>
+                  <div class="device-field">
+                    Device ID<br>
+                    <span id="deviceIdValue">10001</span>
+                  </div>
+                  <div class="device-field">
+                    Serial Number<br>
+                    <span id="deviceSerial">PMRLR24001</span>
+                  </div>
+                  <div class="device-field">
+                    Location<br>
+                    <span id="deviceLocation">Pune</span>
+                  </div>
+                </div>
+                
+                </div>
+          </div>
+          <div class="device-tabs" style="display:flex;gap:0;margin-bottom:0;">
+              <button class="device-tab" id="tabInfo" style="flex:1;background:#f8f9fa;color:333#fff;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;"onclick="navigate('specific_userdevice.html?deviceId=10001')">Info</button>
+              <button class="device-tab" id="tabErrors" style="flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;"onclick="navigate('elevatorerror.html?deviceId=10001')">Elevator <span class="tab-error">Errors</span></button>
+              <button class="device-tab" id="tabStats" style="flex:1;background:#43a047;color:#fff;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;">Total Statistic Value</button>
+          </div>
+          <!-- <div class="device-tabs">
+            <button class="device-tab-btn" >Info</button>
+            <button class="device-tab-btn" >Elevator Errors</button>
+            <button class="device-tab-btn active">Total Stats</button>
+          </div> -->
+      
+      </section>
+        <!-- <div class="device-header-card">
+          <div class="device-header-main">Elevator #E006074</div>
+          <div class="device-header-row">
+            <div class="device-header-col">
+              <div class="device-header-label">User Name</div>
+              <div class="device-header-value">Ravi Kumar</div>
+            </div>
+            <div class="device-header-col">
+              <div class="device-header-label">Device ID</div>
+              <div class="device-header-value">10001</div>
+            </div>
+            <div class="device-header-col">
+              <div class="device-header-label">Serial Number</div>
+              <div class="device-header-value">PMRLR24001</div>
+            </div>
+            <div class="device-header-col">
+              <div class="device-header-label">MAC Address</div>
+              <div class="device-header-value">b8:27:eb:c4:31:cf</div>
+            </div>
+            <div class="device-header-col">
+              <div class="device-header-label">Location</div>
+              <div class="device-header-value">Pune</div>
+            </div>
+          </div>
+        </div> -->
+
+      
+        <div class="device-map">
+          <iframe src="https://maps.google.com/maps?q=Samsan%20Technische%20Labs%20Pvt%20Ltd%20(Kothrud)&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-icon">📶</div><div class="stat-label">Status</div><div class="stat-value">Offline</div></div>
+          <div class="stat-item"><div class="stat-icon">🕒</div><div class="stat-label">Last Upload</div><div class="stat-value">20/06/2025 12:48:56</div></div>
+          <div class="stat-item"><div class="stat-icon">🔁</div><div class="stat-label">Direction Count</div><div class="stat-value">1U / 1D</div></div>
+          <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Distance Travel</div><div class="stat-value">271,988 m</div></div>
+          <div class="stat-item"><div class="stat-icon">⏱️</div><div class="stat-label">Total Time Work</div><div class="stat-value">13,740 hrs</div></div>
+          <div class="stat-item"><div class="stat-icon">🚦</div><div class="stat-label">Total Travel Time</div><div class="stat-value">9,023 hrs</div></div>
+          <div class="stat-item"><div class="stat-icon">🛑</div><div class="stat-label">Total Stop Count</div><div class="stat-value">192,019</div></div>
+          <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door A Status</div><div class="stat-value">N/A</div></div>
+          <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door B Status</div><div class="stat-value">Closed</div></div>
+          <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">Last Signal Date</div><div class="stat-value">19-06-2025</div></div>
+          <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">Current</div><div class="stat-value">223</div></div>
+          <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Emergency Alarm</div><div class="stat-value">No</div></div>
+          <div class="stat-item"><div class="stat-icon">🕒</div><div class="stat-label">Speed</div><div class="stat-value">3</div></div>
+          <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">RPM</div><div class="stat-value">2400</div></div>
+          <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">DC Bus</div><div class="stat-value">800</div></div>
+          <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Position</div><div class="stat-value">6</div></div>
+        
+        </div>
+      </div>
+
+      <script src="js/script.js"></script>
+      <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('deviceId');
+        async function loadDeviceInfo() {
+          if (!deviceId) return;
+          try {
+            const res = await fetch(`/api/device/${deviceId}`);
+            if (!res.ok) throw new Error('Device not found');
+            const deviceData = await res.json();
+            document.querySelector('.device-header-main').textContent = `Elevator #${deviceData.elevator_number || deviceId}`;
+            document.querySelector('.device-header-col .device-header-value').textContent = deviceData.username || '';
+            document.querySelectorAll('.device-header-col .device-header-value')[1].textContent = deviceData.device_id || deviceId;
+            document.querySelectorAll('.device-header-col .device-header-value')[2].textContent = deviceData.serial_number || '';
+            document.querySelectorAll('.device-header-col .device-header-value')[3].textContent = deviceData.mac_address || '';
+            document.querySelectorAll('.device-header-col .device-header-value')[4].textContent = deviceData.location || '';
+          } catch (error) {
+            // fallback to static
+          }
+        }
+        loadDeviceInfo();
+        // Tab navigation
+        document.querySelectorAll('.device-tab-btn')[0].onclick = function() {
+          if (deviceId) navigate(`specific_userdevice.html?deviceId=${deviceId}`);
+        };
+        document.querySelectorAll('.device-tab-btn')[1].onclick = function() {
+          if (deviceId) navigate(`elevatorerror.html?deviceId=${deviceId}`);
+        };
+        document.querySelectorAll('.device-tab-btn')[2].onclick = function() {
+          // Already here
+        };
+      </script>
+    </body>
+    </html>

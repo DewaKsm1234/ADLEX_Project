@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devices | EMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            ;
+            background: #f5f7fa;
+        }
+
+        .dashboard-body {
+            display: flex;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px 30px 30px 30px;
+            transition: margin-left 0.3s;
+            margin-left: 200px;
+        }
+
+        .sidebar {
+            width: 200px;
+            padding: 20px 10px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar li {
+            padding: 12px 16px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .sidebar li.active,
+        .sidebar li:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .device-header-card {
+            background: #2196f3;
+            color: #fff;
+            border-radius: 10px;
+            margin: 30px 0 20px 0;
+            padding: 24px 32px 18px 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+
+        .device-card-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            width: 100%;
+        } 
+
+        .device-field {
+            flex: 1 1 180px;
+            min-width: 160px;
+            color: #fff;
+        }
+
+        .device-field span {
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .device-info-panel {
+            background: #fff;
+            border-radius: 0 0 8px 8px;
+            margin: 0 0 30px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 28px 32px;
+        }
+
+        .device-info-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: #43a047;
+            display: flex;
+            align-items: center;
+        }
+
+        .device-info-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 60px;
+        }
+
+
+
+        .device-tabs {
+            display: flex;
+            gap: 2px;
+            margin: 20px 0;
+        }
+
+        -->.device-tab-btn {
+            flex: 1;
+            padding: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            background: #f1f1f1;
+            color: #333;
+            transition: 0.3s;
+        }
+
+        .device-tab-btn:hover,
+        .device-tab-btn.active {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .device-map iframe {
+            width: 100%;
+            height: 250px;
+            border-radius: 12px;
+            border: none;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-hamburger {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #007bff;
+            cursor: pointer;
+        }
+
+        @media(max-width:768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -220px;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar-hamburger {
+                display: block;
+            }
+        }
+    </style>
+</head>
+</head>
+
+<body class="dashboard-body">
+    <header class="topbar">
+        <div class="topbar-logo-title"
+            style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+            <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+            <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
+            <span style="width:48px;"></span>
+        </div>
+    </header>
+    <aside class="sidebar" id="sidebar">
+        <div class="menu-title">Menu</div>
+        <ul>
+            <li class="nav-link active" onclick="navigate('users.html')">Users</li>
+            <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+            <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+            <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+        </ul>
+        <div class="logout-link" onclick="logout()">Logout</div>
+        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    </aside>
+    <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+    <main class="main-content">
+        <section class="device-detail-section">
+            <div class="device-card" id="deviceCard"
+                style="background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;">
+                <div class="device-card-header"
+                    style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+                    <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">E006074</div>
+                    <!-- <div class="device-serial" id="deviceSerial">PMRLR24001</div> -->
+                </div>
+                <div class="device-card-body">
+                    <div class="device-field">
+                        User Name<br>
+                        <span id="deviceUser">Ravi Kumar</span>
+                    </div>
+                    <div class="device-field">
+                        MAC Address<br>
+                        <span id="deviceMac">b8:27:eb:c4:31:cf</span>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="device-tabs" style="display:flex;gap:0;margin-bottom:0;">
+                <button class="device-tab" id="tabInfo"
+                    style="flex:1;background:#43a047;color:#fff;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;">Info</button>
+                <button class="device-tab" id="tabErrors"
+                    style="flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;">Elevator
+                    <span class="tab-error">Errors</span></button>
+                <button class="device-tab" id="tabStats"
+                    style="flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;">Total
+                    Statistic Value</button>
+            </div>
+            <div class="device-info-panel"
+                style="background:#fff;border-radius:0 0 8px 8px;margin:0 0 30px 0;box-shadow:0 2px 8px rgba(0,0,0,0.05);padding:28px 32px;">
+                <div class="device-info-title"
+                    style="font-size:1.2em;font-weight:600;margin-bottom:18px;color:#43a047;display:flex;align-items:center;">
+                    <span class="info-icon">&#8505;</span> Info</div>
+                <div class="device-info-content" id="deviceInfoContent" style="display:flex;flex-wrap:wrap;gap:60px;">
+                    <div class="device-info-group">
+                        <span class="info-label"><span class="group-icon">&#127760;</span> Group</span><br>
+                        <span class="info-value" id="deviceGroup">Single (Not in any Group)</span>
+                    </div>
+                    <div class="device-info-elevator">
+                        <span class="info-label">&#128424; Elevator Number</span><br>
+                        <span class="info-value" id="deviceElevator">E006074</span>
+                    </div>
+                    <div class="device-info-serial">
+                        <span class="info-label">&#128295; Serial Number</span><br>
+                        <span class="info-value" id="deviceSerialInfo">PMRLR24001</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="js/script.js"></script>
+    <script>
+        // Get deviceId from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('deviceId');
+        let deviceData = {};
+        async function loadDeviceInfo() {
+            if (!deviceId) return;
+            try {
+                const res = await fetch(`/api/device/${deviceId}`);
+                if (!res.ok) throw new Error('Device not found');
+                deviceData = await res.json();
+                document.getElementById('deviceId').textContent = deviceData.elevator_number || deviceId;
+                document.getElementById('deviceSerial').textContent = deviceData.serial_number || '';
+                document.getElementById('deviceUser').textContent = deviceData.username || '';
+                document.getElementById('deviceMac').textContent = deviceData.mac_address || '';
+                document.getElementById('deviceGroup').textContent = deviceData.group || 'Single (Not in any Group)';
+                document.getElementById('deviceElevator').textContent = deviceData.elevator_number || '';
+                document.getElementById('deviceSerialInfo').textContent = deviceData.serial_number || '';
+            } catch (error) {
+                // fallback to static
+            }
+        }
+        loadDeviceInfo();
+        // Tab navigation
+        document.getElementById('tabInfo').onclick = function () {
+            // Already here
+        };
+        document.getElementById('tabErrors').onclick = function () {
+            if (deviceId) window.location.href = `elevatorerror.html?deviceId=${deviceId}`;
+        };
+        document.getElementById('tabStats').onclick = function () {
+            if (deviceId) window.location.href = `totaldevicestats.html?deviceId=${deviceId}`;
+        };
+    </script>
+</body>
+
+</html>

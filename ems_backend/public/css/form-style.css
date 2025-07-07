@@ -1,0 +1,111 @@
+/* form-style.css - Form styles for EMS (keep only if used by register or support forms) */
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.form-body {
+  height: 100vh;
+  background-color: #f0f0f0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.background-shape {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background-color: #cce7ff;
+  opacity: 0.6;
+  transform: rotate(45deg);
+  border-radius: 20px;
+}
+
+.top-left {
+  top: -50px;
+  left: -50px;
+}
+
+.bottom-right {
+  bottom: -50px;
+  right: -50px;
+}
+
+.form-card {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 500px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2, h3 {
+  text-align: center;
+  color: #444;
+  margin-bottom: 20px;
+}
+
+/* Example: input and label styles for forms */
+input, select, textarea {
+  border-radius: 6px;
+  border: 1px solid #d0d7e2;
+  padding: 10px 12px;
+  font-size: 1em;
+  background: #f8fafd;
+  outline: none;
+  transition: border 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border: 1.5px solid #007bff;
+  background: #fff;
+}
+label {
+  font-size: 0.98em;
+  color: #333;
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+fieldset {
+  border: none;
+  margin-top: 20px;
+}
+
+legend {
+  font-weight: bold;
+  color: #0033cc;
+  margin-bottom: 10px;
+}
+
+.buttons {
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #ccc;
+}
+
+button.primary {
+  background-color: #0033cc;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.9;
+}
