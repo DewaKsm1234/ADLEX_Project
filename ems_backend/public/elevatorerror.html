@@ -9,7 +9,7 @@
   <style>
     body, html { background: #f5f7fa; margin: 0; padding: 0; }
     .dashboard-body { min-height: 100vh; }
-    .main-content { margin-left: 200px; margin-top: 60px; padding: 20px 30px 30px 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
+    .main-content { margin-left: 200px; margin-top: 60px; padding: 0px 30px 30px 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
     .device-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
     .device-card-body {
       display: flex;
@@ -63,6 +63,11 @@
   </aside>
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <main class="main-content">
+    <!-- Device Info Bar -->
+    <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
+      <span>Status: <span id="deviceStatus">-</span></span>
+      <span>Last Upload: <span id="deviceLastUpload">-</span></span>
+    </div>
     <section class="device-detail-section">
       <div class="device-card" id="deviceCard" style="background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;">
         <div class="device-card-header">

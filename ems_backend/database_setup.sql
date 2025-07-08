@@ -48,6 +48,9 @@ CREATE TABLE devices (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Add tb_device_id column to devices table for ThingsBoard mapping
+ALTER TABLE devices ADD COLUMN tb_device_id VARCHAR(64) AFTER device_id;
+
 -- Log activity
 CREATE TABLE logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -56,6 +59,32 @@ CREATE TABLE logs (
   action TEXT,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Table to store latest telemetry for each device
+CREATE TABLE IF NOT EXISTS Telemetry_Device (
+    deviceId VARCHAR(64) PRIMARY KEY,
+    DeviceName VARCHAR(255),
+    DirCount INT,
+    DoorAStatus VARCHAR(32),
+    DoorBStatus VARCHAR(32),
+    EmergencyAlarm VARCHAR(32),
+    LastSignalDate VARCHAR(32),
+    LastSignalTime VARCHAR(32),
+    Latitude DOUBLE,
+    Location VARCHAR(255),
+    Longitude DOUBLE,
+    MacAddress VARCHAR(64),
+    Position VARCHAR(64),
+    Rpm INT,
+    SerialNum VARCHAR(64),
+    Speed DOUBLE,
+    Status VARCHAR(32),
+    TotalDistanceTravelled DOUBLE,
+    TotalStopCount INT,
+    TotalTravelTime DOUBLE,
+    TotalWorkTime DOUBLE,
+    AlarmActive VARCHAR(32)
 );
 
 -- Insert sample data

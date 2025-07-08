@@ -9,7 +9,7 @@
 <style>
 body,html{margin:0;padding:0;background:#f5f7fa;}
 .dashboard-body{display:flex;}
-.main-content{flex:1;padding:20px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
+.main-content{flex:1;padding:0px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
 .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
 .device-card-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;}
 .device-card-body{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;width:100%;}
@@ -51,9 +51,10 @@ body,html{margin:0;padding:0;background:#f5f7fa;}
 <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 <div class="main-content">
     <!-- Device Info Bar -->
-    <div id="deviceInfoBar" style="background:#f8f9fa;padding:8px 8px 8px 8px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
+    <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
     <span>Status: <span id="deviceStatus">-</span></span>
     <span>Last Upload: <span id="deviceLastUpload">-</span></span>
+    <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
   </div>
   <section class="device-detail-section">
     <div class="device-card" id="deviceCard">
@@ -95,6 +96,14 @@ body,html{margin:0;padding:0;background:#f5f7fa;}
     <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">DC Bus</div><div class="stat-value">800</div></div>
     <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Position</div><div class="stat-value">6</div></div>
   </div>
+  <!-- Telemetry Data Table -->
+  <div id="telemetryDataSection" style="margin:30px 0 0 0;">
+    <h3>Device Telemetry</h3>
+    <table id="telemetryTable" style="width:100%;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);padding:16px;">
+      <thead><tr><th>Key</th><th>Value</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 <script>
 const urlParams = new URLSearchParams(window.location.search);
@@ -123,6 +132,46 @@ document.getElementById('tabStats').onclick=function(){};
 document.getElementById('tabAlarms').onclick=function(){if(deviceId) window.location.href=`elevatorerror.html?deviceId=${deviceId}`;};
 document.getElementById('tabMode').onclick=function(){if(deviceId) window.location.href=`totaldevicestats.html?deviceId=${deviceId}`;};
 function navigate(page){window.location.href=page;}
+
+// Telemetry keys to display (should match backend)
+const telemetryKeys = [
+  'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
+  'Latitude','Location','Longitude','MacAddress','Position','Rpm','SerialNum','Speed','Status',
+  'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive'
+];
+
+// Handle Sync button click
+const syncBtn = document.getElementById('syncTelemetryBtn');
+syncBtn.addEventListener('click', async function() {
+  if (!deviceId) return alert('No device ID found!');
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Syncing...';
+  try {
+    // Call backend to sync telemetry
+    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync telemetry');
+    const telemetry = await res.json();
+    renderTelemetryTable(telemetry);
+    alert('Telemetry synced and displayed!');
+  } catch (e) {
+    alert('Error syncing telemetry: ' + e.message);
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync';
+  }
+});
+
+// Render telemetry data in the table
+function renderTelemetryTable(telemetry) {
+  const tbody = document.querySelector('#telemetryTable tbody');
+  tbody.innerHTML = '';
+  telemetryKeys.forEach(key => {
+    const value = telemetry[key] !== null && telemetry[key] !== undefined && telemetry[key] !== '' ? telemetry[key] : 'NA';
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${key}</td><td>${value}</td>`;
+    tbody.appendChild(row);
+  });
+}
 </script>
 <script src="js/script.js"></script>
 </body>

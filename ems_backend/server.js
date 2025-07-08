@@ -7,6 +7,35 @@ const mysql = require('mysql2');
 const path = require('path');
 const cors = require('cors');
 
+// Import axios for HTTP requests to ThingsBoard
+const axios = require('axios');
+
+const TB_BASE_URL = 'https://thingsboard.cloud';
+const TB_USERNAME = 'rutuja.arekar@samsanlabs.com';
+const TB_PASSWORD = 'Rutuja@Samsan113';
+
+let tbToken = '';
+let tbTokenExpiry = 0; // Unix timestamp
+
+// Function to login and get a new token
+async function loginToThingsBoard() {
+  const response = await axios.post(`${TB_BASE_URL}/api/auth/login`, {
+    username: TB_USERNAME,
+    password: TB_PASSWORD
+  });
+  tbToken = response.data.token;
+  // Token is valid for 1 hour (3600s); set expiry 5 min before
+  tbTokenExpiry = Date.now() + (55 * 60 * 1000);
+}
+
+// Function to get a valid token (login if expired)
+async function getThingsBoardToken() {
+  if (!tbToken || Date.now() > tbTokenExpiry) {
+    await loginToThingsBoard();
+  }
+  return tbToken;
+}
+
 const app = express();
 const PORT = 3000;
 
@@ -47,7 +76,7 @@ app.post('/api/login', async (req, res) => {
 // Register new user (with device and supervisor assignment)
 app.post('/api/register', async (req, res) => {
   const {
-    username, password, email, phone, address, device_id, supervisor_id
+    username, password, email, phone, address, tb_device_id, supervisor_id
   } = req.body;
   const conn = await db.getConnection();
   try {
@@ -61,10 +90,10 @@ app.post('/api/register', async (req, res) => {
       [username, email, phone, address, supervisor_id || null]
     );
     const user_id = userResult.insertId;
-    if (device_id) {
+    if (tb_device_id) {
       await conn.execute(
-        'UPDATE devices SET user_id = ? WHERE device_id = ?',
-        [user_id, device_id]
+        'UPDATE devices SET user_id = ? WHERE tb_device_id = ?',
+        [user_id, tb_device_id]
       );
     }
     await conn.commit();
@@ -229,7 +258,7 @@ app.get('/api/unassigned-devices', async (req, res) => {
 // Assign Device to User
 app.post('/api/assign-device', async (req, res) => {
   const {
-    username, location, elevator_number, device_id,
+    username, location, elevator_number, tb_device_id,
     serial_number, mac_address, device_info, supervisor_id
   } = req.body;
   try {
@@ -238,11 +267,10 @@ app.post('/api/assign-device', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     const user_id = userRows[0].id;
+    // Update device assignment using tb_device_id
     await db.execute(
-      `INSERT INTO devices 
-      (device_id, elevator_number, serial_number, mac_address, location, device_info, user_id, status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [device_id, elevator_number, serial_number, mac_address, location, device_info, user_id, 'Online']
+      `UPDATE devices SET elevator_number = ?, serial_number = ?, mac_address = ?, location = ?, device_info = ?, user_id = ?, status = ? WHERE tb_device_id = ?`,
+      [elevator_number, serial_number, mac_address, location, device_info, user_id, 'Online', tb_device_id]
     );
     if (supervisor_id) {
       await db.execute(
@@ -252,11 +280,89 @@ app.post('/api/assign-device', async (req, res) => {
     }
     await db.execute(
       'INSERT INTO logs (user_id, device_id, action) VALUES (?, ?, ?)',
-      [user_id, device_id, `Device ${device_id} assigned to user ${username}`]
+      [user_id, tb_device_id, `Device ${tb_device_id} assigned to user ${username}`]
     );
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- TELEMETRY SYNC ENDPOINT -------------------
+/**
+ * Sync telemetry for a device from ThingsBoard and store in Telemetry_Device table.
+ * Expects ThingsBoard token to be set in TB_TOKEN (env or config).
+ *
+ * POST /api/device/:deviceId/sync-telemetry
+ * Returns: latest telemetry for the device
+ */
+app.post('/api/device/:deviceId/sync-telemetry', async (req, res) => {
+  const deviceId = req.params.deviceId;
+  const TB_TOKEN = await getThingsBoardToken();
+  // ThingsBoard API config
+  // List of telemetry keys to fetch
+  const telemetryKeys = [
+    'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
+    'Latitude','Location','Longitude','MacAddress','Position','Rpm','SerialNum','Speed','Status',
+    'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive'
+  ];
+  try {
+    // Fetch telemetry from ThingsBoard
+    const response = await axios.get(
+      `${TB_BASE_URL}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=${telemetryKeys.join(',')}`,
+      { headers: { Authorization: `Bearer ${TB_TOKEN}` } }
+    );
+    const tbData = response.data;
+    // Prepare values for DB (extract latest value for each key, or null)
+    const telemetry = {};
+    telemetryKeys.forEach(key => {
+      telemetry[key] = (tbData[key] && tbData[key][0] && tbData[key][0].value != null) ? tbData[key][0].value : null;
+    });
+    // Upsert into Telemetry_Device table
+    const columns = ['deviceId', ...telemetryKeys];
+    const values = [deviceId, ...telemetryKeys.map(k => telemetry[k])];
+    const updateClause = telemetryKeys.map(k => `${k} = VALUES(${k})`).join(', ');
+    await db.execute(
+      `INSERT INTO Telemetry_Device (${columns.join(',')}) VALUES (${columns.map(_ => '?').join(',')})
+       ON DUPLICATE KEY UPDATE ${updateClause}`,
+      values
+    );
+    res.json({ deviceId, ...telemetry });
+  } catch (err) {
+    console.error('Telemetry sync error:', err.message);
+    res.status(500).json({ error: 'Failed to sync telemetry', details: err.message });
+  }
+});
+
+/**
+ * Fetch all devices from ThingsBoard and store in devices table.
+ * POST /api/sync-thingsboard-devices
+ * This should be run by an admin to sync all available devices.
+ */
+app.post('/api/sync-thingsboard-devices', async (req, res) => {
+  try {
+    const TB_TOKEN = await getThingsBoardToken();
+    // Fetch all devices (limit 1000 for now)
+    const response = await axios.get(
+      `${TB_BASE_URL}/api/tenant/devices?limit=1000`,
+      { headers: { Authorization: `Bearer ${TB_TOKEN}` } }
+    );
+    const devices = response.data.data || [];
+    // For each device, upsert into devices table (tb_device_id, device_id as name)
+    for (const dev of devices) {
+      const tb_device_id = dev.id.id;
+      const device_id = dev.name;
+      // Upsert: if tb_device_id exists, update name; else insert
+      await db.execute(
+        `INSERT INTO devices (tb_device_id, device_id) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE device_id = VALUES(device_id)`,
+        [tb_device_id, device_id]
+      );
+    }
+    res.json({ success: true, count: devices.length });
+  } catch (err) {
+    console.error('Error syncing ThingsBoard devices:', err.message);
+    res.status(500).json({ error: 'Failed to sync devices', details: err.message });
   }
 });
 
