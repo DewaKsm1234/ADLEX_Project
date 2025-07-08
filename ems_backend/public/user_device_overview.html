@@ -6,21 +6,7 @@
     <title>Devices Overview</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        body, html { background: #f5f7fa; margin: 0; padding: 0; }
-        .dashboard-body { min-height: 100vh; }
-        .sidebar { width: 200px; padding: 20px 10px; }
-        .sidebar ul { list-style: none; padding: 0; margin: 0; }
-        .sidebar li { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
-        .sidebar li.active, .sidebar li:hover { background-color: #007bff; color: white; }
-        .main-content { margin-left: 200px; margin-top: 60px; padding: 30px 30px 0 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
-        .topbar { background: #007bff; color: #fff; border-radius: 0 0 8px 8px; }
-        .topbar h2 { margin: 0; font-size: 2em; letter-spacing: 1px; }
-        .search-panel { display: flex; align-items: center; gap: 10px; }
-        .search-box { background: #fff; border-radius: 20px; padding: 5px 10px; display: flex; align-items: center; }
-        .search-box input { border: none; outline: none; background: transparent; padding: 5px; min-width: 180px; }
-        .search-icon { margin-left: 5px; color: #007bff; }
-        .register-btn { background: #fff; color: #007bff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; margin-left: 10px; }
-        .register-btn:hover { background: #e6f0ff; }
+        
         .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
         .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
@@ -120,15 +106,7 @@
                     <legend style="font-weight:600; color:#007bff; margin-bottom:10px; font-size:1em;">
                         <span style="margin-right:6px;">&#128295;</span>Device Info
                     </legend>
-                    <div style="display:flex; gap:12px; margin-bottom:12px;">
-                        <input type="text" name="elevator_number" placeholder="e.g., E010255" required style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;" />
-                        <input type="text" name="serial_number" placeholder="e.g., PUMRL784001" required style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;" />
-                    </div>
-                    <div style="display:flex; gap:12px; margin-bottom:12px;">
-                        <input type="text" name="device_id" placeholder="Enter Device ID" required style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;" />
-                        <input type="text" name="mac_address" placeholder="68:27:ea:43:1c:1f" required style="flex:1; padding:10px; border-radius:6px; border:1px solid #ccc;" />
-                    </div>
-                    <input type="text" name="location" placeholder="Enter site or Location" required style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-bottom:12px;" />
+                    <div id="deviceRowsContainer"></div>
                 </fieldset>
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
                     <button type="button" onclick="closeAddDeviceModal()" style="padding:10px 18px; border:none; border-radius:6px; background:#eee; color:#333; font-weight:500; cursor:pointer;">Cancel</button>
@@ -146,6 +124,7 @@
         document.getElementById('userLabel').textContent = username || 'User';
         document.getElementById('addDeviceBtn').onclick = function() {
             openAddDeviceModal();
+            setupDeviceRows();
         };
         async function loadDevices() {
             if (!username) return;
@@ -249,34 +228,161 @@
             addDeviceModal.style.display = 'none';
             addDeviceForm.reset();
         }
+        let deviceRowCount = 0;
+        async function getUnassignedDevices() {
+            const res = await fetch('/api/unassigned-devices');
+            return await res.json();
+        }
+        function createDeviceRow(devices, rowId) {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'device-row';
+            rowDiv.style.marginBottom = '10px';
+            rowDiv.dataset.rowId = rowId;
+            // --- First row: Device dropdown and Elevator Number ---
+            const row1 = document.createElement('div');
+            row1.style.display = 'flex';
+            row1.style.gap = '10px';
+            // Device dropdown
+            const select = document.createElement('select');
+            select.name = `device_id_${rowId}`;
+            select.required = true;
+            select.style.flex = '1';
+            select.innerHTML = '<option value="">Select Device</option>' +
+                devices.map(dev => `<option value="${dev.device_id}" data-elevator="${dev.elevator_number}" data-serial="${dev.serial_number}" data-mac="${dev.mac_address}" data-location="${dev.location}">${dev.device_id}</option>`).join('');
+            // Elevator number
+            const elevator = document.createElement('input');
+            elevator.type = 'text';
+            elevator.placeholder = 'Elevator Number';
+            elevator.readOnly = true;
+            elevator.style.flex = '1';
+            elevator.style.display = 'none';
+            // Plus and minus buttons
+            const plusBtn = document.createElement('button');
+            plusBtn.type = 'button';
+            plusBtn.textContent = '+';
+            plusBtn.style = 'padding: 0 10px; font-size: 1.2em; border-radius: 6px; border: 1px solid #007bff; background: #fff; color: #007bff; margin-left: 6px;';
+            const minusBtn = document.createElement('button');
+            minusBtn.type = 'button';
+            minusBtn.textContent = '-';
+            minusBtn.style = 'padding: 0 10px; font-size: 1.2em; border-radius: 6px; border: 1px solid #e74c3c; background: #fff; color: #e74c3c; margin-left: 4px;';
+            row1.appendChild(select);
+            row1.appendChild(elevator);
+            row1.appendChild(plusBtn);
+            row1.appendChild(minusBtn);
+            // --- Second row: Serial Number and MAC Address ---
+            const row2 = document.createElement('div');
+            row2.style.display = 'flex';
+            row2.style.gap = '10px';
+            row2.style.marginTop = '8px';
+            const serial = document.createElement('input');
+            serial.type = 'text';
+            serial.placeholder = 'Serial Number';
+            serial.readOnly = true;
+            serial.style.flex = '1';
+            serial.style.display = 'none';
+            const mac = document.createElement('input');
+            mac.type = 'text';
+            mac.placeholder = 'MAC Address';
+            mac.readOnly = true;
+            mac.style.flex = '1';
+            mac.style.display = 'none';
+            row2.appendChild(serial);
+            row2.appendChild(mac);
+            // --- Third row: Location (full width) ---
+            const row3 = document.createElement('div');
+            row3.style.marginTop = '8px';
+            const location = document.createElement('input');
+            location.type = 'text';
+            location.placeholder = 'Location';
+            location.readOnly = true;
+            location.style.width = '100%';
+            location.style.display = 'none';
+            row3.appendChild(location);
+            // Autofill logic
+            select.addEventListener('change', function() {
+                const selected = select.options[select.selectedIndex];
+                if (select.value) {
+                    elevator.value = selected.dataset.elevator || '';
+                    serial.value = selected.dataset.serial || '';
+                    mac.value = selected.dataset.mac || '';
+                    location.value = selected.dataset.location || '';
+                    elevator.style.display = '';
+                    serial.style.display = '';
+                    mac.style.display = '';
+                    location.style.display = '';
+                } else {
+                    elevator.value = '';
+                    serial.value = '';
+                    mac.value = '';
+                    location.value = '';
+                    elevator.style.display = 'none';
+                    serial.style.display = 'none';
+                    mac.style.display = 'none';
+                    location.style.display = 'none';
+                }
+            });
+            // Plus button logic
+            plusBtn.onclick = async function() {
+                const container = document.getElementById('deviceRowsContainer');
+                const devices = await getUnassignedDevices();
+                deviceRowCount++;
+                container.appendChild(createDeviceRow(devices, deviceRowCount));
+            };
+            // Minus button logic
+            minusBtn.onclick = function() {
+                const container = document.getElementById('deviceRowsContainer');
+                if (container.children.length > 1) {
+                    container.removeChild(rowDiv);
+                }
+            };
+            rowDiv.appendChild(row1);
+            rowDiv.appendChild(row2);
+            rowDiv.appendChild(row3);
+            return rowDiv;
+        }
+        async function setupDeviceRows() {
+            const container = document.getElementById('deviceRowsContainer');
+            container.innerHTML = '';
+            const devices = await getUnassignedDevices();
+            deviceRowCount = 0;
+            container.appendChild(createDeviceRow(devices, deviceRowCount));
+        }
         addDeviceForm.onsubmit = async function(e) {
             e.preventDefault();
-            const formData = new FormData(addDeviceForm);
-            const data = {
-                username,
-                elevator_number: formData.get('elevator_number'),
-                serial_number: formData.get('serial_number'),
-                device_id: formData.get('device_id'),
-                mac_address: formData.get('mac_address'),
-                location: formData.get('location'),
-                device_info: null // or you can add a field if needed
-            };
-            try {
-                const res = await fetch('/api/assign-device', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (res.ok) {
-                    closeAddDeviceModal();
-                    await loadDevices(); // Refresh device list
-                } else {
-                    const err = await res.json();
-                    alert(err.error || 'Failed to add device');
+            const container = document.getElementById('deviceRowsContainer');
+            const rows = Array.from(container.children);
+            for (const row of rows) {
+                const select = row.querySelector('select');
+                if (!select.value) continue;
+                const elevator = row.querySelector('input[placeholder="Elevator Number"]');
+                const serial = row.querySelector('input[placeholder="Serial Number"]');
+                const mac = row.querySelector('input[placeholder="MAC Address"]');
+                const location = row.querySelector('input[placeholder="Location"]');
+                const data = {
+                    username,
+                    device_id: select.value,
+                    elevator_number: elevator.value,
+                    serial_number: serial.value,
+                    mac_address: mac.value,
+                    location: location.value,
+                    device_info: null
+                };
+                try {
+                    const res = await fetch('/api/assign-device', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        alert(err.error || 'Failed to add device');
+                    }
+                } catch (err) {
+                    alert('Failed to add device');
                 }
-            } catch (err) {
-                alert('Failed to add device');
             }
+            closeAddDeviceModal();
+            await loadDevices();
         };
         function logout() {
             // Optionally clear local/session storage if you use it for authentication

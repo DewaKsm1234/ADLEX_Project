@@ -4,67 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Supervisor - EMS</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/form-style.css">
+  
+    <!-- <link rel="stylesheet" href="css/form-style.css"> -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f7f8fa;
+          }
+          
+          .register-container {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+          }
+          
+          .form-container {
+            background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px #007bff;
+      padding: 36px 32px 28px 32px;
+      max-width: 400px;
+      width: 100%;
+      margin: 40px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+          }
+          
+          h2 {
+            margin: 0 0 24px 0;
+            font-size: 1.6em;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #222;
+      text-align: center;
+          }
+          
+          form input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            border: 1px solid #d0d7e2;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #f8fafd; /* light blue tint */
+          }
+          form input:focus {
+            border: 1.5px solid #007bff;
+            background: #fff; 
+            outline: none; /* removes default blue outline */
+          }
+          
+          .name-row {
+            display: flex;
+            gap: 12px;
+          }
+          
+          .name-row input {
+            flex: 1;
+          }
+          
+          .button-row {
+            display: flex;
+            justify-content: right;
+            gap: 10px;
+            margin-top: 20px;
+            
+          }
+          
+          .cancel-btn,
+          .register-btn {
+            padding: 10px 18px;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+          }
+          
+          .cancel-btn {
+            background-color: #eee;
+            color: #333;
+          }
+          
+          .register-btn {
+            background-color: #007bff;
+            color: white;
+          }
+          
+          .register-btn:hover {
+            background-color: #0056cc;
+          }
+          
+          .cancel-btn:hover {
+            background-color: #ccc;
+          }
+          
+          .register-bg-shape {
+            position: absolute;
+            background: #b3d8ff;
+            z-index: 0;
+            border-radius: 20px;
+            transform: rotate(45deg);
+            opacity: 0.5;
+          }
+          
+          .register-bg-shape.left {
+            width: 220px;
+            height: 220px;
+            bottom: 80px;
+            left: -100px;
+          }
+          
+          .register-bg-shape.right {
+            width: 200px;
+            height: 200px;
+            top: 60px;
+            right: -90px;
+          }
+          
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="topbar">
-            <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-                <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Register Supervisor</h2>
-                <span style="width:48px;"></span>
-            </div>
-            <nav>
-                <a href="users.html">Dashboard</a>
-                <a href="supervisors.html">Supervisors</a>
-                <a href="login.html">Logout</a>
-            </nav>
-        </header>
-
-        <main>
-            <div class="form-container">
-                <form id="supervisorForm">
-                    <div class="form-group">
-                        <label for="supervisor_id">Supervisor ID:</label>
-                        <input type="text" id="supervisor_id" name="supervisor_id" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="first_name">First Name:</label>
-                        <input type="text" id="first_name" name="first_name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="last_name">Last Name:</label>
-                        <input type="text" id="last_name" name="last_name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="phone">Phone:</label>
-                        <input type="tel" id="phone" name="phone" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm Password:</label>
-                        <input type="password" id="confirm_password" name="confirm_password" required>
-                    </div>
-
-                    <button type="submit" class="btn-primary">Register Supervisor</button>
-                </form>
-            </div>
-        </main>
-    </div>
+    <!-- Background shapes -->
+<!-- <div class="register-bg-shape left"></div>
+<div class="register-bg-shape right"></div> -->
+<style>
+    
+</style>
+<div class="register-container">
+<!-- Form Container -->
+    <div class="form-container">
+        <h2>Register Supervisor</h2>
+        <form id="supervisorForm">
+      <div class="name-row">
+        <input type="text" name="first_name" placeholder="First Name*" required />
+        <input type="text" name="last_name" placeholder="Last Name*" required />
+      </div>
+      <input type="email" name="email" placeholder="Email ID*" required />
+      <input type="tel" name="phone" placeholder="Mobile Number*" required />
+      <input type="text" name="supervisor_id" placeholder="Supervisor ID*" required />
+      <input type="password" name="password" placeholder="Password*" required />
+      <div class="button-row">
+        <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+        <button type="submit" class="register-btn">Register</button>
+      </div>
+    </form>
+  </div>
+</div>
 
     <script>
         document.getElementById('supervisorForm').addEventListener('submit', async (e) => {
@@ -72,11 +165,6 @@
             
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
-            
-            if (data.password !== data.confirm_password) {
-                alert('Passwords do not match!');
-                return;
-            }
 
             try {
                 const response = await fetch('/api/register-supervisor', {
@@ -107,6 +195,10 @@
                 alert('Registration failed. Please try again.');
             }
         });
+
+        document.getElementById('cancelBtn').onclick = function() {
+            window.history.back();
+        };
     </script>
 </body>
 </html>

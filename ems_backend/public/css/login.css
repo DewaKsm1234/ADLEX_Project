@@ -1,59 +1,83 @@
 /* login.css - Login page styles for EMS */
 
 /* Centered login body and background */
+/* ...existing styles... */
+
 .login-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f0f0f0;
-  height: 100vh;
-  min-height: 100vh;
-  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
-  padding-bottom: 80px;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: #f0f0f0;
 }
 
-/* Login card styles */
+
 .login-container {
   background: white;
-  padding: 28px 24px 24px 24px;
+  padding: 28px 24px;
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-  width: 260px;
+  width: 300px;
   z-index: 1;
   text-align: center;
-  transition: width 0.3s, padding 0.3s;
-  margin-top: 100px;
-}
-.login-container h2 {
-  margin-bottom: 24px;
-  color: #333;
-  font-size: 2em;
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
 }
 
-/* Input and button styles */
-input[type="text"], input[type="password"] {
+.login-container h2 {
+  margin-bottom: 24px;
+  font-size: 2em;
+  font-weight: 600;
+  color: #333;
+}
+
+form input[type="text"],
+form input[type="password"] {
   padding: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   border-radius: 8px;
   border: 1px solid #ccc;
   font-size: 1.1em;
+  width: 100%;
+  box-sizing: border-box;
 }
-button {
+
+/* Button + Forgot Password container */
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forgot-link {
+  font-size: 0.9em;
+  color: #007bff;
+  text-decoration: none;
+}
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+form button {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 12px;
+  padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 1.1em;
   font-weight: 600;
 }
-button:hover { background-color: #0056b3; }
+form button:hover {
+  background-color: #0056b3;
+}
+
 
 /* Blue background shapes */
 .register-bg-shape { position: fixed; background-color: #b3d8ff; border-radius: 20px; transform: rotate(45deg); z-index: 0; pointer-events: none; }

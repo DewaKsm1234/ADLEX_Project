@@ -9,12 +9,7 @@
   <style>
     body, html { background: #f5f7fa; margin: 0; padding: 0; }
     .dashboard-body { min-height: 100vh; }
-    .sidebar { width: 200px; padding: 20px 10px; }
-    .sidebar ul { list-style: none; padding: 0; margin: 0; }
-    .sidebar li { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
-    .sidebar li.active, .sidebar li:hover { background-color: #007bff; color: white; }
     .main-content { margin-left: 200px; margin-top: 60px; padding: 20px 30px 30px 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
-    .device-header-card { background: #2196f3; color: #fff; border-radius: 10px; margin: 30px 0 20px 0; padding: 24px 32px 18px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 10px; }
     .device-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
     .device-card-body {
       display: flex;
@@ -70,7 +65,7 @@
   <main class="main-content">
     <section class="device-detail-section">
       <div class="device-card" id="deviceCard" style="background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;">
-        <div class="device-card-header" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+        <div class="device-card-header">
             <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">E006074</div>
             <!-- <div class="device-serial" id="deviceSerial">PMRLR24001</div> -->
         </div>
@@ -102,9 +97,9 @@
           </div>
     </div>
       <div class="device-tabs">
-        <button class="device-tab" id="tabInfo">Info</button>
-        <button class="device-tab active" id="tabErrors">Elevator Errors</button>
         <button class="device-tab" id="tabStats">Total Statistic Value</button>
+        <button class="device-tab active" id="tabAlarms">Alarms</button>
+        <button class="device-tab" id="tabMode">Control Mode</button>
       </div>
       <div class="device-info-panel">
         <div class="device-info-title"><span class="info-icon">&#9888;</span> Elevator Error Logs</div>
@@ -134,13 +129,13 @@
       }
     }
     loadDeviceInfo();
-    document.getElementById('tabInfo').onclick = function() {
+    document.getElementById('tabStats').onclick = function() {
       if (deviceId) window.location.href = `specific_userdevice.html?deviceId=${deviceId}`;
     };
-    document.getElementById('tabErrors').onclick = function() {
+    document.getElementById('tabAlarms').onclick = function() {
       // Already here
     };
-    document.getElementById('tabStats').onclick = function() {
+    document.getElementById('tabMode').onclick = function() {
       if (deviceId) window.location.href = `totaldevicestats.html?deviceId=${deviceId}`;
     };
     function navigate(page) { window.location.href = page; }
@@ -148,5 +143,6 @@
 
     
   </script>
+  
 </body>
 </html>

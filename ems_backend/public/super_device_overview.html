@@ -141,6 +141,15 @@
             });
             updateActionColumnVisibility();
         }
+        function updateActionColumnVisibility() {
+            const checkboxes = document.querySelectorAll('.super-device-row-checkbox');
+            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+            const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+            const userTable = document.querySelector('.user-table');
+            const deleteAllBtn = document.getElementById('delete-all-btn');
+            if (userTable) userTable.classList.toggle('show-action-col', anyChecked);
+            if (deleteAllBtn) deleteAllBtn.style.display = allChecked ? '' : 'none';
+        }
         function hideAllDeleteConfirmations() {
             document.querySelectorAll('.delete-confirmation').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.delete-super-device-btn').forEach(btn => btn.style.display = 'none');
@@ -185,13 +194,8 @@
                 if (!e.target.closest('.action-col')) hideAllDeleteConfirmations();
             });
         });
-        function updateActionColumnVisibility() {
-            const anyChecked = Array.from(document.querySelectorAll('.super-device-row-checkbox')).some(cb => cb.checked);
-            const allChecked = Array.from(document.querySelectorAll('.super-device-row-checkbox')).length > 0 && Array.from(document.querySelectorAll('.super-device-row-checkbox')).every(cb => cb.checked);
-            document.querySelector('.user-table').classList.toggle('show-action-col', anyChecked);
-            document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
-        }
         loadUserDevices();
     </script>
+    <script src="js/script.js"></script>
 </body>
 </html>

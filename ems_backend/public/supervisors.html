@@ -14,7 +14,7 @@
     /* Table and layout styles for supervisor management */
     .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
     .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-    .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+    .user-table th { background: #fff; color: #333; font-weight: 600; }
     .user-table tr:last-child td { border-bottom: none; }
     .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; cursor: pointer; }
     .user-table td a:hover { text-decoration: underline; }
@@ -188,6 +188,37 @@
 
     // Initial load
     loadSupervisors();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const selectAll = document.getElementById('select-all-supervisors');
+      const deleteAllBtn = document.getElementById('delete-all-btn');
+      if (selectAll) {
+        selectAll.addEventListener('change', function () {
+          document.querySelectorAll('.supervisor-row-checkbox').forEach(cb => {
+            cb.checked = this.checked;
+            // Show/hide delete button
+            const row = cb.closest('tr');
+            if (row) {
+              row.querySelector('.delete-supervisor-btn').style.display = cb.checked ? '' : 'none';
+              if (!cb.checked) row.querySelector('.delete-confirmation').style.display = 'none';
+            }
+          });
+          updateActionColumnVisibility();
+        });
+      }
+      if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', function() {
+          document.querySelectorAll('.supervisor-row-checkbox:checked').forEach(cb => {
+            const row = cb.closest('tr');
+            if (row) {
+              row.querySelector('.delete-supervisor-btn').style.display = 'none';
+              row.querySelector('.delete-confirmation').style.display = '';
+            }
+          });
+        });
+      }
+    });
   </script>
+  <script src="js/script.js"></script>
 </body>
 </html>

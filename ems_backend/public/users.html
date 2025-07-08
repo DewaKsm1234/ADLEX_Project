@@ -6,6 +6,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="css/style.css" />
@@ -13,7 +14,7 @@
     /* Table and layout styles for user management */
     .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
     .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-    .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+    .user-table th { background: #ffffff; color: #333; font-weight: 600; }
     .user-table tr:last-child td { border-bottom: none; }
     .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
     .user-table td a:hover { text-decoration: underline; }
@@ -35,6 +36,7 @@
     }
   </style>
 </head>
+
 <body class="dashboard-body">
   <!-- Topbar/Header -->
   <header class="topbar">
@@ -71,7 +73,7 @@
     <!-- User table -->
     <div class="table-container">
       <button id="delete-all-btn">Delete All</button>
-      <table class="user-table">
+      <table class="user-table" id="user-table">
         <thead>
           <tr>
             <th><input type="checkbox" id="select-all-users" /></th>
@@ -140,6 +142,7 @@
           <td>${deviceCount > 0 ? `<a href="user_device_overview.html?username=${user.username}">${deviceCount}</a>` : `<span class='add-device-link' onclick=\"assignDevice('${user.username}')\">Add Device</span>`}</td>
           <td>${supervisorCell}</td>
           <td class="action-col">
+            <button class="edit-user-btn" style="display:none;" title="Edit Supervisor">✏️</button>
             <button class="delete-user-btn" style="display:none;" title="Delete User">🗑️</button>
             <span class="delete-confirmation" style="display:none;">
               <button class="confirm-delete-btn" title="Confirm">✔️</button>
@@ -149,6 +152,32 @@
         `;
         // Checkbox and delete logic
         row.querySelector('.user-row-checkbox').addEventListener('click', e => e.stopPropagation());
+        // Edit button logic
+        row.querySelector('.edit-user-btn').addEventListener('click', async e => {
+          e.stopPropagation();
+          // Fetch supervisors for dropdown
+          const res = await fetch('/api/supervisors');
+          const supervisors = await res.json();
+          const currentSupervisor = user.supervisor_id;
+          // Create dropdown
+          const dropdown = document.createElement('select');
+          dropdown.className = 'edit-supervisor-dropdown';
+          dropdown.innerHTML = `<option value="">Select Supervisor</option>` +
+            supervisors.map(s => `<option value="${s.supervisor_id}" ${s.supervisor_id === currentSupervisor ? 'selected' : ''}>${s.first_name} ${s.last_name}</option>`).join('');
+          row.querySelector('td:nth-child(4)').innerHTML = '';
+          row.querySelector('td:nth-child(4)').appendChild(dropdown);
+          dropdown.addEventListener('change', async function() {
+            const supervisor_id = this.value;
+            if (supervisor_id) {
+              await fetch('/api/assign-supervisor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user.username, supervisor_id })
+              });
+              await loadUsers();
+            }
+          });
+        });
         row.querySelector('.delete-user-btn').addEventListener('click', e => {
           e.stopPropagation();
           hideAllDeleteConfirmations();
@@ -167,31 +196,10 @@
         });
         row.querySelector('.user-row-checkbox').addEventListener('change', function() {
           row.querySelector('.delete-user-btn').style.display = this.checked ? '' : 'none';
+          row.querySelector('.edit-user-btn').style.display = this.checked ? '' : 'none';
           if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
           updateActionColumnVisibility();
         });
-        // Assign supervisor event
-        const dropdown = row.querySelector('.assign-supervisor-dropdown');
-        if (dropdown) {
-          dropdown.addEventListener('change', async function() {
-            const supervisor_id = this.value;
-            const username = this.dataset.username;
-            if (supervisor_id) {
-              const res = await fetch('/api/assign-supervisor', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, supervisor_id })
-              });
-              const data = await res.json();
-              if (res.ok && data.success) {
-                // After assignment, reload users to show supervisor name instead of dropdown
-                await loadUsers();
-              } else {
-                alert('Failed to assign supervisor.');
-              }
-            }
-          });
-        }
         table.appendChild(row);
       }
       updateActionColumnVisibility();
@@ -235,6 +243,41 @@
     }
     // Initial load
     loadUsers();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const selectAll = document.getElementById('select-all-users');
+      const deleteAllBtn = document.getElementById('delete-all-btn');
+      if (selectAll) {
+        selectAll.addEventListener('change', function () {
+          document.querySelectorAll('.user-row-checkbox').forEach(cb => {
+            cb.checked = this.checked;
+        
+            // Show/hide edit/delete buttons
+            const row = cb.closest('tr');
+            if (row) {
+              row.querySelector('.delete-user-btn').style.display = cb.checked ? '' : 'none';
+              row.querySelector('.edit-user-btn').style.display = cb.checked ? '' : 'none';
+              if (!cb.checked) row.querySelector('.delete-confirmation').style.display = 'none';
+            }
+          });
+        
+          updateActionColumnVisibility(); // ✅ This updates the delete-all-btn visibility
+        });
+        
+      }
+      if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', function() {
+          document.querySelectorAll('.user-row-checkbox:checked').forEach(cb => {
+            const row = cb.closest('tr');
+            if (row) {
+              row.querySelector('.delete-user-btn').style.display = 'none';
+              row.querySelector('.delete-confirmation').style.display = '';
+            }
+          });
+        });
+      }
+    });
   </script>
+  <script src="js/script.js"></script>
 </body>
 </html>

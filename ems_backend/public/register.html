@@ -38,7 +38,7 @@
     .register-card {
       background: #fff;
       border-radius: 18px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      box-shadow: 0 4px 12px #007bff;
       padding: 36px 32px 28px 32px;
       max-width: 400px;
       width: 100%;
@@ -74,7 +74,8 @@
       font-size: 1em;
       background: #f8fafd;
       outline: none;
-      transition: border 0.2s;
+      transition: border 0.1s;
+      box-sizing: border-box;
     }
     .register-form input:focus, .register-form select:focus {
       border: 1.5px solid #007bff;
@@ -86,20 +87,38 @@
       margin-bottom: 3px;
       font-weight: 500;
     }
+    .button-row {
+      display: flex;
+      justify-content: right;
+      gap: 10px;
+      margin-top: 20px;
+      
+    }
+    .cancel-btn,
     .register-btn {
-      background: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 0;
-      font-size: 1.1em;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s;
+    padding: 10px 18px;
+    font-size: 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    }
+
+    .cancel-btn {
+    background-color: #eee;
+    color: #333;
+    }
+
+    .register-btn {
+    background-color: #007bff;
+    color: white;
     }
     .register-btn:hover {
-      background: #0056b3;
+      background-color: #0056cc;
+    }
+    
+    .cancel-btn:hover {
+      background-color: #ccc;
     }
     @media (max-width: 600px) {
       .register-card { padding: 18px 6vw; }
@@ -109,8 +128,8 @@
   </style>
 </head>
 <body>
-  <div class="register-bg-shape left"></div>
-  <div class="register-bg-shape right"></div>
+  <!-- <div class="register-bg-shape left"></div>
+  <div class="register-bg-shape right"></div> -->
   <div class="register-container">
     <div class="register-card">
       <h2>Register User</h2>
@@ -124,16 +143,25 @@
         <input type="text" name="address" placeholder="Address*" required>
         <div class="register-form-row">
           <select name="device_id" id="deviceDropdown" required>
-            <option value="">Assign Device</option>
+            <option value="" style="color: #a9a9a9;">Assign Device</option>
           </select>
           <select name="supervisor_id" id="supervisorDropdown">
-            <option value="">Assign Supervisor (optional)</option>
+            <option value="" style="color: #a9a9a9;">Assign Supervisor (optional)</option>
           </select>
         </div>
-        <input type="text" id="elevatorNumber" placeholder="Elevator Number" readonly>
-        <input type="text" id="serialNumber" placeholder="Serial Number" readonly>
-        <input type="text" id="macAddress" placeholder="MAC Address" readonly>
-        <button type="submit" class="register-btn">Register</button>
+        <div class="register-form-row" id="deviceDetailsRow1" style="display:none;">
+          <input type="text" id="elevatorNumber" placeholder="Elevator Number" readonly>
+          <input type="text" id="serialNumber" placeholder="Serial Number" readonly>
+        </div>
+        <div class="register-form-row" id="deviceDetailsRow2" style="display:none;">
+          <input type="text" id="macAddress" placeholder="MAC Address" readonly>
+          <input type="text" id="location" placeholder="Location" readonly>
+        </div>
+        <!-- <button type="submit" class="register-btn">Register</button> -->
+        <div class="button-row">
+          <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+          <button type="submit" class="register-btn">Register</button>
+        </div>
       </form>
     </div>
   </div>
@@ -162,14 +190,27 @@
         opt.dataset.elevator = dev.elevator_number;
         opt.dataset.serial = dev.serial_number;
         opt.dataset.mac = dev.mac_address;
+        opt.dataset.location = dev.location;
         dropdown.appendChild(opt);
       }
     }
     document.getElementById('deviceDropdown').addEventListener('change', function() {
       const selected = this.options[this.selectedIndex];
-      document.getElementById('elevatorNumber').value = selected.dataset.elevator || '';
-      document.getElementById('serialNumber').value = selected.dataset.serial || '';
-      document.getElementById('macAddress').value = selected.dataset.mac || '';
+      if (selected.value) {
+        document.getElementById('elevatorNumber').value = selected.dataset.elevator || '';
+        document.getElementById('serialNumber').value = selected.dataset.serial || '';
+        document.getElementById('macAddress').value = selected.dataset.mac || '';
+        document.getElementById('location').value = selected.dataset.location || '';
+        document.getElementById('deviceDetailsRow1').style.display = '';
+        document.getElementById('deviceDetailsRow2').style.display = '';
+      } else {
+        document.getElementById('elevatorNumber').value = '';
+        document.getElementById('serialNumber').value = '';
+        document.getElementById('macAddress').value = '';
+        document.getElementById('location').value = '';
+        document.getElementById('deviceDetailsRow1').style.display = 'none';
+        document.getElementById('deviceDetailsRow2').style.display = 'none';
+      }
     });
     loadSupervisors();
     loadDevices();
@@ -199,6 +240,9 @@
         window.location.href = 'users.html';
       } else alert('Registration failed');
     });
+    document.getElementById('cancelBtn').onclick = function() {
+      window.history.back();
+    };
   </script>
 </body>
 </html>
