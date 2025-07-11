@@ -67,34 +67,35 @@
     <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
       <span>Status: <span id="deviceStatus">-</span></span>
       <span>Last Upload: <span id="deviceLastUpload">-</span></span>
+      <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
     </div>
     <section class="device-detail-section">
       <div class="device-card" id="deviceCard" style="background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;">
         <div class="device-card-header">
-            <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">E006074</div>
+            <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">-</div>
             <!-- <div class="device-serial" id="deviceSerial">PMRLR24001</div> -->
         </div>
         <div class="device-card-body" style="display:flex;flex-wrap:wrap;gap:40px;">
           <div class="device-card-body">
             <div class="device-field">
               User Name<br>
-              <span id="deviceUser">Ravi Kumar</span>
+              <span id="deviceUser">km</span>
             </div>
             <div class="device-field">
               MAC Address<br>
-              <span id="deviceMac">b8:27:eb:c4:31:cf</span>
+              <span id="deviceMac">-</span>
             </div>
             <div class="device-field">
               Device ID<br>
-              <span id="deviceIdValue">10001</span>
+              <span id="deviceIdValue">-</span>
             </div>
             <div class="device-field">
               Serial Number<br>
-              <span id="deviceSerial">PMRLR24001</span>
+              <span id="deviceSerial">-</span>
             </div>
             <div class="device-field">
               Location<br>
-              <span id="deviceLocation">Pune</span>
+              <span id="deviceLocation">-</span>
             </div>
           </div>
           
@@ -102,13 +103,14 @@
           </div>
     </div>
       <div class="device-tabs">
-        <button class="device-tab" id="tabStats">Total Statistic Value</button>
+        <button class="device-tab" id="tabStats">Position Data</button>
         <button class="device-tab active" id="tabAlarms">Alarms</button>
-        <button class="device-tab" id="tabMode">Control Mode</button>
+        <button class="device-tab" id="tabMode">Control Data</button>
       </div>
       <div class="device-info-panel">
         <div class="device-info-title"><span class="info-icon">&#9888;</span> Elevator Error Logs</div>
         <div id="errorLogs">
+          
           <div class="error-entry"><h4>Error Code: E01</h4><p>Description: Door sensor malfunction.</p></div>
           <div class="error-entry"><h4>Error Code: E02</h4><p>Description: Overweight detected.</p></div>
           <div class="error-entry"><h4>Error Code: E03</h4><p>Description: Emergency stop triggered.</p></div>
@@ -120,6 +122,94 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const deviceId = urlParams.get('deviceId');
+    const username = localStorage.getItem("selectedUsername");
+    document.getElementById("deviceUser").textContent = username || 'NA';
+    async function syncAndRenderTelemetry() {
+      if (!deviceId) return;
+      try {
+      const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to sync telemetry');
+      const telemetry = await res.json();
+      renderTelemetryToUI(telemetry);
+      await fetchAndRenderUser(telemetry.tb_device_id); // ← call this
+      } catch (e) {
+      console.error('Error syncing telemetry:', e);
+      alert('Error syncing telemetry: ' + e.message);
+      }
+      }
+      async function fetchAndRenderUser(tb_device_id) {
+      try {
+      const res = await fetch(`/api/device-user/${tb_device_id}`);
+      if (!res.ok) throw new Error('No user assigned');
+      const user = await res.json();
+      document.getElementById('deviceUser').textContent = user.username || `${user.first_name} ${user.last_name}`;
+      } catch (e) {
+      console.error('Error loading user info:', e.message);
+      document.getElementById('deviceUser').textContent = 'NA';
+      }
+      }
+      const telemetryKeys = [
+  'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
+  'Latitude','Location','Longitude','MacAddress','Position','Rpm','SerialNum','Speed','Status',
+  'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','DeviceId'
+];
+    function renderTelemetryToUI(telemetry) {
+      try {
+        // Device Card
+        //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
+        document.getElementById('deviceId').textContent = telemetry.DeviceName || 'NA';
+        document.getElementById('deviceIdValue').textContent = telemetry.DeviceId || telemetry.tb_device_id || 'NA';
+        document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
+        document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
+        document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
+        document.getElementById('deviceStatus').textContent = telemetry.Status || 'NA';
+        document.getElementById('deviceLastUpload').textContent = telemetry.LastSignalDate || 'NA';
+        
+      } catch (err) {
+        console.error('Error rendering telemetry:', err);
+        alert('Could not update UI with telemetry data.');
+      }
+    }
+    // Update sync button logic to call renderTelemetryToUI
+const syncBtn = document.getElementById('syncTelemetryBtn');
+syncBtn.addEventListener('click', async function() {
+  if (!deviceId) return alert('No device ID found!');
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Syncing...';
+  try {
+    // Call backend to sync telemetry
+    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync telemetry');
+    const telemetry = await res.json();
+    renderTelemetryToUI(telemetry);
+    alert('Telemetry synced and displayed!');
+  } catch (e) {
+    alert('Error syncing telemetry: ' + e.message);
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync';
+  }
+});
+
+// Auto-sync telemetry when the page loads
+window.addEventListener('DOMContentLoaded', async function() {
+  if (!deviceId) return;
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Syncing...';
+  try {
+    // Call backend to sync telemetry
+    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync telemetry');
+    const telemetry = await res.json();
+    renderTelemetryToUI(telemetry);
+  } catch (e) {
+    // Optionally show an error or fallback
+    console.error('Error auto-syncing telemetry:', e.message);
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync';
+  }
+});
     async function loadDeviceInfo() {
       if (!deviceId) return;
       try {

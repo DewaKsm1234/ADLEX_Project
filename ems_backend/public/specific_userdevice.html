@@ -1,178 +1,223 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Specific User Device | EMS</title>
-<link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/style.css" />
-<style>
-body,html{margin:0;padding:0;background:#f5f7fa;}
-.dashboard-body{display:flex;}
-.main-content{flex:1;padding:0px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
-.device-card{background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
-.device-card-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;}
-.device-card-body{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;width:100%;}
-.device-field{flex:1 1 180px;min-width:160px;color:#fff;}
-.device-field span{font-weight:600;display:inline-block;margin-top:4px;}
-.device-tabs{display:flex;gap:2px;margin:20px 0;}
-.device-tab{flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;margin-right:2px;}
-.device-tab.active,.device-tab:hover{background:#43a047;color:#fff;}
-.device-map iframe{width:100%;height:250px;border-radius:12px;border:none;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;}
-.stat-item{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
-.stat-icon{width:32px;height:32px;background:#007bff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;margin-right:12px;}
-.stat-label{font-size:0.9em;color:#555;}
-.stat-value{font-size:1.3em;font-weight:600;color:#000;}
-.sidebar-hamburger{display:none;position:fixed;top:15px;left:15px;z-index:1001;background:#2396f3;border:none;font-size:28px;color:#fff;cursor:pointer;}
-@media(max-width:768px){.sidebar{position:fixed;top:0;left:-220px;z-index:1000;transition:left 0.3s ease;}.sidebar.show{left:0;}.main-content{margin-left:0;}.sidebar-hamburger{display:block;}}
-</style>
-</head>
-<body class="dashboard-body">
-<header class="topbar">
-  <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-    <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-    <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
-    <span style="width:48px;"></span>
-  </div>
-</header>
-
-<aside class="sidebar" id="sidebar">
-  <div class="menu-title">Menu</div>
-  <ul>
-    <li class="nav-link active" onclick="navigate('users.html')">Users</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-  </ul>
-  <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-</aside>
-<button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
-<div class="main-content">
-    <!-- Device Info Bar -->
-    <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
-    <span>Status: <span id="deviceStatus">-</span></span>
-    <span>Last Upload: <span id="deviceLastUpload">-</span></span>
-    <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
-  </div>
-  <section class="device-detail-section">
-    <div class="device-card" id="deviceCard">
-      <div class="device-card-header">
-        <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">E006074</div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Specific User Device | EMS</title>
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+    body,html{margin:0;padding:0;background:#f5f7fa;}
+    .dashboard-body{display:flex;}
+    .main-content{flex:1;padding:0px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
+    .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
+    .device-card-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+    .device-card-body{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;width:100%;}
+    .device-field{flex:1 1 180px;min-width:160px;color:#fff;}
+    .device-field span{font-weight:600;display:inline-block;margin-top:4px;}
+    .device-tabs{display:flex;gap:2px;margin:20px 0;}
+    .device-tab{flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;margin-right:2px;}
+    .device-tab.active,.device-tab:hover{background:#43a047;color:#fff;}
+    .device-map iframe{width:100%;height:250px;border-radius:12px;border:none;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;}
+    .stat-item{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+    .stat-icon{width:32px;height:32px;background:#007bff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;margin-right:12px;}
+    .stat-label{font-size:0.9em;color:#555;}
+    .stat-value{font-size:1.3em;font-weight:600;color:#000;}
+    .sidebar-hamburger{display:none;position:fixed;top:15px;left:15px;z-index:1001;background:#2396f3;border:none;font-size:28px;color:#fff;cursor:pointer;}
+    @media(max-width:768px){.sidebar{position:fixed;top:0;left:-220px;z-index:1000;transition:left 0.3s ease;}.sidebar.show{left:0;}.main-content{margin-left:0;}.sidebar-hamburger{display:block;}}
+    </style>
+    </head>
+    <body class="dashboard-body">
+    <header class="topbar">
+      <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+        <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Machine Data Elevator</h2>
+        <span style="width:48px;"></span>
       </div>
-      <div class="device-card-body">
-        <div class="device-field">User Name<br><span id="deviceUser">Ravi Kumar</span></div>
-        <div class="device-field">MAC Address<br><span id="deviceMac">b8:27:eb:c4:31:cf</span></div>
-        <div class="device-field">Device ID<br><span id="deviceIdValue">10001</span></div>
-        <div class="device-field">Serial Number<br><span id="deviceSerial">PMRLR24001</span></div>
-        <div class="device-field">Location<br><span id="deviceLocation">Pune</span></div>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="menu-title">Menu</div>
+      <ul>
+        <li class="nav-link active" onclick="navigate('users.html')">Users</li>
+        <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+        <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+        <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+      </ul>
+      <div class="logout-link" onclick="logout()">Logout</div>
+      <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    </aside>
+    <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+    <div class="main-content">
+        <!-- Device Info Bar -->
+        <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
+        <span>Status: <span id="deviceStatus">-</span></span>
+        <span>Last Upload: <span id="deviceLastUpload">-</span></span>
+        <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
+      </div>
+      <section class="device-detail-section">
+        <div class="device-card" id="deviceCard">
+          <div class="device-card-header">
+            <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">-</div>
+          </div>
+          <div class="device-card-body">
+            <div class="device-field">User Name<br><span id="deviceUser">-</span></div>
+            <div class="device-field">MAC Address<br><span id="deviceMac">-</span></div>
+            <div class="device-field">Device ID<br><span id="deviceIdValue">-</span></div>
+            <div class="device-field">Serial Number<br><span id="deviceSerial">-</span></div>
+            <div class="device-field">Location<br><span id="deviceLocation">-</span></div>
+          </div>
+        </div>
+        <div class="device-tabs">
+          <button class="device-tab active" id="tabStats">Position Data</button>
+          <button class="device-tab" id="tabAlarms">Alarms</button>
+          <button class="device-tab" id="tabMode">Control Data</button> 
+        </div>
+      </section>
+      <div class="device-map">
+        <iframe src="https://maps.google.com/maps?q=Samsan%20Technische%20Labs%20Pvt%20Ltd%20(Kothrud)&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="stat-icon">🔁</div><div class="stat-label">Direction Count</div><div class="stat-value" id="stat-DirCount">-</div></div>
+        <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Distance Travel</div><div class="stat-value" id="stat-TotalDistanceTravelled">-</div></div>
+        <div class="stat-item"><div class="stat-icon">⏱️</div><div class="stat-label">Total Time Work</div><div class="stat-value" id="stat-TotalWorkTime">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🚦</div><div class="stat-label">Total Travel Time</div><div class="stat-value" id="stat-TotalTravelTime">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🛑</div><div class="stat-label">Total Stop Count</div><div class="stat-value" id="stat-TotalStopCount">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door A Status</div><div class="stat-value" id="stat-DoorAStatus">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door B Status</div><div class="stat-value" id="stat-DoorBStatus">-</div></div>
+        <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">Last Signal Date</div><div class="stat-value" id="stat-LastSignalDate">-</div></div>
+        <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">Emergency Alarm</div><div class="stat-value" id="stat-EmergencyAlarm">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🕒</div><div class="stat-label">Speed</div><div class="stat-value" id="stat-Speed">-</div></div>
+        <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">RPM</div><div class="stat-value" id="stat-Rpm">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Position</div><div class="stat-value" id="stat-Position">-</div></div>
       </div>
     </div>
-    <div class="device-tabs">
-      <button class="device-tab active" id="tabStats">Total Statistic Value</button>
-      <button class="device-tab" id="tabAlarms">Alarms</button>
-      <button class="device-tab" id="tabMode">Control Mode</button>
-    </div>
-  </section>
-  <div class="device-map">
-    <iframe src="https://maps.google.com/maps?q=Samsan%20Technische%20Labs%20Pvt%20Ltd%20(Kothrud)&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
-  </div>
-  <div class="stats-grid">
-    <!--<div class="stat-item"><div class="stat-icon">📶</div><div class="stat-label">Status</div><div class="stat-value">Offline</div></div>
-    <div class="stat-item"><div class="stat-icon">🕒</div><div class="stat-label">Last Upload</div><div class="stat-value">20/06/2025 12:48:56</div></div>-->
-    <div class="stat-item"><div class="stat-icon">🔁</div><div class="stat-label">Direction Count</div><div class="stat-value">1U / 1D</div></div>
-    <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Distance Travel</div><div class="stat-value">271,988 m</div></div>
-    <div class="stat-item"><div class="stat-icon">⏱️</div><div class="stat-label">Total Time Work</div><div class="stat-value">13,740 hrs</div></div>
-    <div class="stat-item"><div class="stat-icon">🚦</div><div class="stat-label">Total Travel Time</div><div class="stat-value">9,023 hrs</div></div>
-    <div class="stat-item"><div class="stat-icon">🛑</div><div class="stat-label">Total Stop Count</div><div class="stat-value">192,019</div></div>
-    <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door A Status</div><div class="stat-value">N/A</div></div>
-    <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door B Status</div><div class="stat-value">Closed</div></div>
-    <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">Last Signal Date</div><div class="stat-value">19-06-2025</div></div>
-    <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">Current</div><div class="stat-value">223</div></div>
-    <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Emergency Alarm</div><div class="stat-value">No</div></div>
-    <div class="stat-item"><div class="stat-icon">🕒</div><div class="stat-label">Speed</div><div class="stat-value">3</div></div>
-    <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">RPM</div><div class="stat-value">2400</div></div>
-    <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">DC Bus</div><div class="stat-value">800</div></div>
-    <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Position</div><div class="stat-value">6</div></div>
-  </div>
-  <!-- Telemetry Data Table -->
-  <div id="telemetryDataSection" style="margin:30px 0 0 0;">
-    <h3>Device Telemetry</h3>
-    <table id="telemetryTable" style="width:100%;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);padding:16px;">
-      <thead><tr><th>Key</th><th>Value</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-<script>
-const urlParams = new URLSearchParams(window.location.search);
-const deviceId = urlParams.get('deviceId');
-async function loadDeviceInfo(){
-  if(!deviceId) return;
-  try{
-    const res = await fetch(`/api/device/${deviceId}`);
-    if(!res.ok) throw new Error('Device not found');
-    const deviceData = await res.json();
-    document.getElementById('deviceId').textContent = deviceData.elevator_number || deviceId;
-    document.getElementById('deviceUser').textContent = deviceData.username || '';
-    document.getElementById('deviceIdValue').textContent = deviceData.device_id || deviceId;
-    document.getElementById('deviceSerial').textContent = deviceData.serial_number || '';
-    document.getElementById('deviceMac').textContent = deviceData.mac_address || '';
-    document.getElementById('deviceLocation').textContent = deviceData.location || '';
-    // Fill status and last upload
-    document.getElementById('deviceStatus').textContent = deviceData.status || '-';
-    document.getElementById('deviceLastUpload').textContent = deviceData.last_upload || '-';
-  } catch(e){
-    console.error('Error loading device info:',e);
-  }
-}
-loadDeviceInfo();
-document.getElementById('tabStats').onclick=function(){};
-document.getElementById('tabAlarms').onclick=function(){if(deviceId) window.location.href=`elevatorerror.html?deviceId=${deviceId}`;};
-document.getElementById('tabMode').onclick=function(){if(deviceId) window.location.href=`totaldevicestats.html?deviceId=${deviceId}`;};
-function navigate(page){window.location.href=page;}
-
-// Telemetry keys to display (should match backend)
-const telemetryKeys = [
-  'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-  'Latitude','Location','Longitude','MacAddress','Position','Rpm','SerialNum','Speed','Status',
-  'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive'
-];
-
-// Handle Sync button click
-const syncBtn = document.getElementById('syncTelemetryBtn');
-syncBtn.addEventListener('click', async function() {
-  if (!deviceId) return alert('No device ID found!');
-  syncBtn.disabled = true;
-  syncBtn.textContent = 'Syncing...';
+    <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const deviceId = urlParams.get('deviceId');
+   
+    
+    // Use this in your page load and sync button
+async function syncAndRenderTelemetry() {
+  if (!deviceId) return;
   try {
-    // Call backend to sync telemetry
     const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
     if (!res.ok) throw new Error('Failed to sync telemetry');
     const telemetry = await res.json();
-    renderTelemetryTable(telemetry);
-    alert('Telemetry synced and displayed!');
+    renderTelemetryToUI(telemetry);
+    await fetchAndRenderUser(telemetry.tb_device_id); // ← call this
   } catch (e) {
+    console.error('Error syncing telemetry:', e);
     alert('Error syncing telemetry: ' + e.message);
-  } finally {
-    syncBtn.disabled = false;
-    syncBtn.textContent = 'Sync';
   }
-});
-
-// Render telemetry data in the table
-function renderTelemetryTable(telemetry) {
-  const tbody = document.querySelector('#telemetryTable tbody');
-  tbody.innerHTML = '';
-  telemetryKeys.forEach(key => {
-    const value = telemetry[key] !== null && telemetry[key] !== undefined && telemetry[key] !== '' ? telemetry[key] : 'NA';
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${key}</td><td>${value}</td>`;
-    tbody.appendChild(row);
-  });
 }
-</script>
-<script src="js/script.js"></script>
-</body>
-</html>
+async function fetchAndRenderUser(tb_device_id) {
+  try {
+    const res = await fetch(`/api/device-user/${tb_device_id}`);
+    if (!res.ok) throw new Error('No user assigned');
+    const user = await res.json();
+    document.getElementById('deviceUser').textContent = user.username || `${user.first_name} ${user.last_name}`;
+  } catch (e) {
+    console.error('Error loading user info:', e.message);
+    document.getElementById('deviceUser').textContent = 'NA';
+  }
+}
+
+    document.getElementById('tabStats').onclick=function(){};
+    document.getElementById('tabAlarms').onclick=function(){if(deviceId) window.location.href=`elevatorerror.html?deviceId=${deviceId}`;};
+    document.getElementById('tabMode').onclick=function(){if(deviceId) window.location.href=`totaldevicestats.html?deviceId=${deviceId}`;};
+    function navigate(page){window.location.href=page;}
+
+    // Telemetry keys to display (should match backend)
+    const telemetryKeys = [
+      'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
+      'latitude','Location','Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
+      'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','DeviceId'
+    ];
+    const username = localStorage.getItem("selectedUsername");
+    document.getElementById("deviceUser").textContent = username || 'NA';
+    
+    // Handle Sync button click
+    // Render telemetry data into device card and stats cards
+    function renderTelemetryToUI(telemetry) {
+      try {
+        // Device Card
+        //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
+        document.getElementById('deviceId').textContent = telemetry.DeviceName || 'NA';
+        document.getElementById('deviceIdValue').textContent = telemetry.DeviceId || telemetry.tb_device_id || 'NA';
+        document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
+        document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
+        document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
+        document.getElementById('deviceStatus').textContent = telemetry.Status || 'NA';
+        document.getElementById('deviceLastUpload').textContent = telemetry.LastSignalDate || 'NA';
+        // Stats cards
+        document.getElementById('stat-DirCount').textContent = telemetry.DirCount || 'NA';
+        document.getElementById('stat-TotalDistanceTravelled').textContent = telemetry.TotalDistanceTravelled || 'NA';
+        document.getElementById('stat-TotalWorkTime').textContent = telemetry.TotalWorkTime || 'NA';
+        document.getElementById('stat-TotalTravelTime').textContent = telemetry.TotalTravelTime || 'NA';
+        document.getElementById('stat-TotalStopCount').textContent = telemetry.TotalStopCount || 'NA';
+        document.getElementById('stat-DoorAStatus').textContent = telemetry.DoorAStatus || 'NA';
+        document.getElementById('stat-DoorBStatus').textContent = telemetry.DoorBStatus || 'NA';
+        document.getElementById('stat-LastSignalDate').textContent = telemetry.LastSignalDate || 'NA';
+        document.getElementById('stat-EmergencyAlarm').textContent = telemetry.EmergencyAlarm || 'NA';
+        document.getElementById('stat-Speed').textContent = telemetry.speed || 'NA';
+        document.getElementById('stat-Rpm').textContent = telemetry.rpm || 'NA';
+        document.getElementById('stat-Position').textContent = telemetry.position || 'NA';
+      } catch (err) {
+        console.error('Error rendering telemetry:', err);
+        alert('Could not update UI with telemetry data.');
+      }
+    }
+    
+
+    // When telemetry is fetched or synced, call this function
+    // Example usage after sync:
+    // renderTelemetryToUI(telemetry);
+
+    // Update sync button logic to call renderTelemetryToUI
+    const syncBtn = document.getElementById('syncTelemetryBtn');
+    syncBtn.addEventListener('click', async function() {
+      if (!deviceId) return alert('No device ID found!');
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+      try {
+        // Call backend to sync telemetry
+        const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to sync telemetry');
+        const telemetry = await res.json();
+        renderTelemetryToUI(telemetry);
+        alert('Telemetry synced and displayed!');
+      } catch (e) {
+        alert('Error syncing telemetry: ' + e.message);
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = 'Sync';
+      }
+    });
+
+    // Auto-sync telemetry when the page loads
+    window.addEventListener('DOMContentLoaded', async function() {
+      if (!deviceId) return;
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+      try {
+        // Call backend to sync telemetry
+        const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to sync telemetry');
+        const telemetry = await res.json();
+        renderTelemetryToUI(telemetry);
+      } catch (e) {
+        // Optionally show an error or fallback
+        console.error('Error auto-syncing telemetry:', e.message);
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = 'Sync';
+      }
+    });
+
+    </script>
+    <script src="js/script.js"></script>
+    
+    </body>
+    </html>

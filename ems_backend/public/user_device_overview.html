@@ -46,7 +46,7 @@
     <header class="topbar">
         <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
             <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-            <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices Overview</h2>
+            <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">User Devices</h2>
             <span style="width:48px;"></span>
         </div>
     </header>
@@ -93,6 +93,9 @@
                 </tbody>
             </table>
         </div>
+        <div class="footer-text">
+            Powered by Samsan | © 2025 Revision
+          </div>
     </main>
     <!-- Add Device Modal -->
     <div id="addDeviceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); z-index:200; align-items:center; justify-content:center;">
@@ -119,6 +122,9 @@
         // Get username from query param
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username');
+        if (username) {
+            localStorage.setItem("selectedUsername", username);
+        }
         let allDevices = [];
         let selectedRow = null;
         document.getElementById('userLabel').textContent = username || 'User';
@@ -429,6 +435,43 @@
             document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
         }
         loadDevices();
+
+        async function loadUserDevices() {
+            if (!username) return;
+            try {
+                const res = await fetch(`/api/user-devices-details/${username}`);
+                if (!res.ok) throw new Error('Failed to fetch device details');
+                const devices = await res.json();
+                const table = document.getElementById('device-table-body');
+                table.innerHTML = '';
+                if (devices.length === 0) {
+                    table.innerHTML = '<tr><td colspan="10">No devices assigned to this user.</td></tr>';
+                    return;
+                }
+                devices.forEach(device => {
+                    const row = document.createElement('tr');
+                    row.onclick = () => window.location.href = `specific_userdevice.html?deviceId=${device.tb_device_id}`;
+                    
+                    row.innerHTML = `
+                        <td><input type="checkbox" class="user-device-row-checkbox" /></td>
+                        <td>${device.tb_device_id}</td>
+                        <td>${device.DeviceName || '-'}</td>
+                        <td>${device.SerialNum || '-'}</td>
+                        <td>${device.MacAddress || '-'}</td>
+                        <td>${device.Location || '-'}</td>
+                        <td>${device.Status || '-'}</td>
+                        
+                    `;
+                    table.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Error loading user devices:', err);
+                const table = document.getElementById('device-table-body');
+                table.innerHTML = '<tr><td colspan="10" style="color:red;">Error loading device details.</td></tr>';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadUserDevices);
     </script>
 </body>
 </html>

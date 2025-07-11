@@ -90,9 +90,10 @@ app.post('/api/register', async (req, res) => {
       [username, email, phone, address, supervisor_id || null]
     );
     const user_id = userResult.insertId;
+    // Map user to device if tb_device_id provided
     if (tb_device_id) {
       await conn.execute(
-        'UPDATE devices SET user_id = ? WHERE tb_device_id = ?',
+        'INSERT INTO user_devices (user_id, tb_device_id) VALUES (?, ?)',
         [user_id, tb_device_id]
       );
     }
@@ -134,11 +135,32 @@ app.post('/api/assign-supervisor', async (req, res) => {
   }
 });
 
+// Assign Device to User
+app.post('/api/assign-device', async (req, res) => {
+  const { username, tb_device_id } = req.body;
+  try {
+    // Get user_id from username
+    const [userRows] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const user_id = userRows[0].id;
+    // Insert mapping into user_devices
+    await db.execute(
+      'INSERT INTO user_devices (user_id, tb_device_id) VALUES (?, ?)',
+      [user_id, tb_device_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Devices for a specific user
 app.get('/api/user-devices/:username', async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT d.* FROM devices d
+      SELECT d.* FROM user_devices d
       JOIN users u ON d.user_id = u.id
       WHERE u.username = ?
     `, [req.params.username]);
@@ -147,6 +169,23 @@ app.get('/api/user-devices/:username', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Endpoint to get all unassigned devices (not mapped to any user)
+app.get('/api/unassigned-devices', async (req, res) => {
+  try {
+    // Get all device IDs from Telemetry_Device
+    const [allDevices] = await db.execute('SELECT tb_device_id, DeviceName FROM Telemetry_Device');
+    // Get all assigned device IDs from user_devices
+    const [assigned] = await db.execute('SELECT DISTINCT tb_device_id FROM user_devices');
+    const assignedIds = new Set(assigned.map(d => d.tb_device_id));
+    // Filter out assigned devices
+    const unassigned = allDevices.filter(d => !assignedIds.has(d.tb_device_id));
+    res.json(unassigned);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch unassigned devices', details: err.message });
+  }
+});
+
 
 // ---------------- SUPERVISORS ENDPOINTS -------------------
 // Register supervisor
@@ -189,7 +228,7 @@ app.get('/api/supervisors-summary', async (req, res) => {
       if (userIds.length > 0) {
         const placeholders = userIds.map(() => '?').join(',');
         const [deviceRows] = await db.execute(
-          `SELECT COUNT(*) as cnt FROM devices WHERE user_id IN (${placeholders})`,
+          `SELECT COUNT(*) as cnt FROM user_devices WHERE user_id IN (${placeholders})`,
           userIds
         );
         assigned_devices = deviceRows[0].cnt;
@@ -218,12 +257,12 @@ app.get('/api/supervisor-users-devices/:supervisor_id', async (req, res) => {
     const [users] = await db.execute('SELECT * FROM users WHERE supervisor_id = ?', [supervisor_id]);
     // For each user, get their devices
     const userDeviceData = await Promise.all(users.map(async (user) => {
-      const [devices] = await db.execute('SELECT * FROM devices WHERE user_id = ?', [user.id]);
+      const [devices] = await db.execute('SELECT * FROM user_devices WHERE user_id = ?', [user.id]);
       return {
         user,
         devices
       };
-    }));
+    }))
     res.json(userDeviceData);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -231,62 +270,7 @@ app.get('/api/supervisor-users-devices/:supervisor_id', async (req, res) => {
 });
 
 // ---------------- DEVICES ENDPOINTS -------------------
-// Fetch all devices
-app.get('/api/devices', async (req, res) => {
-  try {
-    const [rows] = await db.execute(`
-      SELECT d.*, u.username, u.email 
-      FROM devices d 
-      LEFT JOIN users u ON d.user_id = u.id
-    `);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get all unassigned devices
-app.get('/api/unassigned-devices', async (req, res) => {
-  try {
-    const [rows] = await db.execute('SELECT * FROM devices WHERE user_id IS NULL');
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Assign Device to User
-app.post('/api/assign-device', async (req, res) => {
-  const {
-    username, location, elevator_number, tb_device_id,
-    serial_number, mac_address, device_info, supervisor_id
-  } = req.body;
-  try {
-    const [userRows] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    const user_id = userRows[0].id;
-    // Update device assignment using tb_device_id
-    await db.execute(
-      `UPDATE devices SET elevator_number = ?, serial_number = ?, mac_address = ?, location = ?, device_info = ?, user_id = ?, status = ? WHERE tb_device_id = ?`,
-      [elevator_number, serial_number, mac_address, location, device_info, user_id, 'Online', tb_device_id]
-    );
-    if (supervisor_id) {
-      await db.execute(
-        'UPDATE users SET supervisor_id = ? WHERE id = ?',
-        [supervisor_id, user_id]
-      );
-    }
-    await db.execute(
-      'INSERT INTO logs (user_id, device_id, action) VALUES (?, ?, ?)',
-      [user_id, tb_device_id, `Device ${tb_device_id} assigned to user ${username}`]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Remove all endpoints and logic that reference the devices table
 
 // ---------------- TELEMETRY SYNC ENDPOINT -------------------
 /**
@@ -296,67 +280,98 @@ app.post('/api/assign-device', async (req, res) => {
  * POST /api/device/:deviceId/sync-telemetry
  * Returns: latest telemetry for the device
  */
-app.post('/api/device/:deviceId/sync-telemetry', async (req, res) => {
-  const deviceId = req.params.deviceId;
-  const TB_TOKEN = await getThingsBoardToken();
-  // ThingsBoard API config
-  // List of telemetry keys to fetch
+app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
+  const tb_device_id = req.params.tb_device_id;
+  const tbToken = await getThingsBoardToken(); // Your existing function to get TB token
+
+  // List of telemetry keys to fetch from ThingsBoard
   const telemetryKeys = [
     'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-    'Latitude','Location','Longitude','MacAddress','Position','Rpm','SerialNum','Speed','Status',
-    'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive'
+    'latitude','Location','Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
+    'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','Current','dcbus','DeviceId'
   ];
+
   try {
-    // Fetch telemetry from ThingsBoard
+    // Step 1: Fetch telemetry from ThingsBoard
     const response = await axios.get(
-      `${TB_BASE_URL}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=${telemetryKeys.join(',')}`,
-      { headers: { Authorization: `Bearer ${TB_TOKEN}` } }
+      `${TB_BASE_URL}/api/plugins/telemetry/DEVICE/${tb_device_id}/values/timeseries?keys=${telemetryKeys.join(',')}`,
+      { headers: { Authorization: `Bearer ${tbToken}` } }
     );
     const tbData = response.data;
-    // Prepare values for DB (extract latest value for each key, or null)
+    console.log('ThingsBoard response:', JSON.stringify(tbData, null, 2));
+
+    // Step 2: Prepare telemetry object
     const telemetry = {};
     telemetryKeys.forEach(key => {
-      telemetry[key] = (tbData[key] && tbData[key][0] && tbData[key][0].value != null) ? tbData[key][0].value : null;
+      if (!tbData[key]) {
+        console.warn(`Key ${key} not found in ThingsBoard response for device ${tb_device_id}`);
+      }
+      telemetry[key] = (tbData[key] && tbData[key][0] && tbData[key][0].value != null)
+        ? tbData[key][0].value
+        : null;
     });
-    // Upsert into Telemetry_Device table
-    const columns = ['deviceId', ...telemetryKeys];
-    const values = [deviceId, ...telemetryKeys.map(k => telemetry[k])];
+
+    // Step 3: Upsert telemetry into database
+    const columns = ['tb_device_id', ...telemetryKeys];
+    const values = [tb_device_id, ...telemetryKeys.map(k => telemetry[k])];
     const updateClause = telemetryKeys.map(k => `${k} = VALUES(${k})`).join(', ');
     await db.execute(
-      `INSERT INTO Telemetry_Device (${columns.join(',')}) VALUES (${columns.map(_ => '?').join(',')})
+      `INSERT INTO Telemetry_Device (${columns.join(', ')}) VALUES (${columns.map(_ => '?').join(', ')})
        ON DUPLICATE KEY UPDATE ${updateClause}`,
       values
     );
-    res.json({ deviceId, ...telemetry });
+
+    // Step 4: Fetch username mapped to this device
+    const [userRows] = await db.execute(`
+    SELECT u.username
+    FROM user_devices ud
+    JOIN users u ON ud.user_id = u.id
+    WHERE ud.tb_device_id = ?
+    LIMIT 1
+    `, [tb_device_id]);
+
+
+    telemetry.username = userRows.length > 0 ? userRows[0].username : 'NA';
+
+    // Step 5: Respond to frontend
+    res.json({
+      tb_device_id,
+      ...telemetry
+    });
+
   } catch (err) {
     console.error('Telemetry sync error:', err.message);
-    res.status(500).json({ error: 'Failed to sync telemetry', details: err.message });
+    res.status(500).json({
+      error: 'Failed to sync telemetry',
+      details: err.message
+    });
   }
 });
 
+
 /**
- * Fetch all devices from ThingsBoard and store in devices table.
+ * Sync all devices from ThingsBoard and store in a minimal devices table.
  * POST /api/sync-thingsboard-devices
- * This should be run by an admin to sync all available devices.
+ * This should be run by an admin to sync all available devices for navigation/assignment.
  */
 app.post('/api/sync-thingsboard-devices', async (req, res) => {
   try {
-    const TB_TOKEN = await getThingsBoardToken();
+    const tbToken = await getThingsBoardToken();
     // Fetch all devices (limit 1000 for now)
     const response = await axios.get(
       `${TB_BASE_URL}/api/tenant/devices?limit=1000`,
-      { headers: { Authorization: `Bearer ${TB_TOKEN}` } }
+      { headers: { Authorization: `Bearer ${tbToken}` } }
     );
     const devices = response.data.data || [];
-    // For each device, upsert into devices table (tb_device_id, device_id as name)
+    // For each device, upsert into devices table (tb_device_id, device_name)
     for (const dev of devices) {
       const tb_device_id = dev.id.id;
-      const device_id = dev.name;
+      const device_name = dev.name;
       // Upsert: if tb_device_id exists, update name; else insert
       await db.execute(
-        `INSERT INTO devices (tb_device_id, device_id) VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE device_id = VALUES(device_id)`,
-        [tb_device_id, device_id]
+        `INSERT INTO devices (tb_device_id, device_name) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE device_name = VALUES(device_name)`,
+        [tb_device_id, device_name]
       );
     }
     res.json({ success: true, count: devices.length });
@@ -366,8 +381,55 @@ app.post('/api/sync-thingsboard-devices', async (req, res) => {
   }
 });
 
+// ---------------- ROOT ROUTE -------------------
+// Redirect root to login page
+app.get('/', (req, res) => {
+  res.redirect('/login.html');
+});
+
 // ---------------- START SERVER -------------------
 app.listen(PORT, () => {
   console.log(`EMS Backend running on http://localhost:${PORT}`);
-  console.log("Database: ems_dbnew");
+  console.log("✅❌Database: ems_dbnew");
 });
+
+app.get('/api/user-devices-details/:username', async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT td.*, ud.tb_device_id
+      FROM user_devices ud
+      JOIN users u ON ud.user_id = u.id
+      JOIN Telemetry_Device td ON ud.tb_device_id = td.tb_device_id
+      WHERE u.username = ?
+    `, [req.params.username]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// // Get user info for a device
+// app.get('/api/device-user/:tb_device_id', async (req, res) => {
+//   const { tb_device_id } = req.params;
+
+//   try {
+//     // SQL JOIN to get user details from tb_device_id
+//     const [rows] = await db.execute(`
+//       SELECT u.username, u.first_name, u.last_name
+//       FROM users u
+//       JOIN user_devices ud ON u.id = ud.user_id
+//       WHERE ud.tb_device_id = ?
+//       LIMIT 1
+//     `, [tb_device_id]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ error: 'No user assigned to this device' });
+//     }
+
+//     res.json(rows[0]); // returns { username, first_name, last_name }
+//   } catch (err) {
+//     console.error('Error fetching device user:', err.message);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+

@@ -34,7 +34,22 @@
     @media (max-width: 900px) {
       .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
     }
+    .assign-device-dropdown {
+      height: 28px;         /* Makes the dropdown less tall */
+      font-size: 0.95em;    /* Slightly smaller text */
+      padding: 2px 8px;     /* Less padding for compactness */
+      border-radius: 5px;
+      max-width: 220px;     /* Optional: limit width */
+    }
+    .assign-supervisor-dropdown {
+      height: 28px;         /* Makes the dropdown less tall */
+      font-size: 0.95em;    /* Slightly smaller text */
+      padding: 2px 8px;     /* Less padding for compactness */
+      border-radius: 5px;
+      max-width: 220px;     /* Optional: limit width */
+    }
   </style>
+
 </head>
 
 <body class="dashboard-body">
@@ -77,7 +92,7 @@
         <thead>
           <tr>
             <th><input type="checkbox" id="select-all-users" /></th>
-            <th>User Names</th>
+            <th>UserName</th>
             <th>Devices</th>
             <th>Supervisor Name</th>
             <th class="action-col">Action</th>
@@ -87,6 +102,9 @@
           <!-- Filled by JavaScript -->
         </tbody>
       </table>
+    </div>
+    <div class="footer-text">
+      Powered by Samsan | © 2025 Revision
     </div>
   </main>
   <script>
@@ -119,7 +137,9 @@
         let supervisorCell = '';
         // Show supervisor name if assigned, else show dropdown
         if (user.supervisor_first_name || user.supervisor_last_name) {
-          const supervisorName = `${user.supervisor_first_name || ''} ${user.supervisor_last_name || ''}`.trim();
+          // Show username as first and last name with a space
+          // const supervisorName = `${user.supervisor_first_name || ''}${user.supervisor_last_name || ''}`.trim(); // Old: joined without space
+          const supervisorName = `${user.supervisor_first_name || ''} ${user.supervisor_last_name || ''}`.trim(); // New: with space
           supervisorCell = supervisorName;
         } else {
           supervisorCell = `<select class="assign-supervisor-dropdown" data-username="${user.username}">
@@ -136,10 +156,17 @@
         } catch {}
         // Build row
         const row = document.createElement('tr');
+        let deviceCell = '';
+        if (deviceCount > 0) {
+          deviceCell = `<a href="user_device_overview.html?username=${user.username}">${deviceCount}</a>`;
+        } else {
+          // Device dropdown for unassigned devices
+          deviceCell = `<select class="assign-device-dropdown" data-username="${user.username}"><option value="">Add Device</option></select>`;
+        }
         row.innerHTML = `
           <td><input type="checkbox" class="user-row-checkbox" /></td>
           <td><span class="user-link" onclick="goToUserDevices('${user.username}')">${user.username}</span></td>
-          <td>${deviceCount > 0 ? `<a href="user_device_overview.html?username=${user.username}">${deviceCount}</a>` : `<span class='add-device-link' onclick=\"assignDevice('${user.username}')\">Add Device</span>`}</td>
+          <td>${deviceCell}</td>
           <td>${supervisorCell}</td>
           <td class="action-col">
             <button class="edit-user-btn" style="display:none;" title="Edit Supervisor">✏️</button>
@@ -150,6 +177,45 @@
             </span>
           </td>
         `;
+        // Attach event handler to device dropdown if present
+        const deviceDropdown = row.querySelector('.assign-device-dropdown');
+        if (deviceDropdown) {
+          // Fetch unassigned devices and populate dropdown
+          fetch('/api/unassigned-devices').then(res => res.json()).then(devices => {
+            devices.forEach(dev => {
+              const opt = document.createElement('option');
+              opt.value = dev.tb_device_id;
+              opt.textContent = dev.DeviceName ? `${dev.DeviceName} (${dev.tb_device_id})` : dev.tb_device_id;
+              deviceDropdown.appendChild(opt);
+            });
+          });
+          deviceDropdown.addEventListener('change', async function() {
+            const tb_device_id = this.value;
+            if (tb_device_id) {
+              // Assign device to user
+              try {
+                const res = await fetch('/api/assign-device', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ username: user.username, tb_device_id })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  console.log('Device assigned successfully:', data);
+                  // Replace dropdown with device count link
+                  const cell = row.querySelector('td:nth-child(3)');
+                  cell.innerHTML = `<a href="user_device_overview.html?username=${user.username}">1</a>`;
+                } else {
+                  console.error('Error assigning device:', data.error);
+                  alert('Failed to assign device: ' + data.error);
+                }
+              } catch (err) {
+                console.error('Fetch error:', err);
+                alert('Network or server error while assigning device.');
+              }
+            }
+          });
+        }
         // Checkbox and delete logic
         row.querySelector('.user-row-checkbox').addEventListener('click', e => e.stopPropagation());
         // Edit button logic
@@ -174,7 +240,13 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user.username, supervisor_id })
               });
-              await loadUsers();
+              // Find the selected supervisor's name
+              const selectedSupervisor = supervisors.find(s => s.supervisor_id === supervisor_id);
+              const supervisorName = `${selectedSupervisor.first_name || ''} ${selectedSupervisor.last_name || ''}`.trim();
+              // Replace dropdown with supervisor name in the cell
+              const cell = row.querySelector('td:nth-child(4)');
+              cell.innerHTML = supervisorName;
+              notifySupervisorsReload(); // notify supervisors.html to reload
             }
           });
         });
@@ -240,6 +312,11 @@
     }
     function logout() {
       window.location.href = "login.html";
+    }
+    // Helper to notify supervisors.html to reload (if open in another tab)
+    function notifySupervisorsReload() {
+      // Use localStorage event to trigger reload in other tabs
+      localStorage.setItem('reloadSupervisors', Date.now());
     }
     // Initial load
     loadUsers();

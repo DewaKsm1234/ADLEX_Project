@@ -19,7 +19,7 @@
 /* Buttons */
 .register-btn { background: #fff; color: #007bff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; margin-left: 10px; }
 .register-btn:hover { background: #e6f0ff; }
-
+.footer-text { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #333; text-align: center; z-index: 10; padding-left: 200px;}
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .main-content, .table-container { margin: 0; }
@@ -133,23 +133,26 @@ body, html {
 
 /* --- Sidebar Hamburger --- */
 .sidebar-hamburger {
-  position: fixed;
-  left: 10px;
-  top: 10px;
+  position: fixed; /* Keep it pinned to screen center */
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
   background: #007bff;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  width: 44px;
-  height: 44px;
-  font-size: 2em;
+  border-radius: 0 8px 8px 0; /* Rounded on the right side */
+  width: 40px;
+  height: 60px;
+  font-size: 1.5em;
+  font-weight: bold;
   cursor: pointer;
   z-index: 300;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   display: none;
+  justify-content: center;
+  align-items: center;
 }
 .sidebar.collapsed ~ .sidebar-hamburger {
-  display: block;
+  display: flex;
 }
 
 /* --- Main Content --- */
@@ -164,7 +167,7 @@ body, html {
   transition: margin-left 0.3s;
 }
 .sidebar.collapsed ~ .main-content {
-  margin-left: 0;
+  margin-left: 20px;
 }
 
 /* --- Register Button and Topbar Buttons --- */

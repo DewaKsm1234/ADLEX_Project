@@ -34,22 +34,15 @@ CREATE TABLE supervisors (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Device assignments
-CREATE TABLE devices (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  device_id VARCHAR(50) UNIQUE NOT NULL,
-  elevator_number VARCHAR(20),
-  serial_number VARCHAR(100),
-  mac_address VARCHAR(100),
-  location VARCHAR(100),
-  device_info TEXT,
-  user_id INT,
-  status ENUM('Online', 'Offline') DEFAULT 'Online',
-  FOREIGN KEY (user_id) REFERENCES users(id)
+
+-- Create user_devices table for 1:many mapping between users and ThingsBoard device IDs
+CREATE TABLE IF NOT EXISTS user_devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tb_device_id VARCHAR(64) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Add tb_device_id column to devices table for ThingsBoard mapping
-ALTER TABLE devices ADD COLUMN tb_device_id VARCHAR(64) AFTER device_id;
 
 -- Log activity
 CREATE TABLE logs (

@@ -5,3 +5,9 @@
 
 
 create specific_userdevice show image
+
+
+assign multiple device
+delete function full logic
+
+u

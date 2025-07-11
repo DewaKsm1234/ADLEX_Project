@@ -83,6 +83,9 @@
         </tbody>
       </table>
     </div>
+    <div class="footer-text">
+      Powered by Samsan | © 2025 Revision
+    </div>
   </main>
   <script>
     // State for all supervisors
@@ -188,6 +191,13 @@
 
     // Initial load
     loadSupervisors();
+
+    // Listen for reloadSupervisors event from other tabs/pages
+    window.addEventListener('storage', function(event) {
+      if (event.key === 'reloadSupervisors') {
+        loadSupervisors();
+      }
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
       const selectAll = document.getElementById('select-all-supervisors');
