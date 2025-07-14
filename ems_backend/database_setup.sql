@@ -130,3 +130,11 @@ UNION ALL
 SELECT 'Devices', COUNT(*) FROM devices
 UNION ALL
 SELECT 'Logs', COUNT(*) FROM logs; 
+
+CREATE TABLE devices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tb_device_id VARCHAR(64) UNIQUE,
+  device_name VARCHAR(255)
+);
+alter table devices add column DeviceId varchar(5);
+select * from devices;

@@ -1,477 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Devices Overview</title>
-    <link rel="stylesheet" href="css/style.css">
-    <style>
-        
-        .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
-        .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-        .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
-        .user-table tr:last-child td { border-bottom: none; }
-        .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
-        .user-table td a:hover { text-decoration: underline; }
-        .user-table td .add-device-link { color: #007bff; text-decoration: underline; cursor: pointer; }
-        .user-table td .add-device-link:hover { color: #0056b3; }
-        .user-table td .user-link { cursor: pointer; color: #222; font-weight: 500; }
-        .user-table td .user-link:hover { color: #007bff; text-decoration: underline; }
-        .user-table tr:hover { background: #007bff !important; color: #fff; }
-        .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
-        @media (max-width: 900px) {
-            .table-container { margin: 0; }
-            .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
-        }
-        .logout-link {
-            color: #e74c3c !important;
-            font-weight: bold;
-            margin-top: 40px;
-        }
-        .logout-link:hover {
-            background: #ffeaea !important;
-            color: #c0392b !important;
-        }
-        th.action-col, td.action-col { display: none; }
-        .show-action-col th.action-col, .show-action-col td.action-col { display: table-cell !important; }
-        #delete-all-btn { display: none; margin: 10px 0; background: #e74c3c; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; }
-        #delete-all-btn:hover { background: #c0392b; }
-        .confirm-delete-btn, .cancel-delete-btn { display: inline-block; border: none; background: none; font-size: 1.2em; cursor: pointer; margin-left: 4px; }
-        .confirm-delete-btn { color: #28a745; }
-        .cancel-delete-btn { color: #e74c3c; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Devices Overview</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Existing styles preserved */
+    .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+    .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
+    .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+    .user-table tr:last-child td { border-bottom: none; }
+    .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
+    .user-table td a:hover { text-decoration: underline; }
+    .user-table tr:hover { background: #007bff !important; color: #fff; }
+    .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
+    @media (max-width: 900px) {
+      .table-container { margin: 0; }
+      .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
+    }
+    .logout-link {
+      color: #e74c3c !important;
+      font-weight: bold;
+      margin-top: 40px;
+    }
+    .logout-link:hover {
+      background: #ffeaea !important;
+      color: #c0392b !important;
+    }
+    .adddeviceform{
+        width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .adddeviceform label{
+      font-size: 1em;
+      color: #333;
+      margin-bottom: 3px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body class="dashboard-body">
-    <header class="topbar">
-        <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-            <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-            <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">User Devices</h2>
-            <span style="width:48px;"></span>
-        </div>
-    </header>
-    <aside class="sidebar" id="sidebar">
-        <div class="menu-title">Menu</div>
-        <ul>
-            <li class="nav-link active" onclick="navigate('users.html')">Users</li>
-            <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
-            <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-            <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-        </ul>
-        <div class="logout-link" onclick="logout()">Logout</div>
-        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-    </aside>
-    <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
-    <main class="main-content">
-        <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
-            <div class="search-panel">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Search" oninput="filterDevices()" />
-                    <span class="search-icon">🔍</span>
-                </div>
-            </div>
-            <button class="register-btn" id="addDeviceBtn">Add Device</button>
-        </div>
-        <div class="user-label" id="userLabel" style="margin:30px; font-size:1.6em; font-weight:bold;"></div>
-        <div class="table-container">
-            <button id="delete-all-btn">Delete All</button>
-            <table class="user-table">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="select-all-user-device" /></th>
-                        <th>Device ID</th>
-                        <th>Elevator Number</th>
-                        <th>Serial No</th>
-                        <th>MAC Address</th>
-                        <th>Location</th>
-                        <th>Connection</th>
-                        <th class="action-col">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="device-table-body">
-                    <!-- Filled by JS -->
-                </tbody>
-            </table>
-        </div>
-        <div class="footer-text">
-            Powered by Samsan | © 2025 Revision
-          </div>
-    </main>
-    <!-- Add Device Modal -->
-    <div id="addDeviceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); z-index:200; align-items:center; justify-content:center;">
-        <div style="background:#fff; border-radius:12px; width:480px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,0.18); margin:auto; position:relative;">
-            <div style="background:#f4f4f4; border-radius:12px 12px 0 0; padding:18px 28px; display:flex; align-items:center; gap:10px;">
-                <span style="font-size:1.5em; color:#007bff;">&#128230;</span>
-                <span style="font-size:1.2em; font-weight:600;">Add New Device</span>
-            </div>
-            <form id="addDeviceForm" style="padding:28px 28px 18px 28px;">
-                <fieldset style="border:none; margin:0 0 18px 0;">
-                    <legend style="font-weight:600; color:#007bff; margin-bottom:10px; font-size:1em;">
-                        <span style="margin-right:6px;">&#128295;</span>Device Info
-                    </legend>
-                    <div id="deviceRowsContainer"></div>
-                </fieldset>
-                <div style="display:flex; justify-content:flex-end; gap:10px;">
-                    <button type="button" onclick="closeAddDeviceModal()" style="padding:10px 18px; border:none; border-radius:6px; background:#eee; color:#333; font-weight:500; cursor:pointer;">Cancel</button>
-                    <button type="submit" style="padding:10px 18px; border:none; border-radius:6px; background:#007bff; color:#fff; font-weight:600; cursor:pointer;">Submit</button>
-                </div>
-            </form>
-        </div>
+  <header class="topbar">
+    <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">User Devices</h2>
+      <span style="width:48px;"></span>
     </div>
-    <script>
-        // Get username from query param
-        const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username');
-        if (username) {
-            localStorage.setItem("selectedUsername", username);
-        }
-        let allDevices = [];
-        let selectedRow = null;
-        document.getElementById('userLabel').textContent = username || 'User';
-        document.getElementById('addDeviceBtn').onclick = function() {
-            openAddDeviceModal();
-            setupDeviceRows();
-        };
-        async function loadDevices() {
-            if (!username) return;
-            try {
-                const res = await fetch(`/api/user-devices/${username}`);
-                const devices = await res.json();
-                allDevices = devices;
-                renderDevices(devices);
-            } catch {
-                document.getElementById('device-table-body').innerHTML = '<tr><td colspan="7">Error loading devices</td></tr>';
-            }
-        }
-        function renderDevices(devices) {
-            const table = document.getElementById('device-table-body');
-            table.innerHTML = '';
-            devices.forEach((device, idx) => {
-                const row = document.createElement('tr');
-                row.onclick = () => goToDevice(device.device_id);
-                row.innerHTML = `
-                    <td><input type="checkbox" class="user-device-row-checkbox" /></td>
-                    <td>${device.device_id}</td>
-                    <td>${device.elevator_number || ''}</td>
-                    <td>${device.serial_number || ''}</td>
-                    <td>${device.mac_address || ''}</td>
-                    <td>${device.location || ''}</td>
-                    <td><span class="status-pill">${device.status || 'Online'}</span></td>
-                    <td class="action-col">
-                      <button class="delete-user-device-btn" style="display:none;" title="Delete Device">🗑️</button>
-                      <span class="delete-confirmation" style="display:none;">
-                        <button class="confirm-delete-btn" title="Confirm">✔️</button>
-                        <button class="cancel-delete-btn" title="Cancel">❌</button>
-                      </span>
-                    </td>
-                `;
-                row.querySelector('.user-device-row-checkbox').addEventListener('click', e => e.stopPropagation());
-                row.querySelector('.delete-user-device-btn').addEventListener('click', e => {
-                    e.stopPropagation();
-                    hideAllDeleteConfirmations();
-                    row.querySelector('.delete-user-device-btn').style.display = 'none';
-                    row.querySelector('.delete-confirmation').style.display = '';
-                });
-                row.querySelector('.confirm-delete-btn').addEventListener('click', e => {
-                    e.stopPropagation();
-                    row.remove();
-                    updateActionColumnVisibility();
-                });
-                row.querySelector('.cancel-delete-btn').addEventListener('click', e => {
-                    e.stopPropagation();
-                    row.querySelector('.delete-confirmation').style.display = 'none';
-                    row.querySelector('.delete-user-device-btn').style.display = '';
-                });
-                row.querySelector('.user-device-row-checkbox').addEventListener('change', function() {
-                    row.querySelector('.delete-user-device-btn').style.display = this.checked ? '' : 'none';
-                    if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
-                    updateActionColumnVisibility();
-                });
-                table.appendChild(row);
-            });
-            updateActionColumnVisibility();
-        }
-        function hideAllDeleteConfirmations() {
-            document.querySelectorAll('.delete-confirmation').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.delete-user-device-btn').forEach(btn => btn.style.display = 'none');
-            document.querySelectorAll('.user-device-row-checkbox:checked').forEach(cb => {
-                const row = cb.closest('tr');
-                if (row) row.querySelector('.delete-user-device-btn').style.display = '';
-            });
-        }
-        function goToDevice(deviceId) {
-            window.location.href = `specific_userdevice.html?deviceId=${deviceId}`;
-        }
-        function viewDevice(deviceId) {
-            window.location.href = `user_device_overview.html?deviceId=${deviceId}`;
-        }
-        function viewElevator(elevatorNumber) {
-            alert('Elevator details for: ' + elevatorNumber); // Placeholder
-        }
-        function navigate(page) {
-            window.location.href = page;
-        }
-        function filterDevices() {
-            const val = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allDevices.filter(d =>
-                (d.device_id && d.device_id.toLowerCase().includes(val)) ||
-                (d.elevator_number && d.elevator_number.toLowerCase().includes(val)) ||
-                (d.serial_number && d.serial_number.toLowerCase().includes(val)) ||
-                (d.mac_address && d.mac_address.toLowerCase().includes(val)) ||
-                (d.location && d.location.toLowerCase().includes(val))
-            );
-            renderDevices(filtered);
-        }
-        // Modal logic
-        const addDeviceModal = document.getElementById('addDeviceModal');
-        const addDeviceBtn = document.getElementById('addDeviceBtn');
-        const addDeviceForm = document.getElementById('addDeviceForm');
+  </header>
 
-        function openAddDeviceModal() {
-            addDeviceModal.style.display = 'flex';
-        }
-        function closeAddDeviceModal() {
-            addDeviceModal.style.display = 'none';
-            addDeviceForm.reset();
-        }
-        let deviceRowCount = 0;
-        async function getUnassignedDevices() {
-            const res = await fetch('/api/unassigned-devices');
-            return await res.json();
-        }
-        function createDeviceRow(devices, rowId) {
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'device-row';
-            rowDiv.style.marginBottom = '10px';
-            rowDiv.dataset.rowId = rowId;
-            // --- First row: Device dropdown and Elevator Number ---
-            const row1 = document.createElement('div');
-            row1.style.display = 'flex';
-            row1.style.gap = '10px';
-            // Device dropdown
-            const select = document.createElement('select');
-            select.name = `device_id_${rowId}`;
-            select.required = true;
-            select.style.flex = '1';
-            select.innerHTML = '<option value="">Select Device</option>' +
-                devices.map(dev => `<option value="${dev.device_id}" data-elevator="${dev.elevator_number}" data-serial="${dev.serial_number}" data-mac="${dev.mac_address}" data-location="${dev.location}">${dev.device_id}</option>`).join('');
-            // Elevator number
-            const elevator = document.createElement('input');
-            elevator.type = 'text';
-            elevator.placeholder = 'Elevator Number';
-            elevator.readOnly = true;
-            elevator.style.flex = '1';
-            elevator.style.display = 'none';
-            // Plus and minus buttons
-            const plusBtn = document.createElement('button');
-            plusBtn.type = 'button';
-            plusBtn.textContent = '+';
-            plusBtn.style = 'padding: 0 10px; font-size: 1.2em; border-radius: 6px; border: 1px solid #007bff; background: #fff; color: #007bff; margin-left: 6px;';
-            const minusBtn = document.createElement('button');
-            minusBtn.type = 'button';
-            minusBtn.textContent = '-';
-            minusBtn.style = 'padding: 0 10px; font-size: 1.2em; border-radius: 6px; border: 1px solid #e74c3c; background: #fff; color: #e74c3c; margin-left: 4px;';
-            row1.appendChild(select);
-            row1.appendChild(elevator);
-            row1.appendChild(plusBtn);
-            row1.appendChild(minusBtn);
-            // --- Second row: Serial Number and MAC Address ---
-            const row2 = document.createElement('div');
-            row2.style.display = 'flex';
-            row2.style.gap = '10px';
-            row2.style.marginTop = '8px';
-            const serial = document.createElement('input');
-            serial.type = 'text';
-            serial.placeholder = 'Serial Number';
-            serial.readOnly = true;
-            serial.style.flex = '1';
-            serial.style.display = 'none';
-            const mac = document.createElement('input');
-            mac.type = 'text';
-            mac.placeholder = 'MAC Address';
-            mac.readOnly = true;
-            mac.style.flex = '1';
-            mac.style.display = 'none';
-            row2.appendChild(serial);
-            row2.appendChild(mac);
-            // --- Third row: Location (full width) ---
-            const row3 = document.createElement('div');
-            row3.style.marginTop = '8px';
-            const location = document.createElement('input');
-            location.type = 'text';
-            location.placeholder = 'Location';
-            location.readOnly = true;
-            location.style.width = '100%';
-            location.style.display = 'none';
-            row3.appendChild(location);
-            // Autofill logic
-            select.addEventListener('change', function() {
-                const selected = select.options[select.selectedIndex];
-                if (select.value) {
-                    elevator.value = selected.dataset.elevator || '';
-                    serial.value = selected.dataset.serial || '';
-                    mac.value = selected.dataset.mac || '';
-                    location.value = selected.dataset.location || '';
-                    elevator.style.display = '';
-                    serial.style.display = '';
-                    mac.style.display = '';
-                    location.style.display = '';
-                } else {
-                    elevator.value = '';
-                    serial.value = '';
-                    mac.value = '';
-                    location.value = '';
-                    elevator.style.display = 'none';
-                    serial.style.display = 'none';
-                    mac.style.display = 'none';
-                    location.style.display = 'none';
-                }
-            });
-            // Plus button logic
-            plusBtn.onclick = async function() {
-                const container = document.getElementById('deviceRowsContainer');
-                const devices = await getUnassignedDevices();
-                deviceRowCount++;
-                container.appendChild(createDeviceRow(devices, deviceRowCount));
-            };
-            // Minus button logic
-            minusBtn.onclick = function() {
-                const container = document.getElementById('deviceRowsContainer');
-                if (container.children.length > 1) {
-                    container.removeChild(rowDiv);
-                }
-            };
-            rowDiv.appendChild(row1);
-            rowDiv.appendChild(row2);
-            rowDiv.appendChild(row3);
-            return rowDiv;
-        }
-        async function setupDeviceRows() {
-            const container = document.getElementById('deviceRowsContainer');
-            container.innerHTML = '';
-            const devices = await getUnassignedDevices();
-            deviceRowCount = 0;
-            container.appendChild(createDeviceRow(devices, deviceRowCount));
-        }
-        addDeviceForm.onsubmit = async function(e) {
-            e.preventDefault();
-            const container = document.getElementById('deviceRowsContainer');
-            const rows = Array.from(container.children);
-            for (const row of rows) {
-                const select = row.querySelector('select');
-                if (!select.value) continue;
-                const elevator = row.querySelector('input[placeholder="Elevator Number"]');
-                const serial = row.querySelector('input[placeholder="Serial Number"]');
-                const mac = row.querySelector('input[placeholder="MAC Address"]');
-                const location = row.querySelector('input[placeholder="Location"]');
-                const data = {
-                    username,
-                    device_id: select.value,
-                    elevator_number: elevator.value,
-                    serial_number: serial.value,
-                    mac_address: mac.value,
-                    location: location.value,
-                    device_info: null
-                };
-                try {
-                    const res = await fetch('/api/assign-device', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    if (!res.ok) {
-                        const err = await res.json();
-                        alert(err.error || 'Failed to add device');
-                    }
-                } catch (err) {
-                    alert('Failed to add device');
-                }
-            }
-            closeAddDeviceModal();
-            await loadDevices();
-        };
-        function logout() {
-            // Optionally clear local/session storage if you use it for authentication
-            // localStorage.clear();
-            // sessionStorage.clear();
-            window.location.href = "login.html";
-        }
-        // Sidebar toggle logic
-        document.getElementById('sidebarArrow').onclick = function() {
-            var sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('collapsed');
-        };
-        document.getElementById('sidebarHamburger').onclick = function() {
-            var sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('collapsed');
-        };
-        document.addEventListener('DOMContentLoaded', function() {
-            const selectAll = document.getElementById('select-all-user-device');
-            const deleteAllBtn = document.getElementById('delete-all-btn');
-            selectAll && selectAll.addEventListener('change', function() {
-                document.querySelectorAll('.user-device-row-checkbox').forEach(cb => {
-                    cb.checked = selectAll.checked;
-                    cb.dispatchEvent(new Event('change'));
-                });
-                updateActionColumnVisibility();
-            });
-            deleteAllBtn.addEventListener('click', function() {
-                document.querySelectorAll('.user-device-row-checkbox:checked').forEach(cb => {
-                    const row = cb.closest('tr');
-                    if (row) {
-                        row.querySelector('.delete-user-device-btn').style.display = 'none';
-                        row.querySelector('.delete-confirmation').style.display = '';
-                    }
-                });
-            });
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.action-col')) hideAllDeleteConfirmations();
-            });
+  <aside class="sidebar" id="sidebar">
+    <div class="menu-title">Menu</div>
+    <ul>
+      <li class="nav-link active" onclick="navigate('users.html')">Users</li>
+      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    </ul>
+    <div class="logout-link" onclick="logout()">Logout</div>
+    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  </aside>
+  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+
+  <main class="main-content">
+    <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
+      <div class="search-panel">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search" oninput="filterDevices()" />
+          <span class="search-icon">🔍</span>
+        </div>
+      </div>
+      <button class="register-btn" id="addDeviceBtn">Add Device</button>
+    </div>
+
+    <div class="user-label" id="userLabel" style="margin:30px; font-size:1.6em; font-weight:bold;"></div>
+
+    <div class="table-container">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all-user-device" /></th>
+            <th>Device ID</th>
+            <th>Elevator Number</th>
+            <th>Serial No</th>
+            <th>MAC Address</th>
+            <th>Location</th>
+            <th>Connection</th>
+          </tr>
+        </thead>
+        <tbody id="device-table-body">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer-text">Powered by Samsan | © 2025 Revision</div>
+  </main>
+
+  <!-- Add Device Modal -->
+  <div id="addDeviceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); z-index:200; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; width:480px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,0.18); margin:auto;">
+      <div style="background:#f4f4f4; border-radius:12px 12px 0 0; padding:18px 28px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.5em; color:#007bff;">&#128230;</span>
+        <span style="font-size:1.2em; font-weight:600;">Add New Device</span>
+      </div>
+      <form id="addDeviceForm" style="padding:28px;">
+        <div class="device-row">
+          <select id="modalDeviceDropdown" style="width:100%; padding:8px; margin-bottom:8px;"></select>
+          <input type="text" id="modalElevator" placeholder="Elevator Number" style="width:100%; margin-bottom:8px;" readonly />
+          <input type="text" id="modalSerial" placeholder="Serial Number" style="width:100%; margin-bottom:8px;" readonly />
+          <input type="text" id="modalMAC" placeholder="MAC Address" style="width:100%; margin-bottom:8px;" readonly />
+          <input type="text" id="modalLocation" placeholder="Location" style="width:100%;" readonly />
+        </div>
+        <div style="margin-top:16px; text-align:right;">
+          <button type="button" onclick="closeAddDeviceModal()" style="margin-right:10px;">Cancel</button>
+          <button type="submit">Assign Device</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const username = new URLSearchParams(window.location.search).get('username');
+    document.getElementById('userLabel').textContent = username;
+
+    function navigate(page) {
+      window.location.href = page;
+    }
+
+    function logout() {
+      window.location.href = 'login.html';
+    }
+
+    document.getElementById('sidebarArrow').onclick = () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    };
+    document.getElementById('sidebarHamburger').onclick = () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    };
+
+    async function loadDevices() {
+      const res = await fetch(`/api/user-devices-details/${username}`);
+      const devices = await res.json();
+      const table = document.getElementById('device-table-body');
+      table.innerHTML = devices.length ? '' : '<tr><td colspan="7">No devices assigned.</td></tr>';
+      devices.forEach(dev => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input type="checkbox" class="user-device-row-checkbox" /></td>
+          <td>${dev.DeviceId || '-'}</td>
+          <td>${dev.DeviceName || '-'}</td>
+          <td>${dev.SerialNum || '-'}</td>
+          <td>${dev.MacAddress || '-'}</td>
+          <td>${dev.Location || '-'}</td>
+          <td>${dev.Status || '-'}</td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    document.getElementById('addDeviceBtn').onclick = () => {
+      openAddDeviceModal();
+    };
+
+    function openAddDeviceModal() {
+      document.getElementById('addDeviceModal').style.display = 'flex';
+      populateDeviceDropdown();
+    }
+
+    function closeAddDeviceModal() {
+      document.getElementById('addDeviceModal').style.display = 'none';
+    }
+
+    async function populateDeviceDropdown() {
+      const dropdown = document.getElementById('modalDeviceDropdown');
+      dropdown.innerHTML = '<option value="">Select Device</option>';
+      try {
+        const res = await fetch('/api/unassigned-devices');
+        const devices = await res.json();
+        devices.forEach(dev => {
+          const opt = document.createElement('option');
+          opt.value = dev.tb_device_id;
+          opt.textContent = dev.DeviceId || 'Unnamed';
+          dropdown.appendChild(opt);
         });
-        function updateActionColumnVisibility() {
-            const anyChecked = Array.from(document.querySelectorAll('.user-device-row-checkbox')).some(cb => cb.checked);
-            const allChecked = Array.from(document.querySelectorAll('.user-device-row-checkbox')).length > 0 && Array.from(document.querySelectorAll('.user-device-row-checkbox')).every(cb => cb.checked);
-            document.querySelector('.user-table').classList.toggle('show-action-col', anyChecked);
-            document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
-        }
-        loadDevices();
+      } catch (err) {
+        console.error('Failed to load devices:', err);
+      }
+    }
 
-        async function loadUserDevices() {
-            if (!username) return;
-            try {
-                const res = await fetch(`/api/user-devices-details/${username}`);
-                if (!res.ok) throw new Error('Failed to fetch device details');
-                const devices = await res.json();
-                const table = document.getElementById('device-table-body');
-                table.innerHTML = '';
-                if (devices.length === 0) {
-                    table.innerHTML = '<tr><td colspan="10">No devices assigned to this user.</td></tr>';
-                    return;
-                }
-                devices.forEach(device => {
-                    const row = document.createElement('tr');
-                    row.onclick = () => window.location.href = `specific_userdevice.html?deviceId=${device.tb_device_id}`;
-                    
-                    row.innerHTML = `
-                        <td><input type="checkbox" class="user-device-row-checkbox" /></td>
-                        <td>${device.tb_device_id}</td>
-                        <td>${device.DeviceName || '-'}</td>
-                        <td>${device.SerialNum || '-'}</td>
-                        <td>${device.MacAddress || '-'}</td>
-                        <td>${device.Location || '-'}</td>
-                        <td>${device.Status || '-'}</td>
-                        
-                    `;
-                    table.appendChild(row);
-                });
-            } catch (err) {
-                console.error('Error loading user devices:', err);
-                const table = document.getElementById('device-table-body');
-                table.innerHTML = '<tr><td colspan="10" style="color:red;">Error loading device details.</td></tr>';
-            }
-        }
+    document.getElementById('modalDeviceDropdown').addEventListener('change', async function () {
+      const tb_device_id = this.value;
+      if (!tb_device_id) return;
+      try {
+        const res = await fetch(`/api/device-details/${tb_device_id}`);
+        const data = await res.json();
+        document.getElementById('modalElevator').value = data.DeviceId || '';
+        document.getElementById('modalSerial').value = data.SerialNum || '';
+        document.getElementById('modalMAC').value = data.MacAddress || '';
+        document.getElementById('modalLocation').value = data.Location || '';
+      } catch (err) {
+        console.error('Device details fetch failed:', err);
+      }
+    });
 
-        window.addEventListener('DOMContentLoaded', loadUserDevices);
-    </script>
+    document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const tb_device_id = document.getElementById('modalDeviceDropdown').value;
+      if (!tb_device_id) return alert('Please select a device');
+
+      try {
+        const res = await fetch('/api/assign-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, tb_device_id })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('Device assigned!');
+          closeAddDeviceModal();
+          loadDevices();
+        } else {
+          alert('Assignment failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error('Assignment error:', err);
+        alert('Assignment failed');
+      }
+    });
+
+    function filterDevices() {
+      const val = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allDevices.filter(d =>
+        (d.DeviceId || '').toLowerCase().includes(val) ||
+        (d.DeviceName || '').toLowerCase().includes(val)
+      );
+      renderDevices(filtered);
+    }
+
+    window.addEventListener('DOMContentLoaded', loadDevices);
+  </script>
 </body>
 </html>

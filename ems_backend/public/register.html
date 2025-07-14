@@ -169,6 +169,7 @@
     </div>
   </div>
   <script>
+
     async function loadSupervisors() {
       const res = await fetch('/api/supervisors');
       const supervisors = await res.json();
@@ -182,31 +183,56 @@
       }
     }
     async function loadDevices() {
-      const res = await fetch('/api/unassigned-devices');
-      const devices = await res.json();
       const dropdown = document.getElementById('deviceDropdown');
-      dropdown.innerHTML = '<option value="">Assign Device</option>';
-      for (const dev of devices) {
-        const opt = document.createElement('option');
-        opt.value = dev.device_id;
-        opt.textContent = dev.device_id;
-        opt.dataset.elevator = dev.elevator_number;
-        opt.dataset.serial = dev.serial_number;
-        opt.dataset.mac = dev.mac_address;
-        opt.dataset.location = dev.location;
-        dropdown.appendChild(opt);
+      if (!dropdown) return;
+  
+      try {
+        const res = await fetch('/api/unassigned-devices'); // from `devices` table
+        if (!res.ok) throw new Error('Failed to fetch devices');
+  
+        const devices = await res.json();
+        dropdown.innerHTML = '<option value="">Assign Device</option>';
+        for (const dev of devices) {
+          const opt = document.createElement('option');
+          opt.value = dev.tb_device_id;
+          opt.textContent = dev.DeviceId || 'Unnamed';
+          dropdown.appendChild(opt);
+        }
+      } catch (err) {
+        console.error('Error loading devices:', err);
       }
     }
-    document.getElementById('deviceDropdown').addEventListener('change', function() {
-      const selected = this.options[this.selectedIndex];
-      if (selected.value) {
-        document.getElementById('elevatorNumber').value = selected.dataset.elevator || '';
-        document.getElementById('serialNumber').value = selected.dataset.serial || '';
-        document.getElementById('macAddress').value = selected.dataset.mac || '';
-        document.getElementById('location').value = selected.dataset.location || '';
-        document.getElementById('deviceDetailsRow1').style.display = '';
-        document.getElementById('deviceDetailsRow2').style.display = '';
-      } else {
+  
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDevices();
+  
+      const dropdown = document.getElementById('deviceDropdown');
+      dropdown.addEventListener('change', async function () {
+        const tb_device_id = this.value;
+        if (!tb_device_id) {
+          clearDeviceFields();
+          return;
+        }
+  
+        try {
+          const res = await fetch(`/api/device-details/${tb_device_id}`);
+          if (!res.ok) throw new Error('Device details fetch failed');
+          const data = await res.json();
+  
+          document.getElementById('elevatorNumber').value = data.DeviceId || '';
+          document.getElementById('serialNumber').value = data.SerialNum || '';
+          document.getElementById('macAddress').value = data.MacAddress || '';
+          document.getElementById('location').value = data.Location || '';
+  
+          document.getElementById('deviceDetailsRow1').style.display = '';
+          document.getElementById('deviceDetailsRow2').style.display = '';
+        } catch (err) {
+          console.error('Error fetching device details:', err);
+          clearDeviceFields();
+        }
+      });
+  
+      function clearDeviceFields() {
         document.getElementById('elevatorNumber').value = '';
         document.getElementById('serialNumber').value = '';
         document.getElementById('macAddress').value = '';
@@ -215,8 +241,9 @@
         document.getElementById('deviceDetailsRow2').style.display = 'none';
       }
     });
+    
+    //loadDevices();
     loadSupervisors();
-    loadDevices();
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
@@ -239,9 +266,38 @@
         body: JSON.stringify(reqPayload)
       });
       const data = await res.json();
+      
       if (data.success) {
-        window.location.href = 'users.html';
-      } else alert('Registration failed');
+        // 🔄 Assign device in background
+        if (reqPayload.device_id) {
+          fetch('/api/assign-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: reqPayload.username,
+              tb_device_id: reqPayload.device_id
+            })
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (!res.success) {
+              alert('User registered but device assignment failed: ' + res.error);
+            }
+            // ✅ Redirect either way
+            window.location.href = 'users.html';
+          })
+          .catch(err => {
+            alert('User registered but device assignment failed (network issue).');
+            console.error('Device assign error:', err);
+            window.location.href = 'users.html';
+          });
+        } else {
+          // No device assigned — just redirect
+          window.location.href = 'users.html';
+        }
+      } else {
+        alert('Registration failed: ' + (data.error || 'Unknown error'));
+      }
     });
     document.getElementById('cancelBtn').onclick = function() {
       window.history.back();

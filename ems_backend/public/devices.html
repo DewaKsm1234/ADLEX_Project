@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="css/style.css" />
+  <title>All Devices</title>
+  <style>
+    .device-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .device-table th, .device-table td { padding: 12px; border: 1px solid #ddd; }
+    .device-table th { background: #f4f4f4; }
+    .sidebar { width: 200px; float: left; background: #f8f8f8; height: 100vh-60px; justify-content: space-between; }
+    .main-content { margin-left: 220px; padding: 20px; }
+    .topbar { background: #007bff; color: #fff; padding: 16px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="topbar">All Devices</div>
+  <aside class="sidebar">
+    <ul>
+      <li><a href="users.html">Users</a></li>
+      <li><a href="supervisors.html">Supervisors</a></li>
+      <li><a href="devices.html" class="active">Devices</a></li>
+      <li><a href="logs.html">Logs</a></li>
+      <li><a href="support.html">Support</a></li>
+    </ul>
+  </aside>
+  <div class="main-content">
+    <h2>Device List</h2>
+    <table class="device-table" id="deviceTable">
+      <thead>
+        <tr>
+          <th>Device Name</th>
+          <th>DeviceId</th>
+          <th>Serial Number</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filled by JS -->
+      </tbody>
+    </table>
+  </div>
+  <script>
+    async function loadDevices() {
+      const res = await fetch('/api/devices');
+      const devices = await res.json();
+      const tbody = document.getElementById('deviceTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      devices.forEach(dev => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${dev.device_name || '-'}</td>
+          <td>${dev.DeviceId || '-'}</td>
+          <td>${dev.SerialNum || '-'}</td>
+          <td>${dev.Location || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    window.addEventListener('DOMContentLoaded', loadDevices);
+  </script>
+</body>
+</html>
