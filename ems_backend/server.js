@@ -157,8 +157,7 @@ app.post('/api/assign-supervisor', async (req, res) => {
       'UPDATE users SET supervisor_id = ? WHERE username = ?',
       [supervisor_id, username]
     );
-    console.log('Assigning supervisor:', username, supervisor_id);
-
+    
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -438,9 +437,9 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
         const devices = tbResponse.data?.data || [];
         console.log(`📦 Fetched ${devices.length} devices from ThingsBoard.`);
     
-        const telemetryKeys = ['DeviceId', 'MacAddress', 'SerialNum', 'Location'];
-    
-        const formattedDevices = await Promise.all(devices.map(async (device) => {
+        const telemetryKeys = ['DeviceId', 'MacAddress', 'SerialNum', 'Location', 'Status'];//State(Active or Inactive) of device also can be fetched from thingsboard not telemetry
+        //Here States is telemetry
+          const formattedDevices = await Promise.all(devices.map(async (device) => {
           const tb_device_id = device?.id?.id;
           const device_name = device?.name || 'Unnamed Device';
           if (!tb_device_id) return null;
@@ -454,29 +453,31 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
             );
     
             telemetryKeys.forEach(key => {
-              telemetry[key] = telemetryRes.data?.[key]?.[0]?.value || null;
+              telemetry[key] = telemetryRes.data?.[key]?.[0]?.value ?? null;
             });
           } catch (err) {
-            console.warn(`⚠️ Telemetry fetch failed for ${device_name}`);
+            console.warn(`⚠️ Telemetry fetch failed for ${device_name}:`, err.message);
           }
     
           try {
             await db.execute(
-              `INSERT INTO devices (tb_device_id, device_name, DeviceId, MacAddress, SerialNum, Location)
-               VALUES (?, ?, ?, ?, ?, ?)
+              `INSERT INTO devices (tb_device_id, device_name, DeviceId, MacAddress, SerialNum, Location, Status)
+               VALUES (?, ?, ?, ?, ?, ?, ?)
                ON DUPLICATE KEY UPDATE
                  device_name = VALUES(device_name),
                  DeviceId = VALUES(DeviceId),
                  MacAddress = VALUES(MacAddress),
                  SerialNum = VALUES(SerialNum),
-                 Location = VALUES(Location)`,
+                 Location = VALUES(Location),
+                 Status = VALUES(Status)`,
               [
                 tb_device_id,
-                device_name,
-                telemetry.DeviceId,
-                telemetry.MacAddress,
-                telemetry.SerialNum,
-                telemetry.Location
+                device_name ?? null,
+                telemetry.DeviceId ?? null,
+                telemetry.MacAddress ?? null,
+                telemetry.SerialNum ?? null,
+                telemetry.Location ?? null,
+                telemetry.Status ?? null
               ]
             );
           } catch (dbErr) {
@@ -490,7 +491,8 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
             DeviceId: telemetry.DeviceId,
             MacAddress: telemetry.MacAddress,
             SerialNum: telemetry.SerialNum,
-            Location: telemetry.Location
+            Location: telemetry.Location,
+            Status: telemetry.Status
           };
         }));
     
@@ -510,10 +512,6 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
         });
       }
     });
-    
-    
-    
-       
 
 // ---------------- ROOT ROUTE -------------------
 // Redirect root to login page
@@ -552,7 +550,7 @@ app.get('/api/user-devices-details/:username', async (req, res) => {
 //only for devices
 app.get('/api/devices', async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT device_name, DeviceId, SerialNum, Location FROM devices');
+    const [rows] = await db.execute('SELECT device_name, DeviceId, SerialNum, Location, Status FROM devices');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -219,7 +219,7 @@
           if (!res.ok) throw new Error('Device details fetch failed');
           const data = await res.json();
   
-          document.getElementById('elevatorNumber').value = data.DeviceId || '';
+          document.getElementById('elevatorNumber').value = data.DeviceName || '';
           document.getElementById('serialNumber').value = data.SerialNum || '';
           document.getElementById('macAddress').value = data.MacAddress || '';
           document.getElementById('location').value = data.Location || '';
@@ -248,7 +248,7 @@
       e.preventDefault();
       const formData = new FormData(e.target);
       const payload = Object.fromEntries(formData);
-      payload.username = (payload.first_name + payload.last_name).replace(/\s+/g, '').toLowerCase();
+      payload.username = (payload.first_name + payload.last_name).replace(/\s+/g, '');
       payload.password = 'default123';
       // Only send required fields
       const reqPayload = {

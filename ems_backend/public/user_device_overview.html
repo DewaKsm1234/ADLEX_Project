@@ -59,6 +59,7 @@
       <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
       <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
       <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -110,10 +111,14 @@
       <form id="addDeviceForm" style="padding:28px;">
         <div class="device-row">
           <select id="modalDeviceDropdown" style="width:100%; padding:8px; margin-bottom:8px;"></select>
-          <input type="text" id="modalElevator" placeholder="Elevator Number" style="width:100%; margin-bottom:8px;" readonly />
-          <input type="text" id="modalSerial" placeholder="Serial Number" style="width:100%; margin-bottom:8px;" readonly />
-          <input type="text" id="modalMAC" placeholder="MAC Address" style="width:100%; margin-bottom:8px;" readonly />
-          <input type="text" id="modalLocation" placeholder="Location" style="width:100%;" readonly />
+          <div class="device-row" id="deviceDetailsRow1" style="display:flex;flex-direction:column ;gap:10px; display:none;">
+            <input type="text" id="modalElevator" placeholder="Elevator Name" style="width:50%; margin-bottom:8px;" readonly />
+            <input type="text" id="modalSerial" placeholder="Serial Number" style="width:50%; margin-bottom:8px;" readonly />
+          </div>
+          <div class="device-row" id="deviceDetailsRow2" style="display:flex;flex-direction:row;gap:10px; display:none;">
+            <input type="text" id="modalMAC" placeholder="MAC Address" style=" width:50%; margin-bottom:8px;" readonly />
+            <input type="text" id="modalLocation" placeholder="Location" style=" width:50%; margin-bottom:8px;" readonly />
+          </div>
         </div>
         <div style="margin-top:16px; text-align:right;">
           <button type="button" onclick="closeAddDeviceModal()" style="margin-right:10px;">Cancel</button>
@@ -158,6 +163,13 @@
           <td>${dev.Location || '-'}</td>
           <td>${dev.Status || '-'}</td>
         `;
+        // Make the row clickable to view telemetry details
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function(e) {
+          if (e.target.tagName.toLowerCase() === 'input') return;
+          sessionStorage.setItem('selectedUsername', username);
+          window.location.href = `specific_userdevice.html?deviceId=${dev.tb_device_id}&username=${encodeURIComponent(username)}`;
+        });
         table.appendChild(row);
       });
     }
@@ -202,8 +214,19 @@
         document.getElementById('modalSerial').value = data.SerialNum || '';
         document.getElementById('modalMAC').value = data.MacAddress || '';
         document.getElementById('modalLocation').value = data.Location || '';
+        document.getElementById('deviceDetailsRow1').style.display = '';
+        document.getElementById('deviceDetailsRow2').style.display = '';
       } catch (err) {
         console.error('Device details fetch failed:', err);
+        clearDeviceFields();
+      }
+      function clearDeviceFields() {
+        document.getElementById('elevatorNumber').value = '';
+        document.getElementById('serialNumber').value = '';
+        document.getElementById('macAddress').value = '';
+        document.getElementById('location').value = '';
+        document.getElementById('deviceDetailsRow1').style.display = 'none';
+        document.getElementById('deviceDetailsRow2').style.display = 'none';
       }
     });
 

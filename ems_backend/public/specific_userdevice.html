@@ -44,6 +44,7 @@
         <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
         <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
         <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+        <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
       </ul>
       <div class="logout-link" onclick="logout()">Logout</div>
       <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -96,7 +97,9 @@
     <script>
     const urlParams = new URLSearchParams(window.location.search);
     const deviceId = urlParams.get('deviceId');
-   
+    const username = sessionStorage.getItem('selectedUsername') || 'NA';
+    document.getElementById('deviceUser').textContent = username;
+    
     
     // Use this in your page load and sync button
 async function syncAndRenderTelemetry() {
@@ -135,7 +138,7 @@ async function fetchAndRenderUser(tb_device_id) {
       'latitude','Location','Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
       'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','DeviceId'
     ];
-    const username = localStorage.getItem("selectedUsername");
+    
     document.getElementById("deviceUser").textContent = username || 'NA';
     
     // Handle Sync button click
