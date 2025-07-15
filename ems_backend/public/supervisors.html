@@ -95,7 +95,7 @@
     // Fetch supervisors summary and render the table
     async function loadSupervisors() {
       try {
-        const res = await fetch('/api/supervisors-summary', { cache: 'no-store' });
+        const res = await fetch('/api/supervisors-summary', { cache: 'no-store', headers: { 'x-user-role': 'admin' }});
         const supervisors = await res.json();
         console.log('Supervisors fetched in frontend:', supervisors);
         allSupervisors = supervisors;

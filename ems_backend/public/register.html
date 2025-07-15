@@ -171,7 +171,7 @@
   <script>
 
     async function loadSupervisors() {
-      const res = await fetch('/api/supervisors');
+      const res = await fetch('/api/supervisors', { headers: { 'x-user-role': 'admin' } });
       const supervisors = await res.json();
       const dropdown = document.getElementById('supervisorDropdown');
       dropdown.innerHTML = '<option value="">Assign Supervisor (optional)</option>';
@@ -187,7 +187,7 @@
       if (!dropdown) return;
   
       try {
-        const res = await fetch('/api/unassigned-devices'); // from `devices` table
+        const res = await fetch('/api/unassigned-devices', { headers: { 'x-user-role': 'admin' } }); // from `devices` table
         if (!res.ok) throw new Error('Failed to fetch devices');
   
         const devices = await res.json();
@@ -215,7 +215,7 @@
         }
   
         try {
-          const res = await fetch(`/api/device-details/${tb_device_id}`);
+          const res = await fetch(`/api/device-details/${tb_device_id}`, { headers: { 'x-user-role': 'admin' } });
           if (!res.ok) throw new Error('Device details fetch failed');
           const data = await res.json();
   
@@ -262,7 +262,7 @@
       };
       const res = await fetch('/api/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-role': 'admin' },
         body: JSON.stringify(reqPayload)
       });
       const data = await res.json();
@@ -272,7 +272,7 @@
         if (reqPayload.device_id) {
           fetch('/api/assign-device', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-user-role': 'admin' },
             body: JSON.stringify({
               username: reqPayload.username,
               tb_device_id: reqPayload.device_id

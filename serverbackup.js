@@ -162,54 +162,19 @@ app.get('/api/users', requireAdmin, async (req, res) => {
 // Assign supervisor to user
 app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
   const { username, supervisor_id } = req.body;
-
-  // 🔍 Validate input
-  if (!username || !supervisor_id) {
-    return res.status(400).json({ error: 'Missing username or supervisor_id' });
-  }
-
+  console.log('[Assign Supervisor]', { username, supervisor_id });
   try {
-    // ✅ Check if user exists
-    const [userRows] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // ✅ Check if supervisor exists (optional but recommended)
-    const [supRows] = await db.execute('SELECT * FROM supervisors WHERE supervisor_id = ?', [supervisor_id]);
-    if (supRows.length === 0) {
-      return res.status(404).json({ error: 'Supervisor not found' });
-    }
-
-    // 🔁 Update supervisor assignment
+    
     await db.execute(
       'UPDATE users SET supervisor_id = ? WHERE username = ?',
       [supervisor_id, username]
     );
-
-    res.json({ success: true, message: 'Supervisor assigned successfully' });
-
+    
+    res.json({ success: true });
   } catch (err) {
-    console.error('[assign-supervisor ERROR]', err); // log full error
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
-
-// app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
-//   const { username, supervisor_id } = req.body;
-//   console.log('[Assign Supervisor]', { username, supervisor_id });
-//   try {
-    
-//     await db.execute(
-//       'UPDATE users SET supervisor_id = ? WHERE username = ?',
-//       [supervisor_id, username]
-//     );
-    
-//     res.json({ success: true });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
 
 
 // Assign Device to User

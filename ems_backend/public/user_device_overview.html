@@ -52,18 +52,31 @@
     </div>
   </header>
 
-  <aside class="sidebar" id="sidebar">
+  <!-- Sidebar for normal users/admins -->
+  <aside class="sidebar" id="sidebar-normal" style="display:none;">
     <div class="menu-title">Menu</div>
     <ul>
-      <li class="nav-link active" onclick="navigate('users.html')">Users</li>
-      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
-      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+    <li class="nav-link" onclick="navigate('users.html')">Users</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-  </aside>
+</aside>
+
+<!-- Sidebar for supervisors (read-only) -->
+<aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+    <div class="menu-title">Menu</div>
+    <ul>
+    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    </ul>
+    <div class="logout-link" onclick="logout()">Logout</div>
+    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 
   <main class="main-content">
@@ -148,7 +161,7 @@
     };
 
     async function loadDevices() {
-      const res = await fetch(`/api/user-devices-details/${username}`);
+      const res = await fetch(`/api/user-devices-details/${username}`, { headers: { 'x-user-role': 'admin' } });
       const devices = await res.json();
       const table = document.getElementById('device-table-body');
       table.innerHTML = devices.length ? '' : '<tr><td colspan="7">No devices assigned.</td></tr>';
@@ -191,7 +204,7 @@
       const dropdown = document.getElementById('modalDeviceDropdown');
       dropdown.innerHTML = '<option value="">Select Device</option>';
       try {
-        const res = await fetch('/api/unassigned-devices');
+        const res = await fetch('/api/unassigned-devices', { headers: { 'x-user-role': 'admin' } });
         const devices = await res.json();
         devices.forEach(dev => {
           const opt = document.createElement('option');
@@ -208,7 +221,7 @@
       const tb_device_id = this.value;
       if (!tb_device_id) return;
       try {
-        const res = await fetch(`/api/device-details/${tb_device_id}`);
+        const res = await fetch(`/api/device-details/${tb_device_id}`, { headers: { 'x-user-role': 'admin' } });
         const data = await res.json();
         document.getElementById('modalElevator').value = data.DeviceId || '';
         document.getElementById('modalSerial').value = data.SerialNum || '';
@@ -239,6 +252,7 @@
         const res = await fetch('/api/assign-device', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          headers: { 'x-user-role': 'admin' },
           body: JSON.stringify({ username, tb_device_id })
         });
         const result = await res.json();
@@ -266,5 +280,6 @@
 
     window.addEventListener('DOMContentLoaded', loadDevices);
   </script>
+  <script src="js/script.js"></script>
 </body>
 </html>

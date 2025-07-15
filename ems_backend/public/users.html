@@ -61,7 +61,7 @@
       <span style="width:48px;"></span>
     </div>
   </header>
-  <!-- Sidebar Navigation -->
+  <!-- Sidebar Navigation
   <aside class="sidebar" id="sidebar">
     <div class="menu-title">Menu</div>
     <ul>
@@ -73,7 +73,32 @@
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-  </aside>
+  </aside> -->
+  <!-- Sidebar for normal users/admins -->
+<aside class="sidebar" id="sidebar-normal" style="display:none;">
+  <div class="menu-title">Menu</div>
+  <ul>
+    <li class="nav-link" onclick="navigate('users.html')">Users</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+  </ul>
+  <div class="logout-link" onclick="logout()">Logout</div>
+  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
+
+<!-- Sidebar for supervisors (read-only) -->
+<aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+  <div class="menu-title">Menu</div>
+  <ul>
+    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+  </ul>
+  <div class="logout-link" onclick="logout()">Logout</div>
+  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <main class="main-content">
     <!-- Top actions: search and register -->
@@ -115,8 +140,8 @@
     async function loadUsers() {
       try {
         const [usersRes, supervisorsRes] = await Promise.all([
-          fetch('/api/users', { cache: 'no-store' }),
-          fetch('/api/supervisors', { cache: 'no-store' })
+          fetch('/api/users', { cache: 'no-store' ,headers: { 'x-user-role': 'admin' }}),
+          fetch('/api/supervisors', { cache: 'no-store' ,headers: { 'x-user-role': 'admin' }  })
         ]);
         const users = await usersRes.json();
         const supervisors = await supervisorsRes.json();
@@ -147,7 +172,7 @@
   
         let deviceCount = 0;
         try {
-          const devRes = await fetch(`/api/user-devices/${user.username}`);
+          const devRes = await fetch(`/api/user-devices/${user.username}`, { headers: { 'x-user-role': 'admin' } });
           const devices = await devRes.json();
           deviceCount = devices.length;
         } catch {}
@@ -185,7 +210,10 @@
               try {
                 const res = await fetch('/api/assign-supervisor', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-role': 'admin'
+                  },
                   body: JSON.stringify({ username, supervisor_id })
                 });
                 const data = await res.json();
@@ -196,7 +224,14 @@
                   const cell = row.querySelector('td:nth-child(4)');
                   cell.textContent = supervisorName;
                 } else {
-                  alert('Failed to assign supervisor: ' + (data.error || 'Unknown error'));
+                  let errMsg = 'Unknown error';
+                  try {
+                    const err = await res.json();
+                    errMsg = err.error || errMsg;
+                  } catch {
+                    errMsg = await res.text(); // fallback to raw text
+                  }
+                  alert('Failed to assign supervisor: ' + errMsg);
                 }
               } catch (err) {
                 alert('Network or server error while assigning supervisor.');
@@ -207,7 +242,7 @@
   
         const deviceDropdown = row.querySelector('.assign-device-dropdown');
         if (deviceDropdown) {
-          fetch('/api/unassigned-devices')
+          fetch('/api/unassigned-devices', { headers: { 'x-user-role': 'admin' } })
             .then(res => res.json())
             .then(devices => {
               if (!Array.isArray(devices)) return;
@@ -234,6 +269,7 @@
             fetch('/api/assign-device', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              headers: { 'x-user-role': 'admin' },
               body: JSON.stringify({ username, tb_device_id })
             })
             .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, body: data })))
@@ -258,7 +294,7 @@
   
         row.querySelector('.edit-user-btn').addEventListener('click', async e => {
           e.stopPropagation();
-          const res = await fetch('/api/supervisors');
+          const res = await fetch('/api/supervisors', { headers: { 'x-user-role': 'admin' } });
           const supervisors = await res.json();
         
           const currentSupervisor = String(user.supervisor_id || '');
@@ -294,7 +330,10 @@
         
             const assignRes = await fetch('/api/assign-supervisor', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'x-user-role': 'admin'
+              },
               body: JSON.stringify({ username, supervisor_id })
             });
         
@@ -408,7 +447,7 @@
           });
         });
       }
-      fetch('/api/sync-thingsboard-devices', { method: 'POST' })
+      fetch('/api/sync-thingsboard-devices', { method: 'POST',headers: { 'x-user-role': 'admin' } })
     .then(res => {
       if (!res.ok) throw new Error('Sync failed');
       console.log('✅ Devices sync triggered');

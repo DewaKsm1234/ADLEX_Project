@@ -49,7 +49,7 @@
   </div>
   <script>
     async function loadDevices() {
-      const res = await fetch('/api/devices');
+      const res = await fetch('/api/devices', { headers: { 'x-user-role': 'admin' } });
       const devices = await res.json();
       const tbody = document.getElementById('deviceTable').querySelector('tbody');
       tbody.innerHTML = '';

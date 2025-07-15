@@ -49,10 +49,12 @@
           if (data.role === 'admin') {
             window.location.href = 'users.html';
           } else if (data.role === 'supervisor') {
-            window.location.href = 'super_device_overview.html';
+            window.location.href = `super_device_overview.html?supervisor_id=${data.username}`;
           } else {
             window.location.href = 'specific_userdevice.html';
           }
+          // After successful login
+          localStorage.setItem('userRole', data.role); // data.role should be 'supervisor', 'admin', etc.
         } else {
           errorDiv.textContent = data.message || 'Login failed.';
         }
