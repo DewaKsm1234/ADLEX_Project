@@ -195,22 +195,6 @@ app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
   }
 });
 
-// app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
-//   const { username, supervisor_id } = req.body;
-//   console.log('[Assign Supervisor]', { username, supervisor_id });
-//   try {
-    
-//     await db.execute(
-//       'UPDATE users SET supervisor_id = ? WHERE username = ?',
-//       [supervisor_id, username]
-//     );
-    
-//     res.json({ success: true });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
 
 // Assign Device to User
 app.post('/api/assign-device',  requireAdmin, async (req, res) => {
@@ -227,7 +211,7 @@ app.post('/api/assign-device',  requireAdmin, async (req, res) => {
     const tbToken = await getThingsBoardToken();
     const telemetryKeys = [
       'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-      'latitude','Location','Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
+      'GNSS_Latitude','Location','GNSS_Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
       'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','Current','dcbus','DeviceId'
     ];
     const response = await axios.get(
@@ -408,7 +392,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
   // List of telemetry keys to fetch from ThingsBoard
   const telemetryKeys = [
     'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-    'latitude','Location','Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
+    'GNSS_Latitude','Location','GNSS_Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
     'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','Current','dcbus','DeviceId'
   ];
 

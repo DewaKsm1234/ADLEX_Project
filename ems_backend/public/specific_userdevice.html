@@ -24,7 +24,6 @@
     .stat-icon{width:32px;height:32px;background:#007bff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;margin-right:12px;}
     .stat-label{font-size:0.9em;color:#555;}
     .stat-value{font-size:1.3em;font-weight:600;color:#000;}
-    .sidebar-hamburger{display:none;position:fixed;top:15px;left:15px;z-index:1001;background:#2396f3;border:none;font-size:28px;color:#fff;cursor:pointer;}
     @media(max-width:768px){.sidebar{position:fixed;top:0;left:-220px;z-index:1000;transition:left 0.3s ease;}.sidebar.show{left:0;}.main-content{margin-left:0;}.sidebar-hamburger{display:block;}}
     </style>
     </head>
@@ -55,7 +54,7 @@
   <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
       <div class="menu-title">Menu</div>
       <ul>
-      <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+      <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
       <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
       <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
       </ul>
@@ -231,7 +230,26 @@ async function fetchAndRenderUser(tb_device_id) {
         syncBtn.textContent = 'Sync';
       }
     });
-
+    function navi(url) {
+      const role = localStorage.getItem('userRole');
+      const username = localStorage.getItem('username'); // this is supervisor_id
+    
+      // Only attach supervisor_id if role is supervisor
+      if (role === 'supervisor' && url.includes('super_device_overview.html')) {
+        if (username) {
+          url += `?supervisor_id=${username}`;
+        } else {
+          alert('Supervisor session expired. Please log in again.');
+          window.location.href = 'login.html';
+          return;
+        }
+      }
+    
+      // Redirect using final URL
+      window.location.href = url;
+    }
+    
+    
     </script>
     <script src="js/script.js"></script>
     

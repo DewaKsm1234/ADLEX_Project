@@ -5,23 +5,6 @@ function navigate(page) {
   window.location.href = page;
 }
 
-// // Highlight current link in sidebar
-// window.onload = () => {
-//   const links = document.querySelectorAll(".nav-link");
-//   links.forEach(link => {
-//     if (window.location.href.includes(link.getAttribute("onclick").split("'")[1])) {
-//       link.classList.add("active");
-//     }
-//   });
-
-//   // if (document.getElementById("user-table-body")) populateUserTable();
-// };
-
-// //password toggle logic
-// function loginUser(event) {
-//   event.preventDefault();
-//   //Validation to be done here
-//   window.location.href = "dashboard.html";
 // }
 
 function togglePassword() {
@@ -38,31 +21,6 @@ const sidebarSupervisor = document.getElementById('sidebar-supervisor');
 const sidebarArrow = document.getElementById('sidebarArrow');
 const sidebarHamburger = document.getElementById('sidebarHamburger');
 
-// // ✅ Fetch user data from backend JSON
-// async function populateUserTable() {
-//   const tbody = document.getElementById("user-table-body");
-//   tbody.innerHTML = "";
-
-//   try {
-//     const response = await fetch("/api/users");
-//     let users = await response.json();
-//     // Filter out users with missing name
-//     users = users.filter(user => user && user.name);
-
-//     users.forEach(user => {
-//       const row = document.createElement("tr");
-//       row.innerHTML = `
-//         <td><input type="checkbox" /></td>
-//         <td>${user.name}</td>
-//         <td><a href="devices.html">${user.devices}</a></td>
-//         <td>${user.supervisor}</td>
-//       `;
-//       tbody.appendChild(row);
-//     });
-//   } catch (error) {
-//     console.error("Error loading users:", error);
-//   }
-// }
 if (sidebarArrow && sidebar && sidebarHamburger && sidebarSupervisor) {
   sidebarArrow.addEventListener('click', function() {
     sidebar.classList.add('collapsed');
@@ -101,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
       sidebarSupervisor.style.display = 'none';
     }
   }
+  console.log('userRole', localStorage.getItem('userRole'));
 });
 function isSupervisor() {
   return localStorage.getItem('userRole') === 'supervisor';
@@ -111,9 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
       console.log(cb);
       cb.disabled = true;
+      cb.style.display = 'none';
     });
     // Hide or disable edit buttons
-    document.querySelectorAll('.edit-user-btn, .edit-device-btn').forEach(btn => {
+    document.querySelectorAll('.edit-user-btn, .edit-device-btn ').forEach(btn => {
       btn.disabled = true;
       //btn.style.display = 'none'; 
       // or just disable if you want them visible but not clickable

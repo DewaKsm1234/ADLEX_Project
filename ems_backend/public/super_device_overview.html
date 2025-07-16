@@ -133,6 +133,13 @@
                       </span>
                     </td>
                 `;
+                // ✅ hide check boxes immediately:
+                if (typeof isSupervisor === 'function' && isSupervisor()) {
+                    row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.disabled = true;
+                    cb.style.display = 'none';
+                    });
+                }
                 row.querySelector('.super-device-row-checkbox').addEventListener('click', e => e.stopPropagation());
                 row.querySelector('.delete-super-device-btn').addEventListener('click', e => {
                     e.stopPropagation();

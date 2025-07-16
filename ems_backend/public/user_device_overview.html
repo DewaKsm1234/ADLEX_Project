@@ -70,7 +70,7 @@
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
     <div class="menu-title">Menu</div>
     <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
     </ul>
@@ -176,6 +176,13 @@
           <td>${dev.Location || '-'}</td>
           <td>${dev.Status || '-'}</td>
         `;
+        // ✅ hide check boxes immediately:
+        if (typeof isSupervisor === 'function' && isSupervisor()) {
+          row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.disabled = true;
+            cb.style.display = 'none';
+          });
+        }
         // Make the row clickable to view telemetry details
         row.style.cursor = 'pointer';
         row.addEventListener('click', function(e) {
@@ -279,6 +286,26 @@
     }
 
     window.addEventListener('DOMContentLoaded', loadDevices);
+    document.addEventListener('DOMContentLoaded', function() {
+      if (localStorage.getItem('userRole') === 'supervisor') {
+        const addDeviceBtn = document.getElementById('addDeviceBtn');
+        if (addDeviceBtn) addDeviceBtn.style.display = 'none';
+      }
+    });
+    function navi(url) {
+      const username = localStorage.getItem('username'); // this is supervisor_id
+      if (role === 'supervisor' && url.includes('super_device_overview.html')) {
+        if (username) {
+          url += `?supervisor_id=${username}`;
+        } else {
+          alert('Supervisor session expired. Please log in again.');
+          window.location.href = 'login.html';
+          return;
+        }
+      }
+      // Redirect using final URL
+      window.location.href = url;
+    }
   </script>
   <script src="js/script.js"></script>
 </body>

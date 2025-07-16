@@ -9,26 +9,39 @@
     .device-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     .device-table th, .device-table td { padding: 12px; border: 1px solid #ddd; }
     .device-table th { background: #f4f4f4; }
-    .sidebar { width: 200px; float: left; background: #f8f8f8; height: 100vh-60px; justify-content: space-between; }
+    .sidebar { width: 200px; float: left; background: #f0f0f0; height: 100vh-60px; justify-content: space-between; }
     .main-content { margin-left: 220px; padding: 20px; }
-    .topbar { background: #007bff; color: #fff; padding: 16px; text-align: center; }
+    .topbardev { background: #007bff; color: #fff; display:flex; align-items: center; justify-content: center; height: 60px; position:fixed; top:0; left:0; right:0; z-index:1000;font-size: 2em; }
   </style>
 </head>
 <body>
-  <div class="topbar">All Devices</div>
-  <!-- Sidebar Navigation -->
-  <aside class="sidebar" id="sidebar">
+  <div class="topbardev" id="topbardev">All Devices</div>
+  <!-- Sidebar for normal users/admins -->
+  <aside class="sidebar" id="sidebar-normal" style="display:none;">
     <div class="menu-title">Menu</div>
     <ul>
-      <li class="nav-link active" onclick="navigate('users.html')">Users</li>
-      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
-      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+    <li class="nav-link" onclick="navigate('users.html')">Users</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-  </aside>
+</aside>
+
+<!-- Sidebar for supervisors (read-only) -->
+<aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+    <div class="menu-title">Menu</div>
+    <ul>
+    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    </ul>
+    <div class="logout-link" onclick="logout()">Logout</div>
+    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
+  
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <div class="main-content">
     <h2>Device List</h2>
