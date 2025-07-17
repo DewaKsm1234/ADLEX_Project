@@ -8,13 +8,7 @@
   <style>
     body, html { background: #e5e7eb; margin: 0; padding: 0; }
     .dashboard-body { min-height: 100vh; }
-    .sidebar { width: 200px; padding: 0px 10px; }
-    .sidebar ul { list-style: none; padding: 0; margin: 0; }
-    .sidebar li { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
-    .sidebar li.active, .sidebar li:hover { background-color: #007bff; color: white; }
     .main-content { margin-left: 200px; margin-top: 60px; padding: 40px 30px 0 30px; background: #e5e7eb; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
-    .topbar { background: #007bff; color: #fff; border-radius: 0; }
-    .topbar h2 { margin: 0; font-size: 2em; letter-spacing: 1px; text-align: center; }
     .support-header { text-align: center; margin-bottom: 4px; }
     .support-logo { height: 40px; margin-bottom: 8px; }
     .support-title { font-size: 2em; font-weight: 700; color: #007bff; margin-bottom: 8px; }
@@ -47,18 +41,17 @@
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
       <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Support Center</h2>
-      <span style="width:48px;"></span>
+      <span class="userRoleDisplay" id="userRoleDisplay"></span>
     </div>
   </header>
   <!-- Sidebar for normal users/admins -->
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
-    <div class="menu-title">Menu</div>
     <ul>
-    <li class="nav-link" onclick="navigate('users.html')">Users</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+    <li class="nav-link" onclick="navigate('users.html')">Location</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>  
+    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>  
+    <li class="nav-link active" onclick="navigate('support.html')">Support Center</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -66,11 +59,10 @@
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
-    <div class="menu-title">Menu</div>
     <ul>
     <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link active" onclick="navigate('support.html')">Support Center</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>

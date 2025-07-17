@@ -246,8 +246,7 @@ app.post('/api/assign-device',  requireAdmin, async (req, res) => {
   }
 });
 
-
-// Devices for a specific user
+// Devices mapped for a specific user
 app.get('/api/user-devices/:username', requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
@@ -453,6 +452,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
   }
 });
 
+
     // ---------------- SYNC DEVICES ENDPOINT -------------------
     app.post('/api/sync-thingsboard-devices', requireAdmin, async (req, res) => {
       try {
@@ -578,10 +578,16 @@ app.get('/api/user-devices-details/:username', async (req, res) => {
     res.status(500).json({ error: 'Failed to load user device details' });
   }
 });
-//only for devices
+// --------------DEVICES APIS---------------
+//all devices mapped or unmapped
+app.get('/api/user-devices', async (req, res) => {
+  const [rows] = await db.execute('SELECT tb_device_id FROM user_devices');
+  res.json(rows);
+});
+//only for devices page (loading all devices)
 app.get('/api/devices', requireAdmin, async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT device_name, DeviceId, SerialNum, Location, Status FROM devices');
+    const [rows] = await db.execute('SELECT tb_device_id,device_name, DeviceId, SerialNum, Location, Status FROM devices');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

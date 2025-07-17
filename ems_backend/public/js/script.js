@@ -80,3 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+  const role = localStorage.getItem('userRole');
+  const roleDisplay = document.getElementById('userRoleDisplay');
+  if (roleDisplay && role) {
+    // Capitalize first letter for display
+    roleDisplay.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+  }
+});

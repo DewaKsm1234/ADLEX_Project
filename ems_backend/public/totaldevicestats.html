@@ -10,11 +10,11 @@
 body,html{margin:0;padding:0;background:#f5f7fa;}
 .dashboard-body{display:flex;}
 .main-content{flex:1;padding:0px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
-.device-card{background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
+.device-card{background:#2196f3;color:#fff;border-radius:10px;margin:10px 0 20px 0;padding:8px 26px 12px 26px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
 .device-card-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;}
 .device-card-body{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;width:100%;}
-.device-field{flex:1 1 180px;min-width:160px;color:#fff;}
-.device-field span{font-weight:600;display:inline-block;margin-top:4px;}
+.device-field{flex:1 1 180px;min-width:160px;color:#fff;font-size:0.8em;}
+.device-field span{font-weight:600;display:inline-block;margin-top:4px;font-size: 1.2em;}
 .device-tabs{display:flex;gap:2px;margin:20px 0;}
 .device-tab{flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;margin-right:2px;}
 .device-tab.active,.device-tab:hover{background:#43a047;color:#fff;}
@@ -34,8 +34,8 @@ body,html{margin:0;padding:0;background:#f5f7fa;}
 <header class="topbar">
   <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
     <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-    <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
-    <span style="width:48px;"></span>
+    <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Elevator Data</h2>
+    <span class="userRoleDisplay" id="userRoleDisplay"></span>
   </div>
 </header>
 
@@ -43,11 +43,11 @@ body,html{margin:0;padding:0;background:#f5f7fa;}
 <aside class="sidebar" id="sidebar-normal" style="display:none;">
   <div class="menu-title">Menu</div>
   <ul>
-  <li class="nav-link" onclick="navigate('users.html')">Users</li>
-  <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+  <li class="nav-link" onclick="navigate('users.html')">Location</li>
+  <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+  <li class="nav-link" onclick="navigate('devices.html')">Devices</li>  
   <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
   <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-  <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
   <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -67,7 +67,7 @@ body,html{margin:0;padding:0;background:#f5f7fa;}
 <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 <div class="main-content">
     <!-- Device Info Bar -->
-    <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
+    <div id="deviceInfoBar" style="background:#f8f9fa;padding:10px 40px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:0.8em;font-weight:500;">
     <span>Status: <span id="deviceStatus">-</span></span>
     <span>Last Upload: <span id="deviceLastUpload">-</span></span>
     <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>

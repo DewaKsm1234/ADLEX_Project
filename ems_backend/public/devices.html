@@ -11,20 +11,26 @@
     .device-table th { background: #f4f4f4; }
     .sidebar { width: 200px; float: left; background: #f0f0f0; height: 100vh-60px; justify-content: space-between; }
     .main-content { margin-left: 220px; padding: 20px; }
-    .topbardev { background: #007bff; color: #fff; display:flex; align-items: center; justify-content: center; height: 60px; position:fixed; top:0; left:0; right:0; z-index:1000;font-size: 2em; }
-  </style>
+    </style>
 </head>
 <body>
-  <div class="topbardev" id="topbardev">All Devices</div>
+  <!-- Topbar/Header -->
+  <header class="topbar">
+    <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
+      <span class="userRoleDisplay" id="userRoleDisplay"></span>
+    </div>
+  </header>
+
   <!-- Sidebar for normal users/admins -->
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
-    <div class="menu-title">Menu</div>
     <ul>
-    <li class="nav-link" onclick="navigate('users.html')">Users</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+    <li class="nav-link" onclick="navigate('users.html')">Location</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+    <li class="nav-link active" onclick="navigate('devices.html')">Devices</li>  
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -32,9 +38,8 @@
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
-    <div class="menu-title">Menu</div>
     <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link active" onclick="navigate('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
     </ul>
@@ -44,12 +49,28 @@
   
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <div class="main-content">
-    <h2>Device List</h2>
+    <!-- add content here -->
+     
+    <div id="deviceStatsBar" style="display:flex;gap:30px;justify-content:right;align-items:center;padding:8px 10px;font-size:1.1em;">
+      <div class="search-panel">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search" oninput="filterLocation()" /> 
+            <!-- function to search -->
+            <span class="search-icon">🔍</span>
+        </div>
+      </div>
+      <span>Total Devices: <b id="statTotalDevices">-</b></span>
+      <span>Active: <b id="statActiveDevices">-</b></span>
+      <span>Inactive: <b id="statInactiveDevices">-</b></span>
+      <span>Mapped: <b id="statMappedDevices">-</b></span>
+      <span>Unmapped: <b id="statUnmappedDevices">-</b></span>
+    </div>
+
     <table class="device-table" id="deviceTable">
       <thead>
         <tr>  
           <th>Device Name</th>
-          <th>DeviceId</th>
+          <th>Device Id</th>
           <th>Serial Number</th>
           <th>Location</th>
           <th>Status</th>
@@ -66,6 +87,27 @@
       const devices = await res.json();
       const tbody = document.getElementById('deviceTable').querySelector('tbody');
       tbody.innerHTML = '';
+    
+      // Calculate stats
+      const total = devices.length;
+      const active = devices.filter(d => (d.Status || '').toLowerCase() === 'active').length;
+      const inactive = devices.filter(d => (d.Status || '').toLowerCase() === 'inactive').length;
+    
+      // Fetch mapped device IDs
+      const mappedRes = await fetch('/api/user-devices');
+      const mappedData = await mappedRes.json();
+      const mappedIds = new Set(mappedData.map(d => d.tb_device_id));
+      const mapped = devices.filter(d => mappedIds.has(d.tb_device_id)).length;
+      const unmapped = total - mapped;
+    
+      // Update stats bar
+      document.getElementById('statTotalDevices').textContent = total;
+      document.getElementById('statActiveDevices').textContent = active;
+      document.getElementById('statInactiveDevices').textContent = inactive;
+      document.getElementById('statMappedDevices').textContent = mapped;
+      document.getElementById('statUnmappedDevices').textContent = unmapped;
+    
+      // Render table
       devices.forEach(dev => {
         const tr = document.createElement('tr');
         tr.innerHTML = `

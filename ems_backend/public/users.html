@@ -57,32 +57,20 @@
   <header class="topbar">
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
       <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">User List</h2>
-      <span style="width:48px;"></span>
+      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Location List</h2>
+      <span class="userRoleDisplay" id="userRoleDisplay"></span>
     </div>
   </header>
-  <!-- Sidebar Navigation
-  <aside class="sidebar" id="sidebar">
-    <div class="menu-title">Menu</div>
-    <ul>
-      <li class="nav-link active" onclick="navigate('users.html')">Users</li>
-      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
-      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
-    </ul>
-    <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-  </aside> -->
   <!-- Sidebar for normal users/admins -->
 <aside class="sidebar" id="sidebar-normal" style="display:none;">
-  <div class="menu-title">Menu</div>
+  
   <ul>
-    <li class="nav-link" onclick="navigate('users.html')">Users</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+    <li class="nav-link active" onclick="navigate('users.html')">Location</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+    
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
   <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -90,9 +78,9 @@
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
-  <div class="menu-title">Menu</div>
+
   <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link active" onclick="navigate('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
@@ -109,7 +97,7 @@
           <span class="search-icon">🔍</span>
         </div>
       </div>
-      <button class="register-btn" onclick="navigate('register.html')">Register User</button>
+      <button class="register-btn" onclick="navigate('register.html')">Add User</button>
     </div>
     <!-- User table -->
     <div class="table-container">
@@ -118,8 +106,8 @@
         <thead>
           <tr>
             <th><input type="checkbox" id="select-all-users" /></th>
-            <th>UserName</th>
-            <th>Devices</th>
+            <th>UserName</th><!--Loaction name -->
+            <th>Total Device</th>
             <th>Supervisor Name</th>
             <th class="action-col">Action</th>
           </tr>

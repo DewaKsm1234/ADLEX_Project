@@ -3,32 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Devices Overview</title>
+    <title>Devices Overview</title>
   <link rel="stylesheet" href="css/style.css" />
-  <style>
+    <style>
     /* Existing styles preserved */
-    .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
-    .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-    .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
-    .user-table tr:last-child td { border-bottom: none; }
-    .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
-    .user-table td a:hover { text-decoration: underline; }
-    .user-table tr:hover { background: #007bff !important; color: #fff; }
-    .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
-    @media (max-width: 900px) {
-      .table-container { margin: 0; }
-      .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
-    }
-    .logout-link {
-      color: #e74c3c !important;
-      font-weight: bold;
-      margin-top: 40px;
-    }
-    .logout-link:hover {
-      background: #ffeaea !important;
-      color: #c0392b !important;
-    }
+        .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+        .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
+        .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
+        .user-table tr:last-child td { border-bottom: none; }
+        .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
+        .user-table td a:hover { text-decoration: underline; }
+        .user-table tr:hover { background: #007bff !important; color: #fff; }
+        .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
+        @media (max-width: 900px) {
+            .table-container { margin: 0; }
+            .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
+        }
+        .logout-link {
+            color: #e74c3c !important;
+            font-weight: bold;
+            margin-top: 40px;
+        }
+        .logout-link:hover {
+            background: #ffeaea !important;
+            color: #c0392b !important;
+        }
     .adddeviceform{
         width: 100%;
       display: flex;
@@ -41,26 +41,27 @@
       margin-bottom: 3px;
       font-weight: 500;
     }
-  </style>
+    </style>
 </head>
 <body class="dashboard-body">
-  <header class="topbar">
-    <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">User Devices</h2>
-      <span style="width:48px;"></span>
-    </div>
-  </header>
+    <header class="topbar">
+        <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+            <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Location Devices</h2>
+      <span class="userRoleDisplay" id="userRoleDisplay"></span>
+        </div>
+    </header>
 
   <!-- Sidebar for normal users/admins -->
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
-    <div class="menu-title">Menu</div>
+   
     <ul>
-    <li class="nav-link" onclick="navigate('users.html')">Users</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+    <li class="nav-link active" onclick="navigate('users.html')">Location</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>  
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+    
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -68,59 +69,58 @@
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
-    <div class="menu-title">Menu</div>
-    <ul>
+        <ul>
     <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-    </ul>
-    <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
-</aside>
-  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+            <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+            <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+        </ul>
+        <div class="logout-link" onclick="logout()">Logout</div>
+        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    </aside>
+    <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 
-  <main class="main-content">
-    <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
-      <div class="search-panel">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Search" oninput="filterDevices()" />
-          <span class="search-icon">🔍</span>
+    <main class="main-content">
+        <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
+            <div class="search-panel">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search" oninput="filterDevices()" />
+                    <span class="search-icon">🔍</span>
+                </div>
+            </div>
+            <button class="register-btn" id="addDeviceBtn">Add Device</button>
         </div>
-      </div>
-      <button class="register-btn" id="addDeviceBtn">Add Device</button>
-    </div>
 
-    <div class="user-label" id="userLabel" style="margin:30px; font-size:1.6em; font-weight:bold;"></div>
+        <div class="user-label" id="userLabel" style="margin:30px; font-size:1.6em; font-weight:bold;"></div>
 
-    <div class="table-container">
-      <table class="user-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="select-all-user-device" /></th>
-            <th>Device ID</th>
-            <th>Elevator Number</th>
-            <th>Serial No</th>
-            <th>MAC Address</th>
-            <th>Location</th>
-            <th>Connection</th>
-          </tr>
-        </thead>
-        <tbody id="device-table-body">
-          <!-- Filled by JS -->
-        </tbody>
-      </table>
-    </div>
+        <div class="table-container">
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all-user-device" /></th>
+                        <th>Device ID</th>
+                        <th>Elevator Number</th>
+                        <th>Serial No</th>
+                        <th>MAC Address</th>
+            <th>City</th>
+                        <th>Connection</th>
+                    </tr>
+                </thead>
+                <tbody id="device-table-body">
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
 
     <div class="footer-text">Powered by Samsan | © 2025 Revision</div>
-  </main>
+    </main>
 
-  <!-- Add Device Modal -->
-  <div id="addDeviceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); z-index:200; align-items:center; justify-content:center;">
+    <!-- Add Device Modal -->
+    <div id="addDeviceModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); z-index:200; align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:12px; width:480px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,0.18); margin:auto;">
-      <div style="background:#f4f4f4; border-radius:12px 12px 0 0; padding:18px 28px; display:flex; align-items:center; gap:10px;">
-        <span style="font-size:1.5em; color:#007bff;">&#128230;</span>
-        <span style="font-size:1.2em; font-weight:600;">Add New Device</span>
-      </div>
+            <div style="background:#f4f4f4; border-radius:12px 12px 0 0; padding:18px 28px; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.5em; color:#007bff;">&#128230;</span>
+                <span style="font-size:1.2em; font-weight:600;">Add New Device</span>
+            </div>
       <form id="addDeviceForm" style="padding:28px;">
         <div class="device-row">
           <select id="modalDeviceDropdown" style="width:100%; padding:8px; margin-bottom:8px;"></select>
@@ -136,12 +136,12 @@
         <div style="margin-top:16px; text-align:right;">
           <button type="button" onclick="closeAddDeviceModal()" style="margin-right:10px;">Cancel</button>
           <button type="submit">Assign Device</button>
+                </div>
+            </form>
         </div>
-      </form>
     </div>
-  </div>
 
-  <script>
+    <script>
     const username = new URLSearchParams(window.location.search).get('username');
     document.getElementById('userLabel').textContent = username;
 
@@ -166,9 +166,9 @@
       const table = document.getElementById('device-table-body');
       table.innerHTML = devices.length ? '' : '<tr><td colspan="7">No devices assigned.</td></tr>';
       devices.forEach(dev => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td><input type="checkbox" class="user-device-row-checkbox" /></td>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="user-device-row-checkbox" /></td>
           <td>${dev.DeviceId || '-'}</td>
           <td>${dev.DeviceName || '-'}</td>
           <td>${dev.SerialNum || '-'}</td>
@@ -190,10 +190,10 @@
           sessionStorage.setItem('selectedUsername', username);
           window.location.href = `specific_userdevice.html?deviceId=${dev.tb_device_id}&username=${encodeURIComponent(username)}`;
         });
-        table.appendChild(row);
-      });
-    }
-
+                table.appendChild(row);
+            });
+        }
+        
     document.getElementById('addDeviceBtn').onclick = () => {
       openAddDeviceModal();
     };
@@ -258,8 +258,7 @@
       try {
         const res = await fetch('/api/assign-device', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          headers: { 'x-user-role': 'admin' },
+          headers: { 'Content-Type': 'application/json','x-user-role': 'admin' },
           body: JSON.stringify({ username, tb_device_id })
         });
         const result = await res.json();
@@ -276,14 +275,14 @@
       }
     });
 
-    function filterDevices() {
-      const val = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allDevices.filter(d =>
+        function filterDevices() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allDevices.filter(d =>
         (d.DeviceId || '').toLowerCase().includes(val) ||
         (d.DeviceName || '').toLowerCase().includes(val)
-      );
-      renderDevices(filtered);
-    }
+            );
+            renderDevices(filtered);
+        }
 
     window.addEventListener('DOMContentLoaded', loadDevices);
     document.addEventListener('DOMContentLoaded', function() {
@@ -306,7 +305,7 @@
       // Redirect using final URL
       window.location.href = url;
     }
-  </script>
+    </script>
   <script src="js/script.js"></script>
 </body>
 </html>

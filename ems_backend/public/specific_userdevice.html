@@ -10,11 +10,11 @@
     body,html{margin:0;padding:0;background:#f5f7fa;}
     .dashboard-body{display:flex;}
     .main-content{flex:1;padding:0px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
-    .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:30px 0 20px 0;padding:24px 32px 18px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
+    .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:10px 0 20px 0;padding:8px 26px 12px 26px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
     .device-card-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;}
     .device-card-body{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;width:100%;}
-    .device-field{flex:1 1 180px;min-width:160px;color:#fff;}
-    .device-field span{font-weight:600;display:inline-block;margin-top:4px;}
+    .device-field{flex:1 1 180px;min-width:160px;color:#fff;font-size:0.8em;}
+    .device-field span{font-weight:600;display:inline-block;margin-top:4px;font-size: 1.2em;}
     .device-tabs{display:flex;gap:2px;margin:20px 0;}
     .device-tab{flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;margin-right:2px;}
     .device-tab.active,.device-tab:hover{background:#43a047;color:#fff;}
@@ -31,20 +31,20 @@
     <header class="topbar">
       <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
         <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
-        <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Machine Data Elevator</h2>
-        <span style="width:48px;"></span>
+        <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Elevator Data</h2>
+        <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </div>
     </header>
 
     <!-- Sidebar for normal users/admins -->
     <aside class="sidebar" id="sidebar-normal" style="display:none;">
-      <div class="menu-title">Menu</div>
       <ul>
-      <li class="nav-link" onclick="navigate('users.html')">Users</li>
-      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisors</li>
+      <li class="nav-link" onclick="navigate('users.html')">Location</li>
+      <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
       <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
       <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
+      
       </ul>
       <div class="logout-link" onclick="logout()">Logout</div>
       <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
@@ -52,7 +52,6 @@
   
   <!-- Sidebar for supervisors (read-only) -->
   <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
-      <div class="menu-title">Menu</div>
       <ul>
       <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
       <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
@@ -64,7 +63,7 @@
     <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
     <div class="main-content">
         <!-- Device Info Bar -->
-        <div id="deviceInfoBar" style="background:#f8f9fa;padding:20px 90px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:1.1em;font-weight:500;">
+        <div id="deviceInfoBar" style="background:#f8f9fa;padding:10px 40px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:0.8em;font-weight:500;">
         <span>Status: <span id="deviceStatus">-</span></span>
         <span>Last Upload: <span id="deviceLastUpload">-</span></span>
         <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
@@ -79,7 +78,7 @@
             <div class="device-field">MAC Address<br><span id="deviceMac">-</span></div>
             <div class="device-field">Device ID<br><span id="deviceIdValue">-</span></div>
             <div class="device-field">Serial Number<br><span id="deviceSerial">-</span></div>
-            <div class="device-field">Location<br><span id="deviceLocation">-</span></div>
+            <div class="device-field">City<br><span id="deviceLocation">-</span></div>
           </div>
         </div>
         <div class="device-tabs">
@@ -88,9 +87,10 @@
           <button class="device-tab" id="tabMode">Control Data</button> 
         </div>
       </section>
-      <div class="device-map">
+      <!-- <div class="device-map">
         <iframe src="https://maps.google.com/maps?q=Samsan%20Technische%20Labs%20Pvt%20Ltd%20(Kothrud)&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
-      </div>
+      </div> -->
+      <div id="map" style="width:100%; height:250px; margin-top:20px;"></div>
       <div class="stats-grid">
         <div class="stat-item"><div class="stat-icon">🔁</div><div class="stat-label">Direction Count</div><div class="stat-value" id="stat-DirCount">-</div></div>
         <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Distance Travel</div><div class="stat-value" id="stat-TotalDistanceTravelled">-</div></div>
@@ -106,12 +106,42 @@
         <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Position</div><div class="stat-value" id="stat-Position">-</div></div>
       </div>
     </div>
+    
     <script>
     const urlParams = new URLSearchParams(window.location.search);
     const deviceId = urlParams.get('deviceId');
     const username = sessionStorage.getItem('selectedUsername') || 'NA';
     document.getElementById('deviceUser').textContent = username;
     
+    async function renderMapFromTelemetry(telemetry) {
+      // Convert coordinates safely
+      const lat = parseFloat(telemetry.GNSS_Latitude || telemetry.latitude);
+      const lng = parseFloat(telemetry.GNSS_Longitude || telemetry.longitude);
+    
+      const mapContainer = document.getElementById('map');
+    
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+        mapContainer.innerHTML = 'Location not available';
+        return;
+      }
+    
+      // Clear any previous message
+      mapContainer.innerHTML = ''; // ensures map renders again if needed
+    
+      // Await in case you want to prepare or load something else in future
+      await new Promise(resolve => setTimeout(resolve, 0)); // placeholder await
+    
+      const map = new google.maps.Map(mapContainer, {
+        center: { lat, lng },
+        zoom: 15
+      });
+    
+      new google.maps.Marker({
+        position: { lat, lng },
+        map: map,
+        title: 'Device Location'
+      });
+    }
     
     // Use this in your page load and sync button
 async function syncAndRenderTelemetry() {
@@ -222,6 +252,7 @@ async function fetchAndRenderUser(tb_device_id) {
         if (!res.ok) throw new Error('Failed to sync telemetry');
         const telemetry = await res.json();
         renderTelemetryToUI(telemetry);
+        renderMapFromTelemetry(telemetry);
       } catch (e) {
         // Optionally show an error or fallback
         console.error('Error auto-syncing telemetry:', e.message);
@@ -251,6 +282,7 @@ async function fetchAndRenderUser(tb_device_id) {
     
     
     </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEkRLsky3llbZBK44ifns1l84_Wbtz8v4"></script>
     <script src="js/script.js"></script>
     
     </body>
