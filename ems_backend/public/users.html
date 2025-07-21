@@ -60,6 +60,7 @@
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Location List</h2>
       <span class="userRoleDisplay" id="userRoleDisplay"></span>
     </div>
+    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
   </header>
   <!-- Sidebar for normal users/admins -->
 <aside class="sidebar" id="sidebar-normal" style="display:none;">
@@ -78,7 +79,6 @@
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
-
   <ul>
     <li class="nav-link active" onclick="navigate('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
@@ -106,7 +106,7 @@
         <thead>
           <tr>
             <th><input type="checkbox" id="select-all-users" /></th>
-            <th>UserName</th><!--Loaction name -->
+            <th>Location</th><!--Loaction name -->
             <th>Total Device</th>
             <th>Supervisor Name</th>
             <th class="action-col">Action</th>

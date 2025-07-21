@@ -89,3 +89,28 @@ document.addEventListener('DOMContentLoaded', function() {
     roleDisplay.textContent = role.charAt(0).toUpperCase() + role.slice(1);
   }
 });
+
+//Dark mode Logic
+document.getElementById('darkModeToggle').addEventListener('click', function() {
+  document.body.classList.toggle('dark-mode');
+  document.documentElement.classList.toggle('dark-mode');
+  // Optionally, save preference
+  if (document.body.classList.contains('dark-mode')) {
+    localStorage.setItem('theme', 'dark');
+    this.textContent = '☀️';
+  } else {
+    localStorage.setItem('theme', 'light');
+    this.textContent = '🌙';
+  }
+});
+
+// On page load, set theme from localStorage
+document.addEventListener('DOMContentLoaded', function() {
+  const theme = localStorage.getItem('theme');
+  const btn = document.getElementById('darkModeToggle');
+  if (theme === 'dark') {
+    document.body.classList.add('dark-mode');
+    document.documentElement.classList.add('dark-mode');
+    if (btn) btn.textContent = '☀️';
+  }
+});

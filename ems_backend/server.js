@@ -13,6 +13,7 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 // Import axios for HTTP requests to ThingsBoard
 const axios = require('axios');
+const PDFDocument = require('pdfkit');
 
 const TB_BASE_URL = 'https://thingsboard.cloud';
 const TB_USERNAME = 'rutuja.arekar@samsanlabs.com';
@@ -386,7 +387,24 @@ app.get('/api/supervisor-users-devices/:supervisor_id', async (req, res) => {
  */
 app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
   const tb_device_id = req.params.tb_device_id;
-  const tbToken = await getThingsBoardToken(); // Your existing function to get TB token
+  const tbToken = await getThingsBoardToken();//To get token  
+
+  // Fetch device info to get the name
+  let deviceName = '';
+  try {
+    const deviceInfoRes = await axios.get(
+      `${TB_BASE_URL}/api/device/${tb_device_id}`,
+      { headers: { 'Authorization': `Bearer ${tbToken}` } }
+    );
+    deviceName = deviceInfoRes.data.name || '';
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch device info' });
+  }
+
+  // Filter: Only proceed if device name contains "Lift"
+  if (!deviceName.toLowerCase().includes('lift')) {
+    return res.status(400).json({ error: 'Not a Lift device. Telemetry not synced.' });
+  }
 
   // List of telemetry keys to fetch from ThingsBoard
   const telemetryKeys = [
@@ -461,19 +479,24 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
         const token = await getThingsBoardToken();
         console.log('✅ Auth token acquired');
     
-        const tbResponse = await axios.get(`${TB_BASE_URL}/api/tenant/devices?pageSize=100&page=0`, {
-          headers: { 'X-Authorization': `Bearer ${token}` }
-        });
+        const tbResponse = await axios.get(
+          `${TB_BASE_URL}/api/deviceInfos/all?pageSize=1000&page=0`,
+          { headers: { 'X-Authorization': `Bearer ${token}` } }
+        );
     
         const devices = tbResponse.data?.data || [];
         console.log(`📦 Fetched ${devices.length} devices from ThingsBoard.`);
     
-        const telemetryKeys = ['DeviceId', 'MacAddress', 'SerialNum', 'Location', 'Status'];//State(Active or Inactive) of device also can be fetched from thingsboard not telemetry
-        //Here States is telemetry
-          const formattedDevices = await Promise.all(devices.map(async (device) => {
+        const telemetryKeys = ['DeviceId', 'MacAddress', 'SerialNum', 'Location', 'Status'];
+    
+        const formattedDevices = await Promise.all(devices.map(async (device) => {
           const tb_device_id = device?.id?.id;
           const device_name = device?.name || 'Unnamed Device';
-          if (!tb_device_id) return null;
+    
+          // ✅ Filter only devices with 'lift' in the name (case-insensitive)
+          if (!tb_device_id || !device_name.toLowerCase().includes("lift")) {
+            return null;
+          }
     
           let telemetry = {};
     
@@ -543,6 +566,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
         });
       }
     });
+    
 
 // ---------------- ROOT ROUTE -------------------
 // Redirect root to login page
@@ -594,4 +618,235 @@ app.get('/api/devices', requireAdmin, async (req, res) => {
   }
 });
 
+//---------------------LOGS----------------------------
+
+// 2. Auto-fetch and save telemetry every minute
+const fetchAndSaveTelemetry = async () => {
+  try {
+    const [devices] = await db.execute('SELECT tb_device_id,DeviceId FROM devices');
+    const token = await getThingsBoardToken();
+    const telemetryKeys = ['Current', 'dcbus', 'speed', 'rpm', 'position'];
+
+    for (const device of devices) {
+      const tb_device_id = device.tb_device_id;
+      const DeviceId = device.DeviceId || null;
+      const telemetryRes = await axios.get(
+        `${TB_BASE_URL}/api/plugins/telemetry/DEVICE/${tb_device_id}/values/timeseries?keys=${telemetryKeys.join(',')}`,
+        { headers: { 'X-Authorization': `Bearer ${token}` } }
+      );
+
+      const data = telemetryKeys.map(k => telemetryRes.data?.[k]?.[0]?.value ?? null);
+      await db.execute(
+        `INSERT INTO device_logs (tb_device_id,DeviceId, Current, dcbus, speed, rpm, position) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [tb_device_id,DeviceId, ...data]
+      );
+    }
+    console.log('✅ Telemetry saved at', new Date().toLocaleTimeString());
+  } catch (err) {
+    console.error('❌ Error saving telemetry:', err.message);
+  }
+};
+
+// setInterval(fetchAndSaveTelemetry, 60 * 1000); // Every minute
+let autoSaveEnabled = true; // Set to false to pause auto-saving
+
+setInterval(() => {
+  if (autoSaveEnabled) {
+    fetchAndSaveTelemetry();
+  } else {
+    console.log('⏸️ Auto-saving paused');
+  }
+}, 60 * 1000);
+
+// 3. API: Get latest data for all devices
+app.get('/api/logs/latest', async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT d.*, dev.device_name, dev.Location as city
+      FROM device_logs d
+      INNER JOIN (
+        SELECT tb_device_id, MAX(log_time) AS latest
+        FROM device_logs
+        GROUP BY tb_device_id) AS latest_logs
+        ON d.tb_device_id = latest_logs.tb_device_id AND d.log_time = latest_logs.latest
+      LEFT JOIN devices dev ON d.tb_device_id = dev.tb_device_id;
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
+// 3b. API: Get latest data for all devices mapped to a supervisor
+app.get('/api/logs/supervisor-latest', async (req, res) => {
+  const { supervisor_id } = req.query;
+  if (!supervisor_id) {
+    return res.status(400).json({ error: 'Missing supervisor_id' });
+  }
+  try {
+    // Get all tb_device_ids mapped to users under this supervisor
+    const [devices] = await db.execute(`
+      SELECT ud.tb_device_id
+      FROM user_devices ud
+      JOIN users u ON ud.user_id = u.id
+      WHERE u.supervisor_id = ?
+    `, [supervisor_id]);
+    if (!devices.length) return res.json([]);
+    const deviceIds = devices.map(d => d.tb_device_id);
+    // Get latest log for each device
+    const [rows] = await db.query(`
+      SELECT d.*, dev.device_name, dev.Location as city
+      FROM device_logs d
+      INNER JOIN (
+        SELECT tb_device_id, MAX(log_time) AS latest
+        FROM device_logs
+        WHERE tb_device_id IN (${deviceIds.map(() => '?').join(',')})
+        GROUP BY tb_device_id) AS latest_logs
+        ON d.tb_device_id = latest_logs.tb_device_id AND d.log_time = latest_logs.latest
+      LEFT JOIN devices dev ON d.tb_device_id = dev.tb_device_id;
+    `, deviceIds);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'DB error', details: err.message });
+  }
+});
+
+// 4. API: Download logs in date range
+app.get('/api/logs/download/:tb_device_id', async (req, res) => {
+  const { tb_device_id } = req.params;
+  const { from, to } = req.query;
+
+  console.log(`📥 Download requested for device: ${tb_device_id}`);
+  console.log(`➡️ Date range: ${from} to ${to}`);
+
+  try {
+    const [rows] = await db.execute(
+      `SELECT * FROM device_logs WHERE tb_device_id = ? AND log_time BETWEEN ? AND ? ORDER BY log_time`,
+      [tb_device_id, from, to]
+    );
+
+    console.log(`✅ Rows found: ${rows.length}`);
+
+    // // --- PDF Generation ---
+    // const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    // res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_logs.pdf`);
+    // res.setHeader('Content-Type', 'application/pdf');
+    // doc.pipe(res);
+
+    // doc.fontSize(16).text(`Device Logs for ${tb_device_id}`, { align: 'center' });
+    // doc.moveDown();
+    // doc.fontSize(12);
+    // // Table header
+    // doc.text('Sr No', 30, doc.y, { continued: true });
+    // doc.text('Device ID', 70, doc.y, { continued: true });
+    // doc.text('Time', 150, doc.y, { continued: true });
+    // doc.text('Current', 250, doc.y, { continued: true });
+    // doc.text('DC Bus', 320, doc.y, { continued: true });
+    // doc.text('Speed', 390, doc.y, { continued: true });
+    // doc.text('RPM', 450, doc.y, { continued: true });
+    // doc.text('Position', 500, doc.y);
+    // doc.moveDown(0.5);
+    // // Table rows
+    // rows.forEach((r, idx) => {
+    //   doc.text(idx + 1, 30, doc.y, { continued: true });
+    //   doc.text(r.tb_device_id, 70, doc.y, { continued: true });
+    //   doc.text(r.log_time, 150, doc.y, { continued: true });
+    //   doc.text(r.Current == null ? 0 : r.Current, 250, doc.y, { continued: true });
+    //   doc.text(r.dcbus == null ? 0 : r.dcbus, 320, doc.y, { continued: true });
+    //   doc.text(r.speed == null ? 0 : r.speed, 390, doc.y, { continued: true });
+    //   doc.text(r.rpm == null ? 0 : r.rpm, 450, doc.y, { continued: true });
+    //   doc.text(r.position == null ? 0 : r.position, 500, doc.y);
+    // });
+    // doc.end();
+
+    // --- CSV Generation (commented out) ---
+    
+    const csv = [
+      ['Device ID', 'Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'],
+      ...rows.map(r => [
+        r.tb_device_id,
+        r.log_time,
+        r.Current == null ? 0 : r.Current,
+        r.dcbus == null ? 0 : r.dcbus,
+        r.speed == null ? 0 : r.speed,
+        r.rpm == null ? 0 : r.rpm,
+        r.position == null ? 0 : r.position
+      ])
+    ];
+    res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_logs.csv`);
+    res.set('Content-Type', 'text/csv');
+    res.send(csv.map(row => row.join(',')).join('\n'));
+    
+  } catch (err) {
+    console.error('❌ Export error:', err.message);
+    res.status(500).json({ error: 'Export error', details: err.message });
+  }
+});
+
+// 5. API: Download all logs in date range
+app.get('/api/logs/download-all', async (req, res) => {
+  const { from, to } = req.query;
+  if (!from || !to) {
+    return res.status(400).json({ error: 'Missing from or to date' });
+  }
+  try {
+    const [rows] = await db.execute(
+      `SELECT * FROM device_logs WHERE log_time BETWEEN ? AND ? ORDER BY tb_device_id, log_time`,
+      [from, to]
+    );
+    // --- PDF Generation ---
+    // const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    // res.setHeader('Content-disposition', `attachment; filename=all_devices_logs.pdf`);
+    // res.setHeader('Content-Type', 'application/pdf');
+    // doc.pipe(res);
+
+    // doc.fontSize(16).text('All Devices Logs', { align: 'center' });
+    // doc.moveDown();
+    // doc.fontSize(12);
+    // // Table header
+    // doc.text('Sr No', 30, doc.y, { continued: true });
+    // doc.text('Device ID', 70, doc.y, { continued: true });
+    // doc.text('Time', 150, doc.y, { continued: true });
+    // doc.text('Current', 250, doc.y, { continued: true });
+    // doc.text('DC Bus', 320, doc.y, { continued: true });
+    // doc.text('Speed', 390, doc.y, { continued: true });
+    // doc.text('RPM', 450, doc.y, { continued: true });
+    // doc.text('Position', 500, doc.y);
+    // doc.moveDown(0.5);
+    // // Table rows
+    // rows.forEach((r, idx) => {
+    //   doc.text(idx + 1, 30, doc.y, { continued: true });
+    //   doc.text(r.tb_device_id, 70, doc.y, { continued: true });
+    //   doc.text(r.log_time, 150, doc.y, { continued: true });
+    //   doc.text(r.Current == null ? 0 : r.Current, 250, doc.y, { continued: true });
+    //   doc.text(r.dcbus == null ? 0 : r.dcbus, 320, doc.y, { continued: true });
+    //   doc.text(r.speed == null ? 0 : r.speed, 390, doc.y, { continued: true });
+    //   doc.text(r.rpm == null ? 0 : r.rpm, 450, doc.y, { continued: true });
+    //   doc.text(r.position == null ? 0 : r.position, 500, doc.y);
+    // });
+    // doc.end();
+
+    // --- CSV Generation (commented out) ---
+    
+    const csv = [
+      ['Device ID', 'Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'],
+      ...rows.map(r => [
+        r.tb_device_id,
+        r.log_time,
+        r.Current == null ? 0 : r.Current,
+        r.dcbus == null ? 0 : r.dcbus,
+        r.speed == null ? 0 : r.speed,
+        r.rpm == null ? 0 : r.rpm,
+        r.position == null ? 0 : r.position
+      ])
+    ];
+    res.setHeader('Content-disposition', `attachment; filename=all_devices_logs.csv`);
+    res.set('Content-Type', 'text/csv');
+    res.send(csv.map(row => row.join(',')).join('\n'));
+    
+  } catch (err) {
+    console.error('❌ Export all logs error:', err.message);
+    res.status(500).json({ error: 'Export error', details: err.message });
+  }
+});
 

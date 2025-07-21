@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="css/style.css" />
   <title>All Devices</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .device-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     .device-table th, .device-table td { padding: 12px; border: 1px solid #ddd; }
     .device-table th { background: #f4f4f4; }
     .sidebar { width: 200px; float: left; background: #f0f0f0; height: 100vh-60px; justify-content: space-between; }
     .main-content { margin-left: 220px; padding: 20px; }
+    .download {position:absolute;right:10px;top:10px;padding:8px 5px;font-size:1em;background:#007bff;color:#fff;border:none;border-radius:6px;cursor:pointer;}
+    .mapped-device-row { background: #e6e6e6; }
     </style>
 </head>
 <body>
@@ -21,6 +24,7 @@
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
       <span class="userRoleDisplay" id="userRoleDisplay"></span>
     </div>
+    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
   </header>
 
   <!-- Sidebar for normal users/admins -->
@@ -51,7 +55,7 @@
   <div class="main-content">
     <!-- add content here -->
      
-    <div id="deviceStatsBar" style="display:flex;gap:30px;justify-content:right;align-items:center;padding:8px 10px;font-size:1.1em;">
+    <div id="deviceStatsBar" style="display:flex;gap:30px;justify-content:center;align-items:center;padding:18px 0 8px 0;font-size:1.1em;position:relative;">
       <div class="search-panel">
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search" oninput="filterLocation()" /> 
@@ -64,8 +68,11 @@
       <span>Inactive: <b id="statInactiveDevices">-</b></span>
       <span>Mapped: <b id="statMappedDevices">-</b></span>
       <span>Unmapped: <b id="statUnmappedDevices">-</b></span>
+      <button class="download" id="downloadDevicesBtn" >⬇️ Download</button>
     </div>
-
+    <!-- <div style="display:flex;justify-content:center;margin:20px 0;">
+      <canvas id="deviceDonutChart" style="width:30px;height:30px;"></canvas>
+    </div> -->
     <table class="device-table" id="deviceTable">
       <thead>
         <tr>  
@@ -82,9 +89,11 @@
     </table>
   </div>
   <script>
+    
     async function loadDevices() {
       const res = await fetch('/api/devices', { headers: { 'x-user-role': 'admin' } });
       const devices = await res.json();
+      lastLoadedDevices = devices;
       const tbody = document.getElementById('deviceTable').querySelector('tbody');
       tbody.innerHTML = '';
     
@@ -106,7 +115,8 @@
       document.getElementById('statInactiveDevices').textContent = inactive;
       document.getElementById('statMappedDevices').textContent = mapped;
       document.getElementById('statUnmappedDevices').textContent = unmapped;
-    
+      
+      //renderDeviceDonutChart({ total, active, mapped });
       // Render table
       devices.forEach(dev => {
         const tr = document.createElement('tr');
@@ -117,10 +127,37 @@
           <td>${dev.Location || '-'}</td>
           <td>${dev.Status || '-'}</td>
         `;
+        if (mappedIds.has(dev.tb_device_id)) {
+          tr.classList.add('mapped-device-row');
+        }
         tbody.appendChild(tr);
+        
       });
     }
     window.addEventListener('DOMContentLoaded', loadDevices);
+      document.getElementById('downloadDevicesBtn').onclick = function() {
+        downloadCSVFromDevices(lastLoadedDevices);
+    };
+    function downloadCSVFromDevices(devices) {
+      if (!devices.length) return;
+      // Define the columns you want to export
+      const columns = ['device_name', 'DeviceId', 'SerialNum', 'Location', 'Status'];
+      const header = columns.map(col => `"${col}"`).join(',');
+      const rows = devices.map(dev =>
+        columns.map(col => `"${dev[col] || ''}"`).join(',')
+      );
+      const csvContent = [header, ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+    
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'devices.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   </script>
   <script src="js/script.js"></script>
 </body>

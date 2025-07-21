@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register User</title>
+  <title>Add Location</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
     body {
@@ -135,15 +135,8 @@
   <div class="register-bg-shape right"></div> -->
   <div class="register-container">
     <div class="register-card">
-      <h2>Register User</h2>
+      <h2>Add Location</h2>
       <form id="registerForm" class="register-form">
-        <div class="register-form-row">
-          <input type="text" name="first_name" placeholder="First Name*" required>
-          <input type="text" name="last_name" placeholder="Last Name*" required>
-        </div>
-        <input type="email" name="email" placeholder="Email ID*" required>
-        <input type="text" name="phone" placeholder="Mobile Number*" required>
-        <input type="text" name="address" placeholder="Address*" required>
         <div class="register-form-row">
           <select name="device_id" id="deviceDropdown">
             <option value="" style="color: #a9a9a9;">Assign Device</option>
@@ -160,6 +153,14 @@
           <input type="text" id="macAddress" placeholder="MAC Address" readonly>
           <input type="text" id="location" placeholder="Location" readonly>
         </div>
+        <input type="text" name="address" placeholder="Address | Building Name*" required>
+        <div class="register-form-row">
+          <input type="text" name="first_name" placeholder="First Name*" required>
+          <input type="text" name="last_name" placeholder="Last Name*" required>
+        </div>
+        <input type="email" name="email" placeholder="Email ID*" required>
+        <input type="text" name="phone" placeholder="Mobile Number*" required>
+
         <!-- <button type="submit" class="register-btn">Register</button> -->
         <div class="button-row">
           <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>

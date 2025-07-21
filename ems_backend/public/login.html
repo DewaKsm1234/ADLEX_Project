@@ -8,21 +8,26 @@
 </head>
 
 <body class="login-body">
-  <div class="login-container">
-    <h2>Login</h2>
-  
-    <form id="loginForm">
-      <input type="text" name="username" placeholder="Username" required />
-      <input type="password" name="password" placeholder="Password" required />
+  <div class="elevator-container">
+    <div class="door left-door"></div>
+    <div class="door right-door"></div>
+      <div class="login-container">
+        <h2>Login</h2>
       
-      <div class="form-footer">
-        <a href="#" class="forgot-link">Forgot Password?</a>
-        <button type="submit">Login</button>
+        <form id="loginForm">
+          <input type="text" name="username" placeholder="Username" required />
+          <input type="password" name="password" placeholder="Password" required />
+          
+          <div class="form-footer">
+            <a href="#" class="forgot-link">Forgot Password?</a>
+            <button type="submit">Login</button>
+          </div>
+        </form>
+      
+        <div id="loginError" style="color:red; margin-top:10px;"></div>
       </div>
-    </form>
-  
-    <div id="loginError" style="color:red; margin-top:10px;"></div>
-  </div>
+      </div>
+    </div>
   
   <img src="/assets/adlex_logo.png" alt="ADLEX" class="footer-logo" />
 <div class="footer-text">
@@ -30,6 +35,12 @@
 </div>
 
   <script>
+    // Elevator animation on load
+    window.onload = () => {
+      document.querySelector('.left-door').classList.add('open-left');
+      document.querySelector('.right-door').classList.add('open-right');
+      document.body.classList.add('doors-opened');
+    };
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const form = e.target;

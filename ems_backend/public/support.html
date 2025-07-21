@@ -43,6 +43,7 @@
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Support Center</h2>
       <span class="userRoleDisplay" id="userRoleDisplay"></span>
     </div>
+    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
   </header>
   <!-- Sidebar for normal users/admins -->
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
@@ -62,7 +63,7 @@
     <ul>
     <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link active" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>

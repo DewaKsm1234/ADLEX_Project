@@ -238,3 +238,43 @@ body, html {
 .search-box { background: #fff; border-radius: 20px; padding: 5px 10px; display: flex; align-items: center; }
 .search-box input { border: none; outline: none; background: transparent; padding: 5px; min-width: 180px; }
 .search-icon { margin-left: 5px; color: #007bff; }
+
+/*Style in dark mode*/
+
+body.dark-mode, html.dark-mode {
+  background: #181a1b !important;
+  color: #e0e0e0 !important;
+}
+.dark-mode .main-content,
+.dark-mode .device-table,
+.dark-mode .sidebar,
+.dark-mode .topbar {
+  background: #23272b !important;
+  color: #e0e0e0 !important;
+}
+.dark-mode .device-table th,
+.dark-mode .device-table td {
+  background: #23272b !important;
+  color: #e0e0e0 !important;
+  border-color: #333 !important;
+}
+.dark-mode .sidebar {
+  background: #23272b !important;
+}
+.dark-mode .topbar {
+  background: #111 !important;
+  color: #fff !important;
+}
+.dark-mode .userRoleDisplay {
+  color: #fff !important;
+}
+.dark-mode .nav-link {
+  color: #b0b0b0 !important;
+}
+.dark-mode .nav-link.active {
+  color: #fff !important;
+  background: #333 !important;
+}
+.dark-mode .logout-link {
+  color: #ffb3b3 !important;
+}
