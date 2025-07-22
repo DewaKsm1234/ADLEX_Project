@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .device-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .device-table th, .device-table td { padding: 12px; border: 1px solid #ddd; }
+    .device-table th, .device-table td { padding: 12px; border: 1px solid #ddd;text-align: center; }
     .device-table th { background: #f4f4f4; }
     .sidebar { width: 200px; float: left; background: #f0f0f0; height: 100vh-60px; justify-content: space-between; }
     .main-content { margin-left: 220px; padding: 20px; }
@@ -22,7 +22,10 @@
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
       <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
-      <span class="userRoleDisplay" id="userRoleDisplay"></span>
+      <span class="user-role-container">
+        <span class="user-icon">👤</span>
+        <span class="userRoleDisplay" id="userRoleDisplay"></span>
+      </span>
     </div>
     <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
   </header>
@@ -31,7 +34,7 @@
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
     <ul>
     <li class="nav-link" onclick="navigate('users.html')">Location</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">User</li>
     <li class="nav-link active" onclick="navigate('devices.html')">Devices</li>  
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
@@ -68,7 +71,8 @@
       <span>Inactive: <b id="statInactiveDevices">-</b></span>
       <span>Mapped: <b id="statMappedDevices">-</b></span>
       <span>Unmapped: <b id="statUnmappedDevices">-</b></span>
-      <button class="download" id="downloadDevicesBtn" >⬇️ Download</button>
+      <!-- <button class="download" id="downloadDevicesBtn" >⬇️ Download</button> -->
+      <button class="download" id="downloadSelectedBtn">⬇️ Download </button>
     </div>
     <!-- <div style="display:flex;justify-content:center;margin:20px 0;">
       <canvas id="deviceDonutChart" style="width:30px;height:30px;"></canvas>
@@ -76,6 +80,7 @@
     <table class="device-table" id="deviceTable">
       <thead>
         <tr>  
+          <th><input type="checkbox" id="selectAllDevices"></th>
           <th>Device Name</th>
           <th>Device Id</th>
           <th>Serial Number</th>
@@ -118,9 +123,10 @@
       
       //renderDeviceDonutChart({ total, active, mapped });
       // Render table
-      devices.forEach(dev => {
+      devices.forEach((dev, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
+          <td><input type="checkbox" class="device-row-checkbox" data-idx="${idx}"></td>
           <td>${dev.device_name || '-'}</td>
           <td>${dev.DeviceId || '-'}</td>
           <td>${dev.SerialNum || '-'}</td>
@@ -131,12 +137,46 @@
           tr.classList.add('mapped-device-row');
         }
         tbody.appendChild(tr);
-        
+      });
+      // Add select all logic
+      const selectAll = document.getElementById('selectAllDevices');
+      selectAll.checked = false;
+      selectAll.onclick = function() {
+        const visibleCheckboxes = Array.from(document.querySelectorAll('.device-row-checkbox')).filter(cb => cb.closest('tr').style.display !== 'none');
+        visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+      };
+      // Uncheck select all if any box is unchecked
+      tbody.querySelectorAll('.device-row-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+          if (!this.checked) selectAll.checked = false;
+        });
       });
     }
+    function filterLocation() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const rows = document.querySelectorAll('#deviceTable tbody tr');
+    
+      rows.forEach(row => {
+        const locationCell = row.children[4]?.textContent?.toLowerCase() || '';
+        const usernameCell = row.children[1]?.textContent?.toLowerCase() || ''; // assuming device name holds username
+        const matches = locationCell.includes(query) || usernameCell.includes(query);
+        row.style.display = matches ? '' : 'none';
+      });
+    
+      // Recalculate "Select All" to reflect only visible ones
+      const selectAll = document.getElementById('selectAllDevices');
+      selectAll.checked = false; // reset checkbox after filtering
+    }
+    
     window.addEventListener('DOMContentLoaded', loadDevices);
-      document.getElementById('downloadDevicesBtn').onclick = function() {
-        downloadCSVFromDevices(lastLoadedDevices);
+    document.getElementById('downloadSelectedBtn').onclick = function() {
+      // Only download checked devices (visible/filtered)
+      const checkboxes = Array.from(document.querySelectorAll('.device-row-checkbox:checked'));
+      if (!checkboxes.length) return alert('No devices selected!');
+      const tbody = document.getElementById('deviceTable').querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const selectedDevices = checkboxes.map(cb => lastLoadedDevices[parseInt(cb.dataset.idx)]);
+      downloadCSVFromDevices(selectedDevices);
     };
     function downloadCSVFromDevices(devices) {
       if (!devices.length) return;

@@ -64,6 +64,7 @@ body, html {
 .topbar-logo {
   height: 40px;
   width: auto;
+  border-style: double;
 }
 .topbar-title {
   font-size: 2em;
@@ -267,6 +268,14 @@ body.dark-mode, html.dark-mode {
 }
 .dark-mode .userRoleDisplay {
   color: #fff !important;
+}
+.user-role-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.user-icon {
+  font-size: 1.5em;
 }
 .dark-mode .nav-link {
   color: #b0b0b0 !important;

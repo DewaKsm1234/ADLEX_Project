@@ -18,7 +18,10 @@
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
       <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Logs</h2>
-      <span class="userRoleDisplay" id="userRoleDisplay"></span>
+      <span class="user-role-container">
+        <span class="user-icon">👤</span>
+        <span class="userRoleDisplay" id="userRoleDisplay"></span>
+      </span>
     </div>
     <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
   </header>
@@ -27,7 +30,7 @@
   
   <ul>
     <li class="nav-link" onclick="navigate('users.html')">Location</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">Supervisor</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">User</li>
     <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
     <li class="nav-link active" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
@@ -54,7 +57,7 @@
       <div class="calendar-container">
         <label>From: <input type="date" id="fromDate" /></label>
         <label>To: <input type="date" id="toDate" /></label>
-        <button id="downloadAllBtn" class="download-btn">Download All</button>
+        <button id="downloadSelectedBtn" class="download-btn">Download</button>
       </div>
       <div class="search-panel">
         <div class="search-box">
@@ -69,6 +72,7 @@
   <table id="logsTable">
     <thead>
       <tr>
+        <th><input type="checkbox" id="SelectAllDevices"></th>
         <th>Sr No</th>
         <th>Device ID</th>
         <th>Device Name</th>
@@ -78,7 +82,7 @@
         <th>Speed</th>
         <th>RPM</th>
         <th>Position</th>
-        <th>Actions</th>
+        <!-- <th>Actions</th> -->
       </tr>
     </thead>
     <tbody id="logsBody"></tbody>
@@ -86,29 +90,42 @@
 
   <script>
     let allLogsData = [];
+  
     function renderLogsTable(data) {
       const tbody = document.getElementById('logsBody');
       tbody.innerHTML = '';
       data.forEach((device, idx) => {
         const row = document.createElement('tr');
         row.innerHTML = `
+          <td><input type="checkbox" class="device-row-checkbox" data-idx="${idx}"></td>
           <td>${idx + 1}</td>
           <td>${device.DeviceId || device.tb_device_id || '-'}</td>
           <td>${device.device_name || '-'}</td>
           <td>${device.city || '-'}</td>
-          <td>${device.Current ?? device.current ?? 0}</td>
+          <!-- <td>${device.Current ?? device.current ?? 0}</td>
           <td>${device.dcbus ?? 0}</td>
           <td>${device.speed ?? 0}</td>
           <td>${device.rpm ?? 0}</td>
-          <td>${device.position ?? 0}</td>
-          <td>
-            <button class="download-btn" onclick="downloadLogs('${device.tb_device_id}')">Download</button>
-          </td>
+          <td>${device.position ?? 0}</td> -->
         `;
         tbody.appendChild(row);
       });
+  
+      // Add select all logic
+      const selectAll = document.getElementById('SelectAllDevices');
+      selectAll.checked = false;
+      selectAll.onclick = function () {
+        const visibleCheckboxes = Array.from(document.querySelectorAll('.device-row-checkbox')).filter(cb => cb.closest('tr').style.display !== 'none');
+        visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+      };
+      // Uncheck select all if any checkbox is manually unchecked
+      tbody.querySelectorAll('.device-row-checkbox').forEach(cb => {
+        cb.addEventListener('change', function () {
+          if (!this.checked) selectAll.checked = false;
+        });
+      });
     }
-
+  
     async function fetchLatestLogs() {
       let data;
       const role = localStorage.getItem('userRole');
@@ -128,29 +145,35 @@
       allLogsData = data;
       renderLogsTable(data);
     }
-
-    async function downloadLogs(tb_device_id) {
+  
+    async function downloadSelectedLogs() {
       const from = document.getElementById('fromDate').value;
       const to = document.getElementById('toDate').value;
       if (!from || !to) {
         alert('Please select both From and To dates');
         return;
       }
-      window.location.href = `/api/logs/download/${tb_device_id}?from=${from}&to=${to}`;
-    }
-
-    document.getElementById('downloadAllBtn').addEventListener('click', downloadAllLogs);
-
-    async function downloadAllLogs() {
-      const from = document.getElementById('fromDate').value;
-      const to = document.getElementById('toDate').value;
-      if (!from || !to) {
-        alert('Please select both From and To dates');
+  
+      const checkboxes = document.querySelectorAll('.device-row-checkbox:checked');
+      if (checkboxes.length === 0) {
+        alert('Please select at least one device to download logs');
         return;
       }
-      window.location.href = `/api/logs/download-all?from=${from}&to=${to}`;
+  
+      const selectedIds = Array.from(checkboxes).map(cb => {
+        const idx = cb.getAttribute('data-idx');
+        return allLogsData[idx]?.tb_device_id;
+      }).filter(Boolean);
+  
+      if (selectedIds.length === 0) {
+        alert('No valid device IDs found.');
+        return;
+      }
+  
+      const idsParam = selectedIds.join(',');
+      window.location.href = `/api/logs/download-selected?ids=${idsParam}&from=${from}&to=${to}`;
     }
-
+  
     function filterLogs() {
       const search = document.getElementById('searchInput').value.trim().toLowerCase();
       const filtered = allLogsData.filter(device =>
@@ -160,12 +183,12 @@
       );
       renderLogsTable(filtered);
     }
-
-    // Refresh logs every 30s
+  
     fetchLatestLogs();
     setInterval(fetchLatestLogs, 30000);
     document.getElementById('searchInput').oninput = filterLogs;
   </script>
+  
   <script src="js/script.js"></script>
 </body>
 </html>

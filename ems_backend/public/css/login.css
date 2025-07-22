@@ -125,7 +125,12 @@ form button:hover {
 .register-bg-shape.right { width: 40vw; height: 40vw; min-width: 180px; min-height: 180px; max-width: 600px; max-height: 600px; bottom: 10vh; right: -20vw; }
 
 /* Footer and logo */
-.footer-logo { position: fixed; bottom: 10px; right: 20px; width: 70px; opacity: 0.95; z-index: 10; }
+.footer-logo { position: fixed; bottom: 10px; right: 20px; width: 70px; opacity: 0.95; z-index: 10;
+  border: 2.5px solid #fff;
+  border-radius: 8px;
+  background: #fff0;
+  margin: 6px 12px 6px 0;
+}
 .footer-text { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #333; text-align: center; z-index: 10; }
 
 /* Responsive adjustments */
