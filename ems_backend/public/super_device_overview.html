@@ -5,31 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Devices Overview - Supervisor</title>
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .main-panel { background: #fff; border-radius: 8px; margin: 0 0 0 0; }
-        .topbar { background: #007bff; color: #fff; border-radius: 0 0 8px 8px; }
-        .topbar h2 { margin: 0; font-size: 2em; letter-spacing: 1px; }
-        .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
-        .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-        .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
-        .user-table tr:last-child td { border-bottom: none; }
-        .user-table tr { cursor: pointer; transition: background 0.2s; }
-        .user-table tr:hover { background: #007bff !important; color: #fff; }
-        .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
-        .user-table td a { color: inherit; text-decoration: none; font-weight: 500; pointer-events: none; }
-        @media (max-width: 900px) {
-            .main-panel, .table-container { margin: 0; }
-            .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
-        }
-        th.action-col, td.action-col { display: none; }
-        .show-action-col th.action-col, .show-action-col td.action-col { display: table-cell !important; }
-        #delete-all-btn { display: none; margin: 10px 0; background: #e74c3c; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; }
-        #delete-all-btn:hover { background: #c0392b; }
-        .confirm-delete-btn, .cancel-delete-btn { display: inline-block; border: none; background: none; font-size: 1.2em; cursor: pointer; margin-left: 4px; }
-        .confirm-delete-btn { color: #28a745; }
-        .cancel-delete-btn { color: #e74c3c; }
-    </style>
+    
 </head>
 <body class="dashboard-body">
     <header class="topbar">
@@ -60,7 +36,7 @@
     <!-- Sidebar for supervisors (read-only) -->
     <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
         <ul>
-        <li class="nav-link active" onclick="navigate('super_device_overview.html')">My Devices</li>
+        <li class="nav-link active" onclick="navi('super_device_overview.html')">My Devices</li>
         <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
         <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
         </ul>
@@ -119,10 +95,10 @@
                 const user = ud.user;
                 const devices = ud.devices;
                 const row = document.createElement('tr');
-                row.onclick = () => goToUserDevices(user.username);
+                row.onclick = () => goToUserDevices(user.address);
                 row.innerHTML = `
                     <td><input type="checkbox" class="super-device-row-checkbox" /></td>
-                    <td>${user.username}</td>
+                    <td>${user.first_name || ''} ${user.last_name || ''}</td>
                     <td>${devices.length}</td>
                     <td class="action-col">
                       <button class="delete-super-device-btn" style="display:none;" title="Delete User Device">🗑️</button>
@@ -182,8 +158,8 @@
                 if (row) row.querySelector('.delete-super-device-btn').style.display = '';
             });
         }
-        function goToUserDevices(username) {
-            window.location.href = `user_device_overview.html?username=${username}`;
+        function goToUserDevices(address) {
+            window.location.href = `user_device_overview.html?address=${address}`;
         }
         function navigate(page) {
             window.location.href = page;

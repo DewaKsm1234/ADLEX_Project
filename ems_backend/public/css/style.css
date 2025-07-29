@@ -1,7 +1,7 @@
 /* style.css - Main dashboard and table styles for EMS */
 
 /* Sidebar styles */
-.sidebar { width: 200px; background: #f8f9fa; padding: 20px 10px; border-radius: 8px; }
+.sidebar { width: 200px; background: #f8f9fa; padding: 20px 10px; }
 .menu-title { font-weight: bold; margin-bottom: 10px; }
 .nav-link { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
 .nav-link.active, .nav-link:hover { background-color: #007bff; color: white; }
@@ -11,6 +11,7 @@
 /* Table container and main content */
 .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 .main-content { margin-left: 200px; margin-top: 60px; padding: 30px 30px 0 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box;flex:1;overflow-y: auto; }
+/*.main-content { margin-left: 200px; margin-top: 60px; padding: 40px 30px 0 30px; background: #e5e7eb; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }*/
 
 /* Buttons */
 .register-btn { background: #fff; color: #007bff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; margin-left: 10px; }
@@ -144,7 +145,6 @@ body, html {
   background: #007bff;
   color: #fff;
   border: none;
-  border-radius: 0 8px 8px 0; /* Rounded on the right side */
   width: 40px;
   height: 60px;
   font-size: 1.5em;
@@ -240,50 +240,599 @@ body, html {
 .search-box input { border: none; outline: none; background: transparent; padding: 5px; min-width: 180px; }
 .search-icon { margin-left: 5px; color: #007bff; }
 
-/*Style in dark mode*/
 
-body.dark-mode, html.dark-mode {
-  background: #181a1b !important;
-  color: #e0e0e0 !important;
+    /* Users table in users.html*/
+    /* Table and layout styles for user management */
+    .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+    .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
+    .user-table th { background: #ffffff; color: #333; font-weight: 600; }
+    .user-table tr:last-child td { border-bottom: none; }
+    .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
+    .user-table td a:hover { text-decoration: underline; }
+    .user-table td .add-device-link { color: #007bff; text-decoration: underline; cursor: pointer; }
+    .user-table td .add-device-link:hover { color: #0056b3; }
+    .user-table td .user-link { cursor: pointer; color: #222; font-weight: 500; }
+    .user-table td .user-link:hover { color: #fff; text-decoration: underline; }
+    .user-table tr:hover { background: #007bff !important; color: #fff; }
+    .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
+    th.action-col, td.action-col { display: none; }
+    .show-action-col th.action-col, .show-action-col td.action-col { display: table-cell !important; }
+    #delete-all-btn { display: none; margin: 10px 0; background: #e74c3c; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; }
+    #delete-all-btn:hover { background: #c0392b; }
+    .confirm-delete-btn, .cancel-delete-btn { display: inline-block; border: none; background: none; font-size: 1.2em; cursor: pointer; margin-left: 4px; }
+    .confirm-delete-btn { color: #28a745 !important; }
+    .cancel-delete-btn { color: #e74c3c; }
+    @media (max-width: 900px) {
+      .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
+    }
+    .assign-device-dropdown {
+      height: 28px;         /* Makes the dropdown less tall */
+      font-size: 0.95em;    /* Slightly smaller text */
+      padding: 2px 8px;     /* Less padding for compactness */
+      border-radius: 5px;
+      max-width: 220px;     /* Optional: limit width */
+    }
+    .assign-supervisor-dropdown {
+      height: 28px;         /* Makes the dropdown less tall */
+      font-size: 0.95em;    /* Slightly smaller text */
+      padding: 2px 8px;     /* Less padding for compactness */
+      border-radius: 5px;
+      max-width: 220px;     /* Optional: limit width */
+    }
+    /* support.html css */
+    .dashboard-body { min-height: 100vh; }
+    .support-header { text-align: center; margin-bottom: 4px; }
+    .support-logo { height: 40px; margin-bottom: 8px; }
+    .support-title { font-size: 2em; font-weight: 700; color: #007bff; margin-bottom: 8px; }
+    .support-center-row { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 40px; margin-top: 24px; }
+    .cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 40px;
+    max-width: 1600px;
+    margin: auto;
+    }
+    .faq-card, .contact-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 32px 28px; min-width: 200px; max-width: 100%; flex: 1 1 380px; }
+    .faq-card h3, .contact-card h3 { margin-top: 0; font-size: 1.2em; font-weight: 600; margin-bottom: 18px; }
+    .faq-card ul { list-style: none; padding: 0; margin: 0; }
+    .faq-card li { margin-bottom: 12px; font-size: 1em; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .contact-card p, .contact-card form { margin: 0 0 12px 0; }
+    .contact-card input, .contact-card textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 12px; font-size: 1em; }
+    .contact-card button { background: #6c63ff; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; float: right; }
+    .contact-card button:hover { background: #4f46e5; }
+    @media (max-width: 900px) {
+      .support-center-row { flex-direction: column; gap: 24px; }
+      .faq-card, .contact-card { max-width: 100%; min-width: 0; }
+    }
+
+/* DARK THEME REDEFINED */
+
+body.dark-mode,
+html.dark-mode {
+  background: #25293c !important;
+  color: #ffffff !important;
 }
+
 .dark-mode .main-content,
+.dark-mode .table-container,
 .dark-mode .device-table,
+.dark-mode .user-table,
+.dark-mode .search-box,
 .dark-mode .sidebar,
 .dark-mode .topbar {
-  background: #23272b !important;
-  color: #e0e0e0 !important;
+  background: #25293c !important;
+  color: #ffffff !important;
 }
+
 .dark-mode .device-table th,
-.dark-mode .device-table td {
-  background: #23272b !important;
-  color: #e0e0e0 !important;
-  border-color: #333 !important;
+.dark-mode .device-table td,
+.dark-mode .user-table th,
+.dark-mode .user-table td {
+  background: #25293c !important;
+  color: #ffffff !important;
+  border-color: #4e4f82 !important;
 }
+
 .dark-mode .sidebar {
-  background: #23272b !important;
+  background: #2f3349 !important;
 }
+
 .dark-mode .topbar {
-  background: #111 !important;
+  background: #2f3349 !important;
   color: #fff !important;
 }
-.dark-mode .userRoleDisplay {
+
+.dark-mode .userRoleDisplay,
+.dark-mode .topbar-title,
+.dark-mode .topbar-logo-title,
+.dark-mode .topbar-actions {
+  color: #ffffff !important;
+}
+
+.dark-mode .nav-link {
+  color: #cdd4f6 !important;
+}
+
+.dark-mode .nav-link.active,
+.dark-mode .nav-link:hover {
+  color: #fff !important;
+  background: #4e4f82 !important;
+}
+
+.dark-mode .logout-link,
+.dark-mode .signout-link {
+  color: #ffb3b3 !important;
+}
+
+.dark-mode .logout-link:hover,
+.dark-mode .signout-link:hover {
+  background: #5a5c8a !important;
   color: #fff !important;
 }
-.user-role-container {
+
+.dark-mode .search-box input {
+  color: #fff !important;
+}
+
+.dark-mode .register-btn,
+.dark-mode .add-btn,
+.dark-mode .topbar button {
+  background: #4e4f82 !important;
+  color: #fff !important;
+  border: none;
+}
+
+.dark-mode .register-btn:hover,
+.dark-mode .add-btn:hover,
+.dark-mode .topbar button:hover {
+  background: #5a5c8a !important;
+}
+
+.dark-mode .sidebar-arrow,
+.dark-mode .sidebar-hamburger {
+  background: #7367f0 !important;
+  color: #fff !important;
+  border-color: #7367f0;
+}
+
+.dark-mode .user-table td .user-link:hover {
+  color: #fff !important;
+  text-decoration: underline;
+}
+
+/* Help Widget Styles */
+.help-widget {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
+  cursor: pointer;
+  z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border: none;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
 }
-.user-icon {
+
+.help-widget:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(0, 123, 255, 0.4);
+}
+
+.help-widget:active {
+  transform: scale(0.95);
+}
+
+/* Help Modal Overlay */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.help-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.help-modal-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-modal-title {
   font-size: 1.5em;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  text-align: center;
 }
-.dark-mode .nav-link {
-  color: #b0b0b0 !important;
+
+.help-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
-.dark-mode .nav-link.active {
+
+.help-modal-close:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.help-modal-content {
+  padding: 24px 32px 32px;
+}
+
+/* Search Section */
+.help-search-section {
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.help-search-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.help-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.help-search-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.help-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 18px;
+}
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+/* Contextual Help Section */
+.contextual-help {
+  background: #f8f9ff;
+  border: 1px solid #e1e5ff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.contextual-help h4 {
+  margin: 0 0 12px 0;
+  color: #007bff;
+  font-size: 1.1em;
+}
+
+.contextual-help ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.contextual-help li {
+  margin-bottom: 8px;
+  color: #555;
+}
+
+/* Quick Links Section */
+.help-quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.help-quick-link {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.help-quick-link:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.help-quick-link-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+/* FAQ Section */
+.help-faq-section {
+  margin-bottom: 24px;
+}
+
+.help-faq-item {
+  border-bottom: 1px solid #eee;
+  padding: 16px 0;
+}
+
+.help-faq-question {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-faq-answer {
+  color: #666;
+  line-height: 1.5;
+  display: none;
+  padding-top: 8px;
+}
+
+.help-faq-answer.show {
+  display: block;
+}
+
+.help-faq-toggle {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #007bff;
+  transition: transform 0.2s ease;
+}
+
+.help-faq-toggle.rotated {
+  transform: rotate(180deg);
+}
+
+/* Contact Section */
+.help-contact-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.help-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #555;
+}
+
+.help-contact-item:last-child {
+  margin-bottom: 0;
+}
+
+.help-contact-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+/* Dark Mode Support */
+.dark-mode .help-widget {
+  background: linear-gradient(135deg, #4e4f82, #7367f0);
+  box-shadow: 0 4px 20px rgba(78, 79, 130, 0.3);
+}
+
+.dark-mode .help-widget:hover {
+  box-shadow: 0 6px 25px rgba(78, 79, 130, 0.4);
+}
+
+.dark-mode .help-modal {
+  background: #2f3349;
+  color: #fff;
+}
+
+.dark-mode .help-modal-header {
+  border-bottom-color: #4e4f82;
+}
+
+.dark-mode .help-modal-title {
+  color: #fff;
+}
+
+.dark-mode .help-modal-close {
+  color: #cdd4f6;
+}
+
+.dark-mode .help-modal-close:hover {
+  background: #4e4f82;
+  color: #fff;
+}
+
+.dark-mode .help-search-input {
+  background: #25293c;
+  border-color: #4e4f82;
+  color: #fff;
+}
+
+.dark-mode .help-search-input:focus {
+  border-color: #7367f0;
+}
+
+.dark-mode .contextual-help {
+  background: #25293c;
+  border-color: #4e4f82;
+}
+
+.dark-mode .help-quick-link {
+  background: #25293c;
+  border-color: #4e4f82;
+  color: #cdd4f6;
+}
+
+.dark-mode .help-quick-link:hover {
+  background: #4e4f82;
+  border-color: #7367f0;
+  color: #fff;
+}
+
+.dark-mode .help-faq-question {
+  color: #fff;
+}
+
+.dark-mode .help-faq-answer {
+  color: #cdd4f6;
+}
+
+.dark-mode .help-contact-section {
+  background: #25293c;
+}
+
+.dark-mode .help-contact-item {
+  color: #cdd4f6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .help-widget {
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .help-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .help-modal-header,
+  .help-modal-content {
+    padding: 16px 20px;
+  }
+  
+  .help-quick-links {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark mode for support and info bar */
+body.dark-mode .deviceInfoBar {
+  background: #25293c !important;
+  color: #cdd4f6 !important;
+}
+
+body.dark-mode .sync-button {
+  background: #4e4f82 !important;
   color: #fff !important;
-  background: #333 !important;
 }
-.dark-mode .logout-link {
-  color: #ffb3b3 !important;
+
+body.dark-mode .dashboard-body {
+  background: #25293c !important;
+}
+
+body.dark-mode .support-header,
+body.dark-mode .support-title {
+  color: #cdd4f6 !important;
+}
+
+body.dark-mode .faq-card,
+body.dark-mode .contact-card {
+  background: #2f3349 !important;
+  color: #cdd4f6 !important;
+  box-shadow: 0 2px 8px rgba(78,79,130,0.12);
+}
+
+body.dark-mode .faq-card h3,
+body.dark-mode .contact-card h3 {
+  color: #fff !important;
+}
+
+body.dark-mode .faq-card li {
+  border-bottom: 1px solid #4e4f82 !important;
+  color: #cdd4f6 !important;
+}
+
+body.dark-mode .contact-card input,
+body.dark-mode .contact-card textarea {
+  background: #25293c !important;
+  color: #fff !important;
+  border: 1px solid #4e4f82 !important;
+}
+
+body.dark-mode .contact-card button {
+  background: #7367f0 !important;
+  color: #fff !important;
+}
+
+body.dark-mode .contact-card button:hover {
+  background: #4e4f82 !important;
+}
+
+@media (max-width: 900px) {
+  body.dark-mode .support-center-row {
+    flex-direction: column;
+    gap: 24px;
+  }
+  body.dark-mode .faq-card,
+  body.dark-mode .contact-card {
+    max-width: 100%;
+    min-width: 0;
+  }
 }

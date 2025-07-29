@@ -6,44 +6,7 @@
   <title>Elevator Errors | EMS</title>
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
-  <style>
-    body, html { background: #f5f7fa; margin: 0; padding: 0; }
-    .dashboard-body { display: flex; }
-    .main-content { margin-left: 200px; padding: 0px 30px 30px 30px; background: #f8f9fa; min-width: 0;overflow-y: auto;}
-    .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:10px 0 20px 0;padding:8px 26px 12px 26px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
-    .device-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-    .device-card-body {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: space-between;
-      width: 100%;
-    }
-    
-    .device-field {
-      flex: 1 1 180px;
-      min-width: 160px;
-      color: #fff;
-      font-size: 0.8em;
-    } 
-    
-    .device-field span {
-      font-weight: 600;
-      display: inline-block;
-      margin-top: 4px;
-      font-size: 1.2em;
-    }
-    
-    .device-tabs { display: flex; margin-bottom: 0; }
-    .device-tab { flex: 1; background: #f8f9fa; color: #333; border: none; border-radius: 8px 8px 0 0; padding: 12px 0; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; margin-right: 2px; }
-    .device-tab.active, .device-tab:hover { background: #43a047; color: #fff; }
-    .device-info-panel { background: #fff; border-radius: 0 0 8px 8px; margin: 0 0 30px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 28px 32px;overflow-y: auto; }
-    .device-info-title { font-size: 1.2em; font-weight: 600; margin-bottom: 0px; color: #007bff; display: flex; align-items: center; }
-    .error-entry { border-bottom: 1px solid #eee; padding: 12px 0px 0px 0px; }
-    .error-entry h4 { margin: 0 0 6px 0; font-size: 1em; color: #222; }
-    .error-entry p { margin: 0; color: #666; font-size: 0.95em; }
-    @media(max-width:768px){ .sidebar{ position:fixed; top:0; left:-220px; z-index:1000; transition:left 0.3s ease; } .sidebar.show{ left:0; } .main-content{ margin-left:0; } .sidebar-hamburger{ display:block; } }
-  </style>
+  <link rel="stylesheet" href="css/stats.css" />
 </head>
 <body class="dashboard-body">
   <header class="topbar">
@@ -73,7 +36,7 @@
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
     <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
+    <li class="nav-link active" onclick="navi('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
     </ul>
@@ -83,7 +46,7 @@
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <main class="main-content">
     <!-- Device Info Bar -->
-    <div id="deviceInfoBar" style="background:#f8f9fa;padding:10px 40px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:0.8em;font-weight:500;">
+    <div id="deviceInfoBar" class="deviceInfoBar">
       <span>Status: <span id="deviceStatus">-</span></span>
       <span>Last Upload: <span id="deviceLastUpload">-</span></span>
       <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
@@ -177,7 +140,7 @@
         // Device Card
         //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
         document.getElementById('deviceId').textContent = telemetry.DeviceName || 'NA';
-        document.getElementById('deviceIdValue').textContent = telemetry.DeviceId || telemetry.tb_device_id || 'NA';
+        document.getElementById('deviceIdValue').textContent = telemetry.ID ||telemetry.DeviceId|| 'NA';
         document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
         document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
         document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';

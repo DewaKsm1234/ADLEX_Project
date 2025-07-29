@@ -11,8 +11,7 @@
     .device-table th, .device-table td { padding: 12px; border: 1px solid #ddd;text-align: center; }
     .device-table th { background: #f4f4f4; }
     .sidebar { width: 200px; float: left; background: #f0f0f0; height: 100vh-60px; justify-content: space-between; }
-    .main-content { margin-left: 220px; padding: 20px; }
-    .download {position:absolute;right:10px;top:10px;padding:8px 5px;font-size:1em;background:#007bff;color:#fff;border:none;border-radius:6px;cursor:pointer;}
+    .download {padding:5px 3px;font-size:1em;background:#007bff;color:#fff;border:none;border-radius:6px;cursor:pointer;}
     .mapped-device-row { background: #e6e6e6; }
     </style>
 </head>
@@ -58,7 +57,10 @@
   <div class="main-content">
     <!-- add content here -->
      
-    <div id="deviceStatsBar" style="display:flex;gap:30px;justify-content:center;align-items:center;padding:18px 0 8px 0;font-size:1.1em;position:relative;">
+    <div id="deviceLoading" style="text-align:center; margin: 20px; display:none;">
+      <span>Loading devices...</span>
+    </div>
+    <div id="deviceStatsBar" style="display:flex;gap:30px;justify-content:center;align-items:center;padding:0 px 0 8px 0;position:relative;">
       <div class="search-panel">
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search" oninput="filterLocation()" /> 
@@ -72,11 +74,17 @@
       <span>Mapped: <b id="statMappedDevices">-</b></span>
       <span>Unmapped: <b id="statUnmappedDevices">-</b></span>
       <!-- <button class="download" id="downloadDevicesBtn" >⬇️ Download</button> -->
-      <button class="download" id="downloadSelectedBtn">⬇️ Download </button>
+      <button class="download" id="downloadSelectedBtn">Download</button>
+      <div id="exportOptions" style="display:none; position:absolute; z-index:10; background:#fff; border:1px solid #ccc; border-radius:6px; padding:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <button class="download" id="exportCSV">CSV</button>
+        <button class="download" id="exportXLS">XLS</button>
+        <button class="download" id="exportPDF">PDF</button>
+      </div>
     </div>
     <!-- <div style="display:flex;justify-content:center;margin:20px 0;">
       <canvas id="deviceDonutChart" style="width:30px;height:30px;"></canvas>
     </div> -->
+    <!-- Table structure: always visible -->
     <table class="device-table" id="deviceTable">
       <thead>
         <tr>  
@@ -84,33 +92,44 @@
           <th>Device Name</th>
           <th>Device Id</th>
           <th>Serial Number</th>
+          <th>Address</th>
           <th>Location</th>
           <th>Status</th>
         </tr>
       </thead>
       <tbody>
-        <!-- Filled by JS -->
+    <!-- Loading row, shown by default -->
+    <tr id="deviceLoadingRow">
+      <td colspan="7" style="text-align:center; color:#007bff;">Loading devices...</td>
+    </tr>
       </tbody>
     </table>
   </div>
   <script>
-    
     async function loadDevices() {
-      const res = await fetch('/api/devices', { headers: { 'x-user-role': 'admin' } });
-      const devices = await res.json();
-      lastLoadedDevices = devices;
       const tbody = document.getElementById('deviceTable').querySelector('tbody');
-      tbody.innerHTML = '';
+      // Show loading row
+      tbody.innerHTML = `<tr id="deviceLoadingRow">
+        <td colspan="7" style="text-align:center; color:#007bff;">Loading devices...</td>
+      </tr>`;
+
+      try {
+        // Fetch devices
+        const res = await fetch('/api/devices', { headers: { 'x-user-role': 'admin' } });
+        if (!res.ok) throw new Error('Failed to fetch devices');
+        const devices = await res.json();
+        lastLoadedDevices = devices;
+
+        // Fetch mapped device IDs
+        const mappedRes = await fetch('/api/user-devices');
+        if (!mappedRes.ok) throw new Error('Failed to fetch mapped devices');
+        const mappedData = await mappedRes.json();
+        const mappedIds = new Set(mappedData.map(d => d.tb_device_id));
     
       // Calculate stats
       const total = devices.length;
       const active = devices.filter(d => (d.Status || '').toLowerCase() === 'active').length;
       const inactive = devices.filter(d => (d.Status || '').toLowerCase() === 'inactive').length;
-    
-      // Fetch mapped device IDs
-      const mappedRes = await fetch('/api/user-devices');
-      const mappedData = await mappedRes.json();
-      const mappedIds = new Set(mappedData.map(d => d.tb_device_id));
       const mapped = devices.filter(d => mappedIds.has(d.tb_device_id)).length;
       const unmapped = total - mapped;
     
@@ -121,15 +140,19 @@
       document.getElementById('statMappedDevices').textContent = mapped;
       document.getElementById('statUnmappedDevices').textContent = unmapped;
       
-      //renderDeviceDonutChart({ total, active, mapped });
-      // Render table
+        // Render table rows
+        if (devices.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888;">No devices found.</td></tr>`;
+        } else {
+          tbody.innerHTML = '';
       devices.forEach((dev, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><input type="checkbox" class="device-row-checkbox" data-idx="${idx}"></td>
           <td>${dev.device_name || '-'}</td>
-          <td>${dev.DeviceId || '-'}</td>
+          <td>${dev.ID || dev.DeviceId || '-'}</td>
           <td>${dev.SerialNum || '-'}</td>
+          <td>${dev.address || '-'}</td>
           <td>${dev.Location || '-'}</td>
           <td>${dev.Status || '-'}</td>
         `;
@@ -138,6 +161,8 @@
         }
         tbody.appendChild(tr);
       });
+        }
+
       // Add select all logic
       const selectAll = document.getElementById('selectAllDevices');
       selectAll.checked = false;
@@ -151,6 +176,12 @@
           if (!this.checked) selectAll.checked = false;
         });
       });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:red;text-align:center;">${err.message}</td></tr>`;
+      } finally {
+        // Hide loading row
+        document.getElementById('deviceLoadingRow').style.display = 'none';
+      }
     }
     function filterLocation() {
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -169,19 +200,46 @@
     }
     
     window.addEventListener('DOMContentLoaded', loadDevices);
-    document.getElementById('downloadSelectedBtn').onclick = function() {
+    document.getElementById('downloadSelectedBtn').onclick = function(e) {
       // Only download checked devices (visible/filtered)
       const checkboxes = Array.from(document.querySelectorAll('.device-row-checkbox:checked'));
       if (!checkboxes.length) return alert('No devices selected!');
-      const tbody = document.getElementById('deviceTable').querySelector('tbody');
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      const selectedDevices = checkboxes.map(cb => lastLoadedDevices[parseInt(cb.dataset.idx)]);
-      downloadCSVFromDevices(selectedDevices);
+      // Only include checked checkboxes that are in visible rows
+      const selectedDevices = checkboxes
+        .map(cb => cb.closest('tr'))
+        .filter(row => row && row.style.display !== 'none')
+        .map(row => lastLoadedDevices[parseInt(row.querySelector('.device-row-checkbox').dataset.idx)]);
+      // Show export options popup
+      const exportOptions = document.getElementById('exportOptions');
+      exportOptions.style.display = 'block';
+      exportOptions.style.left = (e.target.offsetLeft) + 'px';
+      exportOptions.style.top = (e.target.offsetTop + e.target.offsetHeight + 5) + 'px';
+      // Store selected devices for export
+      window.selectedDevicesForExport = selectedDevices;
+    };
+    // Hide export options when clicking outside
+    document.addEventListener('click', function(e) {
+      const exportOptions = document.getElementById('exportOptions');
+      if (!exportOptions.contains(e.target) && e.target.id !== 'downloadSelectedBtn') {
+        exportOptions.style.display = 'none';
+      }
+    });
+    document.getElementById('exportCSV').onclick = function() {
+      downloadCSVFromDevices(window.selectedDevicesForExport || []);
+      document.getElementById('exportOptions').style.display = 'none';
+    };
+    document.getElementById('exportXLS').onclick = function() {
+      downloadXLSFromDevices(window.selectedDevicesForExport || []);
+      document.getElementById('exportOptions').style.display = 'none';
+    };
+    document.getElementById('exportPDF').onclick = function() {
+      downloadPDFfromDevices(window.selectedDevicesForExport || []);
+      document.getElementById('exportOptions').style.display = 'none';
     };
     function downloadCSVFromDevices(devices) {
       if (!devices.length) return;
       // Define the columns you want to export
-      const columns = ['device_name', 'DeviceId', 'SerialNum', 'Location', 'Status'];
+      const columns = ['Device_name', 'DeviceId', 'SerialNum', 'Address', 'Location', 'Status'];
       const header = columns.map(col => `"${col}"`).join(',');
       const rows = devices.map(dev =>
         columns.map(col => `"${dev[col] || ''}"`).join(',')
@@ -200,5 +258,8 @@
     }
   </script>
   <script src="js/script.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>

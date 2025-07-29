@@ -83,7 +83,6 @@ form button:hover {
   width: 400px;
   height: 420px;
   background: #444;
-  border-radius: 18px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   overflow: hidden;
   display: flex;
@@ -102,12 +101,10 @@ form button:hover {
 }
 .left-door {
   left: 0;
-  border-radius: 18px 0 0 18px;
   transform: translateX(0);
 }
 .right-door {
   right: 0;
-  border-radius: 0 18px 18px 0;
   transform: translateX(0);
 }
 .open-left {

@@ -7,7 +7,7 @@
   <style>
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
-    .calendar-container { display: flex; gap: 10px; margin-bottom: 10px; }
+    .calendar-container { display: flex; gap: 10px; }
     .download-btn {padding:5px 3px;font-size:1em;background:#007bff;color:#fff;border:none;border-radius:6px;cursor:pointer;}
    </style>
 </head>
@@ -43,8 +43,8 @@
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
   <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
+    <li class="nav-link active" onclick="navigaate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
@@ -53,18 +53,23 @@
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <main class="main-content">
     <!-- Top actions: search and register -->
-    <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
-      <div class="calendar-container">
-        <label>From: <input type="date" id="fromDate" /></label>
-        <label>To: <input type="date" id="toDate" /></label>
-        <button id="downloadSelectedBtn" class="download-btn">Download</button>
-      </div>
+     
+    <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;  ">
       <div class="search-panel">
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="Search" oninput="filterLogs()" />
           <span class="search-icon">🔍</span>
-          
         </div>
+      </div>
+      <div class="calendar-container">
+        <label>From: <input type="date" id="fromDate" /></label>
+        <label>To: <input type="date" id="toDate" /></label>
+        <select id="downloadFormat">
+          <option value="csv">CSV</option>
+          <option value="xls">Excel (XLSX)</option>
+          <!-- <option value="pdf">PDF</option> -->
+        </select>
+        <button id="downloadSelectedBtn" class="download-btn">Download</button>
       </div>
     </div>
   
@@ -76,13 +81,8 @@
         <th>Sr No</th>
         <th>Device ID</th>
         <th>Device Name</th>
+        <th>Address</th>
         <th>City</th>
-        <th>Current</th>
-        <th>DC Bus</th>
-        <th>Speed</th>
-        <th>RPM</th>
-        <th>Position</th>
-        <!-- <th>Actions</th> -->
       </tr>
     </thead>
     <tbody id="logsBody"></tbody>
@@ -99,8 +99,9 @@
         row.innerHTML = `
           <td><input type="checkbox" class="device-row-checkbox" data-idx="${idx}"></td>
           <td>${idx + 1}</td>
-          <td>${device.DeviceId || device.tb_device_id || '-'}</td>
+          <td>${device.ID || device.DeviceId || '-'}</td>
           <td>${device.device_name || '-'}</td>
+          <td>${device.address || '-'}</td>
           <td>${device.city || '-'}</td>
           <!-- <td>${device.Current ?? device.current ?? 0}</td>
           <td>${device.dcbus ?? 0}</td>
@@ -146,40 +147,14 @@
       renderLogsTable(data);
     }
   
-    async function downloadSelectedLogs() {
-      const from = document.getElementById('fromDate').value;
-      const to = document.getElementById('toDate').value;
-      if (!from || !to) {
-        alert('Please select both From and To dates');
-        return;
-      }
-  
-      const checkboxes = document.querySelectorAll('.device-row-checkbox:checked');
-      if (checkboxes.length === 0) {
-        alert('Please select at least one device to download logs');
-        return;
-      }
-  
-      const selectedIds = Array.from(checkboxes).map(cb => {
-        const idx = cb.getAttribute('data-idx');
-        return allLogsData[idx]?.tb_device_id;
-      }).filter(Boolean);
-  
-      if (selectedIds.length === 0) {
-        alert('No valid device IDs found.');
-        return;
-      }
-  
-      const idsParam = selectedIds.join(',');
-      window.location.href = `/api/logs/download-selected?ids=${idsParam}&from=${from}&to=${to}`;
-    }
   
     function filterLogs() {
       const search = document.getElementById('searchInput').value.trim().toLowerCase();
       const filtered = allLogsData.filter(device =>
         (device.device_name && device.device_name.toLowerCase().includes(search)) ||
         (device.city && device.city.toLowerCase().includes(search)) ||
-        (device.tb_device_id && device.tb_device_id.toLowerCase().includes(search))
+        (device.tb_device_id && device.tb_device_id.toLowerCase().includes(search)) ||
+        (device.address && device.address.toLowerCase().includes(search))
       );
       renderLogsTable(filtered);
     }
@@ -187,6 +162,39 @@
     fetchLatestLogs();
     setInterval(fetchLatestLogs, 30000);
     document.getElementById('searchInput').oninput = filterLogs;
+    document.getElementById('downloadSelectedBtn').onclick = function() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      const format = document.getElementById('downloadFormat').value;
+      if (!from || !to) {
+        alert('Please select both From and To dates');
+        return;
+      }
+      const checkboxes = Array.from(document.querySelectorAll('.device-row-checkbox:checked'));
+      if (!checkboxes.length) {
+        alert('Please select at least one device to download logs');
+        return;
+      }
+      // Only include checked checkboxes that are in visible rows
+      const selectedRows = checkboxes
+        .map(cb => cb.closest('tr'))
+        .filter(row => row && row.style.display !== 'none');
+      if (!selectedRows.length) {
+        alert('No visible devices selected.');
+        return;
+      }
+      const selectedIds = selectedRows.map(row => {
+        const idx = parseInt(row.querySelector('.device-row-checkbox').dataset.idx);
+        const device = allLogsData[idx];
+        return device && (device.tb_device_id || device.DeviceId);
+      }).filter(Boolean);
+      if (!selectedIds.length) {
+        alert('No valid device IDs found.');
+        return;
+      }
+      // Download from server API as a single zip file
+      window.location.href = `/api/logs/download-selected?ids=${selectedIds.join(',')}&from=${from}&to=${to}&format=${format}`;
+    };
   </script>
   
   <script src="js/script.js"></script>

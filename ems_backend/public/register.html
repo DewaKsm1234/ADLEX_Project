@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Location</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/validation.js"></script>
+  <!-- <link rel="stylesheet" href="css/form-style.css"> -->
   <style>
     body {
       min-height: 100vh;
@@ -125,6 +127,29 @@
       .register-bg-shape.left { width: 180px; height: 180px; left: -60px; }
       .register-bg-shape.right { width: 160px; height: 160px; right: -50px; }
     }
+    /* input-validation.css - Visual feedback for real-time input validation
+   Add this to both register.html and register_super.html */
+
+/* Input states */
+.register-form input:focus,
+.form-container input:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25) !important;
+}
+
+.register-form input.valid,
+.form-container input.valid {
+  border-color: #28a745 !important;
+  background-color: #f8fff9 !important;
+}
+
+.register-form input.invalid,
+.form-container input.invalid {
+  border-color: #e74c3c !important;
+  background-color: #fff8f8 !important;
+}
+
+
   </style>
 </head>
 <body>
@@ -138,37 +163,56 @@
       <h2>Add Location</h2>
       <form id="registerForm" class="register-form">
         <div class="register-form-row">
-          <select name="device_id" id="deviceDropdown">
-            <option value="" style="color: #a9a9a9;">Assign Device</option>
-          </select>
-          <select name="supervisor_id" id="supervisorDropdown">
-            <option value="" style="color: #a9a9a9;">Assign Supervisor (optional)</option>
-          </select>
+            <select name="device_id" id="deviceDropdown">
+                <option value="" style="color: #a9a9c9;">Assign Device</option>
+            </select>
+            <select name="supervisor_id" id="supervisorDropdown">
+                <option value="" style="color: #a9a9c9;">Assign Supervisor (optional)</option>
+            </select>
         </div>
         <div class="register-form-row" id="deviceDetailsRow1" style="display:none;">
-          <input type="text" id="elevatorNumber" placeholder="Elevator Number" readonly>
-          <input type="text" id="serialNumber" placeholder="Serial Number" readonly>
+            <input type="text" id="elevatorNumber" placeholder="Elevator Number" readonly>
+            <input type="text" id="serialNumber" placeholder="Serial Number" readonly>
         </div>
         <div class="register-form-row" id="deviceDetailsRow2" style="display:none;">
-          <input type="text" id="macAddress" placeholder="MAC Address" readonly>
-          <input type="text" id="location" placeholder="Location" readonly>
+            <input type="text" id="macAddress" placeholder="MAC Address" readonly>
+            <input type="text" id="location" placeholder="Location" readonly>
         </div>
-        <input type="text" name="address" placeholder="Address | Building Name*" required>
+        
+        <div class="form-group">
+            <input type="text" name="address" id="addressInput" placeholder="Address | Building Name*" required maxlength="100">
+            <small class="validation-message" id="addressInput-error"></small>
+        </div>
+    
         <div class="register-form-row">
-          <input type="text" name="first_name" placeholder="First Name*" required>
-          <input type="text" name="last_name" placeholder="Last Name*" required>
+            <div class="form-group-inline">
+                <input type="text" name="first_name" id="firstNameInput" placeholder="First Name*" required maxlength="15">
+                <small class="validation-message" id="firstNameInput-error"></small>
+            </div>
+            <div class="form-group-inline">
+                <input type="text" name="last_name" id="lastNameInput" placeholder="Last Name*" required maxlength="15">
+                <small class="validation-message" id="lastNameInput-error"></small>
+            </div>
         </div>
-        <input type="email" name="email" placeholder="Email ID*" required>
-        <input type="text" name="phone" placeholder="Mobile Number*" required>
-
-        <!-- <button type="submit" class="register-btn">Register</button> -->
+        
+        <div class="form-group">
+            <input type="email" name="email" id="emailInput" placeholder="Email ID*" required maxlength="50">
+            <small class="validation-message" id="emailInput-error"></small>
+        </div>
+    
+        <div class="form-group">
+            <input type="text" name="phone" id="phoneNumberInput" placeholder="Mobile Number*" required maxlength="10">
+            <small class="validation-message" id="phoneNumberInput-error"></small>
+        </div>
+    
         <div class="button-row">
-          <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
-          <button type="submit" class="register-btn">Register</button>
+            <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+            <button type="submit" class="register-btn">Register</button>
         </div>
-      </form>
+    </form>
     </div>
   </div>
+  
   <script>
 
     async function loadSupervisors() {
@@ -249,15 +293,15 @@
       e.preventDefault();
       const formData = new FormData(e.target);
       const payload = Object.fromEntries(formData);
-      payload.username = (payload.first_name + payload.last_name).replace(/\s+/g, '');
       payload.password = 'default123';
       // Only send required fields
       const reqPayload = {
-        username: payload.username,
+        address: payload.address,
         password: payload.password,
         email: payload.email,
         phone: payload.phone,
-        address: payload.address,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
         device_id: payload.device_id,
         supervisor_id: payload.supervisor_id || null
       };
@@ -274,10 +318,7 @@
           fetch('/api/assign-device', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-role': 'admin' },
-            body: JSON.stringify({
-              username: reqPayload.username,
-              tb_device_id: reqPayload.device_id
-            })
+            body: JSON.stringify({ address: reqPayload.address, tb_device_id: reqPayload.device_id })
           })
           .then(r => r.json())
           .then(res => {

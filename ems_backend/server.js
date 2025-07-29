@@ -14,6 +14,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Import axios for HTTP requests to ThingsBoard
 const axios = require('axios');
 const PDFDocument = require('pdfkit');
+const archiver = require('archiver'); // Add at the top if not present
+const ExcelJS = require('exceljs'); // Add at the top if not present
 
 const TB_BASE_URL = 'https://thingsboard.cloud';
 const TB_USERNAME = 'rutuja.arekar@samsanlabs.com';
@@ -100,6 +102,7 @@ app.post('/api/login', async (req, res) => {
       success: true,
       username: rows[0].username,
       role: rows[0].role,
+      name: (rows[0].first_name || '') + ' ' + (rows[0].last_name || ''),
       message: 'Login successful. Device sync running in background.'
     });
 
@@ -115,18 +118,18 @@ app.post('/api/login', async (req, res) => {
 // Register new user (with device and supervisor assignment)
 app.post('/api/register',requireAdmin, async (req, res) => {
   const {
-    username, password, email, phone, address, tb_device_id, supervisor_id
+    address, password, email, phone, first_name, last_name, tb_device_id, supervisor_id
   } = req.body;
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
-    await conn.execute(
-      'INSERT INTO users_login (username, password, role) VALUES (?, ?, ?)',
-      [username, password, 'user']
-    );
+    // await conn.execute(
+    //   'INSERT INTO users_login (address, password, role) VALUES (?, ?, ?)',
+    //   [address, password, 'user']
+    // );
     const [userResult] = await conn.execute(
-      'INSERT INTO users (username, email, phone, address, supervisor_id) VALUES (?, ?, ?, ?, ?)',
-      [username, email, phone, address, supervisor_id || null]
+      'INSERT INTO users (address, email, phone, first_name, last_name, supervisor_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [address, email, phone, first_name, last_name, supervisor_id || null]
     );
     const user_id = userResult.insertId;
     // Map user to device if tb_device_id provided
@@ -162,16 +165,16 @@ app.get('/api/users', requireAdmin, async (req, res) => {
 
 // Assign supervisor to user
 app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
-  const { username, supervisor_id } = req.body;
+  const { address, supervisor_id } = req.body;
 
   // 🔍 Validate input
-  if (!username || !supervisor_id) {
-    return res.status(400).json({ error: 'Missing username or supervisor_id' });
+  if (!address || !supervisor_id) {
+    return res.status(400).json({ error: 'Missing address or supervisor_id' });
   }
 
   try {
     // ✅ Check if user exists
-    const [userRows] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
+    const [userRows] = await db.execute('SELECT id FROM users WHERE address = ?', [address]);
     if (userRows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -184,8 +187,8 @@ app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
 
     // 🔁 Update supervisor assignment
     await db.execute(
-      'UPDATE users SET supervisor_id = ? WHERE username = ?',
-      [supervisor_id, username]
+      'UPDATE users SET supervisor_id = ? WHERE address = ?',
+      [supervisor_id, address]
     );
 
     res.json({ success: true, message: 'Supervisor assigned successfully' });
@@ -199,10 +202,10 @@ app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
 
 // Assign Device to User
 app.post('/api/assign-device',  requireAdmin, async (req, res) => {
-  const { username, tb_device_id } = req.body;
+  const { address, tb_device_id } = req.body;
   try {
-    // Get user_id from username
-    const [userRows] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
+    // Get user_id from address
+    const [userRows] = await db.execute('SELECT id FROM users WHERE address = ?', [address]);
     if (userRows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -211,9 +214,8 @@ app.post('/api/assign-device',  requireAdmin, async (req, res) => {
     // Fetch telemetry from ThingsBoard for this device
     const tbToken = await getThingsBoardToken();
     const telemetryKeys = [
-      'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-      'GNSS_Latitude','Location','GNSS_Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
-      'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','Current','dcbus','DeviceId'
+      'ERR', 'CFL', 'POS', 'SPD', 'RPM', 'VBUS', 'CUR', 'ID', 'CSQ', 'LAT', 'LNG',
+      'TWTIME', 'TWCOUNT', 'DIRCHG', 'DIRCNT', 'TRVTIME', 'DOORA', 'DOORB', 'RDTIME', 'STPCNT','DeviceId','MacAddress'
     ];
     const response = await axios.get(
       `${TB_BASE_URL}/api/plugins/telemetry/DEVICE/${tb_device_id}/values/timeseries?keys=${telemetryKeys.join(',')}`,
@@ -248,14 +250,14 @@ app.post('/api/assign-device',  requireAdmin, async (req, res) => {
 });
 
 // Devices mapped for a specific user
-app.get('/api/user-devices/:username', requireAdmin, async (req, res) => {
+app.get('/api/user-devices/:address', requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT d.* FROM devices d
       JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
       JOIN users u ON ud.user_id = u.id
-      WHERE u.username = ?
-    `, [req.params.username]);
+      WHERE u.address = ?
+    `, [req.params.address]);
  
     // console.log("Loaded devices for user:", rows);
 
@@ -295,6 +297,24 @@ app.get('/api/device-details/:tb_device_id', requireAdmin, async (req, res) => {
   }
 });
 
+// Get user information for a specific device
+app.get('/api/device-user/:tb_device_id', async (req, res) => {
+  const { tb_device_id } = req.params;
+  try {
+    const [rows] = await db.execute(
+      `SELECT u.first_name, u.last_name, u.email, u.phone, u.address
+       FROM users u
+       JOIN user_devices ud ON u.id = ud.user_id
+       WHERE ud.tb_device_id = ?`,
+      [tb_device_id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'No user assigned to this device' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ---------------- SUPERVISORS ENDPOINTS -------------------
 // Register supervisor
@@ -302,7 +322,7 @@ app.post('/api/register-supervisor', requireAdmin, async (req, res) => {
   const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
   try {
     await db.execute(
-      'INSERT INTO users_login (username, password, role) VALUES (?, ?, ?)',
+      'INSERT INTO users_login (address, password, role) VALUES (?, ?, ?)',
       [supervisor_id, password, 'supervisor']
     );
     await db.execute(
@@ -386,6 +406,7 @@ app.get('/api/supervisor-users-devices/:supervisor_id', async (req, res) => {
  * Returns: latest telemetry for the device
  */
 app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
+
   const tb_device_id = req.params.tb_device_id;
   const tbToken = await getThingsBoardToken();//To get token  
 
@@ -397,6 +418,11 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
       { headers: { 'Authorization': `Bearer ${tbToken}` } }
     );
     deviceName = deviceInfoRes.data.name || '';
+    const isActive = deviceInfoRes.data.active;
+    if (isActive === false) {
+      console.log('Device Inactive');
+      return res.status(400).json({ error: 'Device is inactive. Telemetry not synced.' });
+    }
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch device info' });
   }
@@ -408,9 +434,9 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
 
   // List of telemetry keys to fetch from ThingsBoard
   const telemetryKeys = [
-    'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-    'GNSS_Latitude','Location','GNSS_Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
-    'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','Current','dcbus','DeviceId'
+    'MacAddress', 'SerialNum', 'Location', 'Status', 'DeviceId',
+    'ERR', 'CFL', 'POS', 'SPD', 'RPM', 'VBUS', 'CUR', 'ID', 'CSQ', 'LAT', 'LNG',
+    'TWTIME', 'TWCOUNT', 'DIRCHG', 'DIRCNT', 'TRVTIME', 'DOORA', 'DOORB', 'RDTIME', 'STPCNT'
   ];
 
   try {
@@ -445,7 +471,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
 
     // Step 4: Fetch username mapped to this device
     const [userRows] = await db.execute(`
-    SELECT u.username
+    SELECT u.address
     FROM user_devices ud
     JOIN users u ON ud.user_id = u.id
     WHERE ud.tb_device_id = ?
@@ -453,12 +479,19 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
     `, [tb_device_id]);
 
 
-    telemetry.username = userRows.length > 0 ? userRows[0].username : 'NA';
+    telemetry.address = userRows.length > 0 ? userRows[0].address : 'NA';
 
     // Step 5: Respond to frontend
+    const [rows] = await db.execute(
+      'SELECT log_time FROM device_logs WHERE tb_device_id = ? ORDER BY log_time DESC LIMIT 1',
+      [tb_device_id]
+    );
+    const log_time = rows.length ? rows[0].log_time : null;
+
     res.json({
       tb_device_id,
-      ...telemetry
+      ...telemetry,
+      log_time // <-- include this in the response
     });
 
   } catch (err) {
@@ -479,10 +512,18 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
         const token = await getThingsBoardToken();
         console.log('✅ Auth token acquired');
     
+        // 1. Fetch all device infos (once per job run)
         const tbResponse = await axios.get(
           `${TB_BASE_URL}/api/deviceInfos/all?pageSize=1000&page=0`,
           { headers: { 'X-Authorization': `Bearer ${token}` } }
         );
+        const deviceInfos = tbResponse.data.data || [];
+        const activeMap = {};
+        deviceInfos.forEach(device => {
+          if (device.id && device.id.id) {
+            activeMap[device.id.id] = device.active;
+          }
+        });
     
         const devices = tbResponse.data?.data || [];
         console.log(`📦 Fetched ${devices.length} devices from ThingsBoard.`);
@@ -581,22 +622,47 @@ app.listen(PORT, () => {
 });
 
 // Get detailed telemetry devices assigned to a user
-app.get('/api/user-devices-details/:username', async (req, res) => {
-  const username = req.params.username;
+app.get('/api/user-devices-details/:address', async (req, res) => {
+  const address = req.params.address;
   try {
     const [rows] = await db.execute(`
       SELECT td.*, ud.tb_device_id
       FROM user_devices ud
       JOIN users u ON ud.user_id = u.id
       JOIN Telemetry_Device td ON ud.tb_device_id = td.tb_device_id
-      WHERE u.username = ?
-    `, [username]);
+      WHERE u.address = ?
+    `, [address]);
 
     if (rows.length === 0) {
-      console.log(`[INFO] No telemetry devices found for user '${username}'`);
+      console.log(`[INFO] No telemetry devices found for user '${address}'`);
+      return res.json([]);
     }
 
-    res.json(rows);
+    // Fetch all device infos from ThingsBoard to get active status
+    let activeMap = {};
+    try {
+      const token = await getThingsBoardToken();
+      const tbResponse = await axios.get(
+        `${TB_BASE_URL}/api/deviceInfos/all?pageSize=1000&page=0`,
+        { headers: { 'X-Authorization': `Bearer ${token}` } }
+      );
+      const deviceInfos = tbResponse.data.data || [];
+      deviceInfos.forEach(device => {
+        if (device.id && device.id.id) {
+          activeMap[device.id.id] = device.active;
+        }
+      });
+    } catch (err) {
+      console.error('[WARN] Could not fetch deviceInfos for active status:', err.message);
+    }
+
+    // Add active status to each device
+    const result = rows.map(dev => ({
+      ...dev,
+      active: activeMap[dev.tb_device_id] === true
+    }));
+
+    res.json(result);
   } catch (err) {
     console.error('[ERROR] Failed to fetch user device details:', err);
     res.status(500).json({ error: 'Failed to load user device details' });
@@ -611,7 +677,12 @@ app.get('/api/user-devices', async (req, res) => {
 //only for devices page (loading all devices)
 app.get('/api/devices', requireAdmin, async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT tb_device_id,device_name, DeviceId, SerialNum, Location, Status FROM devices');
+    const [rows] = await db.execute(`
+      SELECT d.*, u.address
+      FROM devices d
+      LEFT JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
+      LEFT JOIN users u ON ud.user_id = u.id
+    `);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -625,11 +696,34 @@ const fetchAndSaveTelemetry = async () => {
   try {
     const [devices] = await db.execute('SELECT tb_device_id,DeviceId FROM devices');
     const token = await getThingsBoardToken();
-    const telemetryKeys = ['Current', 'dcbus', 'speed', 'rpm', 'position'];
+    const telemetryKeys = ['CUR', 'VBUS', 'SPD', 'RPM', 'POS'];
 
+    // Fetch all device infos from ThingsBoard
+    const tbResponse = await axios.get(
+      `${TB_BASE_URL}/api/deviceInfos/all?pageSize=1000&page=0`,
+      { headers: { 'X-Authorization': `Bearer ${token}` } }
+    );
+    const deviceInfos = tbResponse.data.data || [];
+    const activeMap = {};
+    deviceInfos.forEach(device => {
+      if (device.id && device.id.id) {
+        activeMap[device.id.id] = device.active;
+      }
+    });
+
+    // Now, loop through your DB devices (not deviceInfos)
+    let anyActive = false;
+    let savedAt = null;
+    let savedId = null;
     for (const device of devices) {
       const tb_device_id = device.tb_device_id;
       const DeviceId = device.DeviceId || null;
+      const isActive = activeMap[tb_device_id];
+      console.log(`Device ${tb_device_id} active status:`, isActive);
+      if (!isActive) {
+        console.log('Device Inactive');
+        continue; // Skip saving telemetry for inactive devices
+      }
       const telemetryRes = await axios.get(
         `${TB_BASE_URL}/api/plugins/telemetry/DEVICE/${tb_device_id}/values/timeseries?keys=${telemetryKeys.join(',')}`,
         { headers: { 'X-Authorization': `Bearer ${token}` } }
@@ -637,11 +731,18 @@ const fetchAndSaveTelemetry = async () => {
 
       const data = telemetryKeys.map(k => telemetryRes.data?.[k]?.[0]?.value ?? null);
       await db.execute(
-        `INSERT INTO device_logs (tb_device_id,DeviceId, Current, dcbus, speed, rpm, position) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [tb_device_id,DeviceId, ...data]
+        `INSERT INTO device_logs (tb_device_id,DeviceId, CUR, VBUS, SPD, RPM, POS) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [tb_device_id, DeviceId, ...data]
       );
+      anyActive = true;
+      savedAt = new Date().toLocaleTimeString();
+      savedId = tb_device_id;
     }
-    console.log('✅ Telemetry saved at', new Date().toLocaleTimeString());
+    if (anyActive) {
+      console.log(`✅ Telemetry saved at ${savedAt} for ID = '${savedId}'`);
+    } else {
+      console.log('All devices inactive');
+    }
   } catch (err) {
     console.error('❌ Error saving telemetry:', err.message);
   }
@@ -662,14 +763,16 @@ setInterval(() => {
 app.get('/api/logs/latest', async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT d.*, dev.device_name, dev.Location as city
+      SELECT d.*, dev.device_name, dev.Location as city, u.address
       FROM device_logs d
       INNER JOIN (
         SELECT tb_device_id, MAX(log_time) AS latest
         FROM device_logs
         GROUP BY tb_device_id) AS latest_logs
         ON d.tb_device_id = latest_logs.tb_device_id AND d.log_time = latest_logs.latest
-      LEFT JOIN devices dev ON d.tb_device_id = dev.tb_device_id;
+      LEFT JOIN devices dev ON d.tb_device_id = dev.tb_device_id
+      LEFT JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
+      LEFT JOIN users u ON ud.user_id = u.id;
     `);
     res.json(rows);
   } catch (err) {
@@ -712,75 +815,128 @@ app.get('/api/logs/supervisor-latest', async (req, res) => {
 });
 
 // 4. API: Download logs in date range
-app.get('/api/logs/download/:tb_device_id', async (req, res) => {
-  const { tb_device_id } = req.params;
-  const { from, to } = req.query;
-
-  console.log(`📥 Download requested for device: ${tb_device_id}`);
-  console.log(`➡️ Date range: ${from} to ${to}`);
-
-  try {
-    const [rows] = await db.execute(
-      `SELECT * FROM device_logs WHERE tb_device_id = ? AND log_time BETWEEN ? AND ? ORDER BY log_time`,
-      [tb_device_id, from, to]
-    );
-
-    console.log(`✅ Rows found: ${rows.length}`);
-
-    // // --- PDF Generation ---
-    // const doc = new PDFDocument({ margin: 30, size: 'A4' });
-    // res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_logs.pdf`);
-    // res.setHeader('Content-Type', 'application/pdf');
-    // doc.pipe(res);
-
-    // doc.fontSize(16).text(`Device Logs for ${tb_device_id}`, { align: 'center' });
-    // doc.moveDown();
-    // doc.fontSize(12);
-    // // Table header
-    // doc.text('Sr No', 30, doc.y, { continued: true });
-    // doc.text('Device ID', 70, doc.y, { continued: true });
-    // doc.text('Time', 150, doc.y, { continued: true });
-    // doc.text('Current', 250, doc.y, { continued: true });
-    // doc.text('DC Bus', 320, doc.y, { continued: true });
-    // doc.text('Speed', 390, doc.y, { continued: true });
-    // doc.text('RPM', 450, doc.y, { continued: true });
-    // doc.text('Position', 500, doc.y);
-    // doc.moveDown(0.5);
-    // // Table rows
-    // rows.forEach((r, idx) => {
-    //   doc.text(idx + 1, 30, doc.y, { continued: true });
-    //   doc.text(r.tb_device_id, 70, doc.y, { continued: true });
-    //   doc.text(r.log_time, 150, doc.y, { continued: true });
-    //   doc.text(r.Current == null ? 0 : r.Current, 250, doc.y, { continued: true });
-    //   doc.text(r.dcbus == null ? 0 : r.dcbus, 320, doc.y, { continued: true });
-    //   doc.text(r.speed == null ? 0 : r.speed, 390, doc.y, { continued: true });
-    //   doc.text(r.rpm == null ? 0 : r.rpm, 450, doc.y, { continued: true });
-    //   doc.text(r.position == null ? 0 : r.position, 500, doc.y);
-    // });
-    // doc.end();
-
-    // --- CSV Generation (commented out) ---
-    
-    const csv = [
-      ['Device ID', 'Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'],
-      ...rows.map(r => [
-        r.tb_device_id,
-        r.log_time,
-        r.Current == null ? 0 : r.Current,
-        r.dcbus == null ? 0 : r.dcbus,
-        r.speed == null ? 0 : r.speed,
-        r.rpm == null ? 0 : r.rpm,
-        r.position == null ? 0 : r.position
-      ])
-    ];
-    res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_logs.csv`);
-    res.set('Content-Type', 'text/csv');
-    res.send(csv.map(row => row.join(',')).join('\n'));
-    
-  } catch (err) {
-    console.error('❌ Export error:', err.message);
-    res.status(500).json({ error: 'Export error', details: err.message });
+// API: Download selected logs as zip of CSVs
+app.get('/api/logs/download-selected', async (req, res) => {
+  const { ids, from, to, format = 'csv' } = req.query;
+  if (!ids || !from || !to) {
+    return res.status(400).json({ error: 'Missing ids, from, or to parameter' });
   }
+  const deviceIds = ids.split(',');
+  if (deviceIds.length > 10) {
+    return res.status(400).json({ error: 'You can download logs for a maximum of 10 devices at a time.' });
+  }
+  const isZip = deviceIds.length > 1;
+  if (isZip) {
+    res.setHeader('Content-disposition', 'attachment; filename=selected_logs.zip');
+    res.set('Content-Type', 'application/zip');
+  }
+  let archive;
+  if (isZip) {
+    archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+  }
+  for (const tb_device_id of deviceIds) {
+    // Fetch logs for this device
+    const [rows] = await db.execute(`
+      SELECT d.*, u.address
+      FROM device_logs d
+      LEFT JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
+      LEFT JOIN users u ON ud.user_id = u.id
+      WHERE d.tb_device_id = ? AND d.log_time BETWEEN ? AND ?
+      ORDER BY d.log_time
+    `, [tb_device_id, from, to]);
+    if (!rows.length) continue;
+    const address = rows[0].address || '-';
+    const header = ['Date and Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'];
+    const dataRows = rows.map(r => [
+      formatDateTime(r.log_time),
+      r.CUR == null ? 0 : r.CUR,
+      r.VBUS == null ? 0 : r.VBUS,
+      r.SPD == null ? 0 : r.SPD,
+      r.RPM == null ? 0 : r.RPM,
+      r.POS == null ? 0 : r.POS
+    ]);
+    let fileName = `${tb_device_id}_logs`;
+    if (format === 'csv') {
+      const csvRows = [
+        [address, tb_device_id],
+        [],
+        header,
+        ...dataRows
+      ];
+      const csvContent = csvRows.map(row => row.join(',')).join('\n');
+      if (isZip) {
+        archive.append(csvContent, { name: `${fileName}.csv` });
+      } else {
+        res.setHeader('Content-disposition', `attachment; filename=${fileName}.csv`);
+        res.set('Content-Type', 'text/csv');
+        return res.send(csvContent);
+      }
+    } else if (format === 'xls') {
+      const ExcelJS = require('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const ws = workbook.addWorksheet('Logs');
+      ws.addRow([address, tb_device_id]);
+      ws.mergeCells('A1:F1');
+      ws.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.addRow([]);
+      ws.addRow(header);
+      dataRows.forEach(row => ws.addRow(row));
+      ws.columns.forEach(col => {
+        col.alignment = { horizontal: 'center', vertical: 'middle' };
+        let maxLength = 10;
+        col.eachCell({ includeEmpty: true }, cell => {
+          const len = (cell.value ? cell.value.toString().length : 0);
+          if (len > maxLength) maxLength = len;
+        });
+        col.width = maxLength + 2;
+      });
+      const buffer = await workbook.xlsx.writeBuffer();
+      if (isZip) {
+        archive.append(buffer, { name: `${fileName}.xlsx` });
+      } else {
+        res.setHeader('Content-disposition', `attachment; filename=${fileName}.xlsx`);
+        res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        return res.send(Buffer.from(buffer));
+      }
+    } else if (format === 'pdf') {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({ margin: 30, size: 'A4' });
+      let buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        if (isZip) {
+          archive.append(pdfBuffer, { name: `${fileName}.pdf` });
+        } else {
+          res.setHeader('Content-disposition', `attachment; filename=${fileName}.pdf`);
+          res.set('Content-Type', 'application/pdf');
+          res.send(pdfBuffer);
+        }
+      });
+      doc.fontSize(16).text(`${address} | ${tb_device_id}`, { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12);
+      header.forEach(h => {
+        doc.text(h, { continued: true, align: 'center', width: 80 });
+      });
+      doc.text('');
+      dataRows.forEach(row => {
+        row.forEach(cell => {
+          doc.text(cell == null ? '' : cell.toString(), { continued: true, align: 'center', width: 80 });
+        });
+        doc.text('');
+      });
+      doc.end();
+      if (!isZip) {
+        await new Promise(resolve => doc.on('finish', resolve));
+        return;
+      } else {
+        await new Promise(resolve => doc.on('finish', resolve));
+      }
+    }
+  }
+  if (isZip) archive.finalize();
 });
 
 // 5. API: Download all logs in date range
@@ -849,4 +1005,73 @@ app.get('/api/logs/download-all', async (req, res) => {
     res.status(500).json({ error: 'Export error', details: err.message });
   }
 });
+
+const formatDateTime = (dt) => {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const pad = n => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+
+
+
+// Add these endpoints to your server.js for duplicate checking and CSRF protection
+
+// CSRF token generation
+app.get('/api/csrf-token', (req, res) => {
+  const token = crypto.randomBytes(32).toString('hex');
+  res.json({ token });
+});
+
+// Duplicate checking endpoint
+app.post('/api/check-duplicate/:field', async (req, res) => {
+  try {
+    const { field } = req.params;
+    const { value } = req.body;
+    
+    // Rate limiting for duplicate checks
+    const clientIP = req.ip;
+    const key = `duplicate_check:${clientIP}:${field}`;
+    
+    // Check if too many requests
+    const attempts = await redis.get(key) || 0;
+    if (attempts > 10) {
+      return res.status(429).json({ error: 'Too many duplicate checks' });
+    }
+    
+    // Increment counter
+    await redis.incr(key);
+    await redis.expire(key, 60); // 1 minute
+    
+    let query;
+    let params;
+    
+    switch (field) {
+      case 'email':
+        query = 'SELECT COUNT(*) as count FROM users WHERE email = ?';
+        params = [value];
+        break;
+      case 'phone':
+        query = 'SELECT COUNT(*) as count FROM users WHERE phone = ?';
+        params = [value];
+        break;
+      case 'supervisor_id':
+        query = 'SELECT COUNT(*) as count FROM supervisors WHERE supervisor_id = ?';
+        params = [value];
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid field' });
+    }
+    
+    const [result] = await db.execute(query, params);
+    const exists = result.count > 0;
+    
+    res.json({ exists });
+    
+  } catch (error) {
+    console.error('Duplicate check error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 

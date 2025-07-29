@@ -5,43 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Devices Overview</title>
   <link rel="stylesheet" href="css/style.css" />
-    <style>
-    /* Existing styles preserved */
-        .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
-        .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-        .user-table th { background: #f8f9fa; color: #333; font-weight: 600; }
-        .user-table tr:last-child td { border-bottom: none; }
-        .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
-        .user-table td a:hover { text-decoration: underline; }
-        .user-table tr:hover { background: #007bff !important; color: #fff; }
-        .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
-        @media (max-width: 900px) {
-            .table-container { margin: 0; }
-            .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
-        }
-        .logout-link {
-            color: #e74c3c !important;
-            font-weight: bold;
-            margin-top: 40px;
-        }
-        .logout-link:hover {
-            background: #ffeaea !important;
-            color: #c0392b !important;
-        }
-    .adddeviceform{
-        width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .adddeviceform label{
-      font-size: 1em;
-      color: #333;
-      margin-bottom: 3px;
-      font-weight: 500;
-    }
-    </style>
+
+
+
 </head>
 <body class="dashboard-body">
     <header class="topbar">
@@ -74,7 +40,7 @@
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
         <ul>
-    <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
+          <li class="nav-link active" onclick="navi('super_device_overview.html')">My Devices</li>
             <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
             <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
         </ul>
@@ -94,7 +60,7 @@
             <button class="register-btn" id="addDeviceBtn">Add Device</button>
         </div>
 
-        <div class="user-label" id="userLabel" style="margin:30px; font-size:1.6em; font-weight:bold;"></div>
+        <div class="user-label" id="userLabel" style="margin:10px; font-size:1.2em; font-weight:bold;"></div>
 
         <div class="table-container">
             <table class="user-table">
@@ -106,7 +72,8 @@
                         <th>Serial No</th>
                         <th>MAC Address</th>
                         <th>City</th>
-                        <th>Connection</th>
+                        <!-- <th>Connection</th> -->
+                        <th>Active</th>
                     </tr>
                 </thead>
                 <tbody id="device-table-body">
@@ -146,8 +113,8 @@
     </div>
 
     <script>
-    const username = new URLSearchParams(window.location.search).get('username');
-    document.getElementById('userLabel').textContent = username;
+    const address = new URLSearchParams(window.location.search).get('address');
+    document.getElementById('userLabel').textContent = address;
 
     function navigate(page) {
       window.location.href = page;
@@ -165,7 +132,7 @@
     };
 
     async function loadDevices() {
-      const res = await fetch(`/api/user-devices-details/${username}`, { headers: { 'x-user-role': 'admin' } });
+      const res = await fetch(`/api/user-devices-details/${address}`, { headers: { 'x-user-role': 'admin' } });
       const devices = await res.json();
       const table = document.getElementById('device-table-body');
       table.innerHTML = devices.length ? '' : '<tr><td colspan="7">No devices assigned.</td></tr>';
@@ -173,13 +140,14 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><input type="checkbox" class="user-device-row-checkbox" /></td>
-          <td>${dev.DeviceId || '-'}</td>
-          <td>${dev.DeviceName || '-'}</td>
-          <td>${dev.SerialNum || '-'}</td>
-          <td>${dev.MacAddress || '-'}</td>
-          <td>${dev.Location || '-'}</td>
-          <td>${dev.Status || '-'}</td>
-        `;
+                    <td>${dev.ID || dev.DeviceId || '-'}</td>
+                    <td>${dev.DeviceName || '-'}</td>
+                    <td>${dev.SerialNum || '-'}</td>
+                    <td>${dev.MacAddress || '-'}</td>
+                    <td>${dev.Location || '-'}</td>
+                    <!-- <td>${dev.Status || '-'}</td> -->
+                    <td>${dev.active === true ? 'Active' : 'Inactive'}</td> 
+                  `;
         // ✅ hide check boxes immediately:
         if (typeof isSupervisor === 'function' && isSupervisor()) {
           row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -191,8 +159,8 @@
         row.style.cursor = 'pointer';
         row.addEventListener('click', function(e) {
           if (e.target.tagName.toLowerCase() === 'input') return;
-          sessionStorage.setItem('selectedUsername', username);
-          window.location.href = `specific_userdevice.html?deviceId=${dev.tb_device_id}&username=${encodeURIComponent(username)}`;
+          sessionStorage.setItem('selectedAddress', address);
+          window.location.href = `specific_userdevice.html?deviceId=${dev.tb_device_id}&address=${encodeURIComponent(address)}`;
         });
                 table.appendChild(row);
             });
@@ -234,7 +202,7 @@
       try {
         const res = await fetch(`/api/device-details/${tb_device_id}`, { headers: { 'x-user-role': 'admin' } });
         const data = await res.json();
-        document.getElementById('modalElevator').value = data.DeviceId || '';
+        document.getElementById('modalElevator').value = data.ID || '';
         document.getElementById('modalSerial').value = data.SerialNum || '';
         document.getElementById('modalMAC').value = data.MacAddress || '';
         document.getElementById('modalLocation').value = data.Location || '';
@@ -263,7 +231,7 @@
         const res = await fetch('/api/assign-device', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json','x-user-role': 'admin' },
-          body: JSON.stringify({ username, tb_device_id })
+          body: JSON.stringify({ address, tb_device_id })
         });
         const result = await res.json();
         if (result.success) {
@@ -295,20 +263,7 @@
         if (addDeviceBtn) addDeviceBtn.style.display = 'none';
       }
     });
-    function navi(url) {
-      const username = localStorage.getItem('username'); // this is supervisor_id
-      if (role === 'supervisor' && url.includes('super_device_overview.html')) {
-        if (username) {
-          url += `?supervisor_id=${username}`;
-        } else {
-          alert('Supervisor session expired. Please log in again.');
-          window.location.href = 'login.html';
-          return;
-        }
-      }
-      // Redirect using final URL
-      window.location.href = url;
-    }
+    
     </script>
   <script src="js/script.js"></script>
 </body>

@@ -5,6 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - EMS</title>
   <link rel="stylesheet" href="css/login.css" />
+  <style>
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .password-wrapper input[type="password"],
+.password-wrapper input[type="text"] {
+  padding-right: 36px;
+  height: 44px; /* or whatever consistent height you want */
+  line-height: 1.4;
+  font-size: 16px;
+}
+
+    .toggle-password-icon {
+      position: absolute;
+      right: 10px;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      height: 22px;
+      width: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #888;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+    
+    .toggle-password-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+  </style>
 </head>
 
 <body class="login-body">
@@ -16,7 +54,14 @@
       
         <form id="loginForm">
           <input type="text" name="username" placeholder="Username" required />
-          <input type="password" name="password" placeholder="Password" required />
+          <div class="password-wrapper">
+            <input type="password" id="password" name="password" placeholder="Password" required />
+            <button type="button" id="togglePassword" class="toggle-password-icon" tabindex="-1" aria-label="Show/Hide Password">
+              <!-- Eye SVG (default) -->
+              <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1.5 12s4.5-7.5 10.5-7.5S22.5 12 22.5 12s-4.5 7.5-10.5 7.5S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+              <svg id="eyeClosed" style="display:none;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M1.5 12s4.5-7.5 10.5-7.5c2.5 0 4.8 1.2 6.7 2.9M22.5 12s-4.5 7.5-10.5 7.5c-2.5 0-4.8-1.2-6.7-2.9M9.5 9.5a3.5 3.5 0 014.9 4.9"/></svg>
+            </button>
+          </div>
           
           <div class="form-footer">
             <a href="#" class="forgot-link">Forgot Password?</a>
@@ -58,10 +103,12 @@
         if (data.success) {
           // Redirect based on role
           localStorage.setItem('userRole', data.role);
-          localStorage.setItem('supervisor_id', data.username || null);
+          sessionStorage.setItem('supervisor_id', data.username || null);
           if (data.role === 'admin') {
             window.location.href = 'users.html';
           } else if (data.role === 'supervisor') {
+            console.log('Supervisor ID:', sessionStorage.getItem('supervisor_id'));
+            console.log('Role:', localStorage.getItem('userRole'));
             window.location.href = `super_device_overview.html?supervisor_id=${data.username}`;
           } else {
             window.location.href = 'specific_userdevice.html';
@@ -74,6 +121,26 @@
         errorDiv.textContent = 'Server error. Please try again.';
       }
     });
+
+    // Add password toggle logic
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+    const eyeOpen = document.getElementById('eyeOpen');
+    const eyeClosed = document.getElementById('eyeClosed');
+    if (passwordInput && togglePassword && eyeOpen && eyeClosed) {
+      togglePassword.addEventListener('click', function(e) {
+        e.preventDefault();
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        if (type === 'password') {
+          eyeOpen.style.display = '';
+          eyeClosed.style.display = 'none';
+        } else {
+          eyeOpen.style.display = 'none';
+          eyeClosed.style.display = '';
+        }
+      });
+    }
   </script>
 </body>
 </html>
