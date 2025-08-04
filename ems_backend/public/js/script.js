@@ -30,29 +30,34 @@ function navi(url) {
 }
 
 
-// Sidebar toggle logic for hamburger and arrow
+// Sidebar toggle logic for hamburger and arrow (Updated to include superadmin)
 const sidebar = document.getElementById('sidebar-normal');
 const sidebarSupervisor = document.getElementById('sidebar-supervisor');
+const sidebarSuperadmin = document.getElementById('sidebar-superadmin');
 const sidebarArrow = document.getElementById('sidebarArrow');
 const sidebarHamburger = document.getElementById('sidebarHamburger');
 
-if (sidebarArrow && sidebar && sidebarHamburger && sidebarSupervisor) {
+if (sidebarArrow && sidebar && sidebarHamburger && sidebarSupervisor && sidebarSuperadmin) {
   sidebarArrow.addEventListener('click', function() {
     sidebar.classList.add('collapsed');
     sidebarSupervisor.classList.add('collapsed');
+    sidebarSuperadmin.classList.add('collapsed');
     sidebarHamburger.style.display = 'block';
   });
   sidebarHamburger.addEventListener('click', function() {
     sidebar.classList.remove('collapsed');
     sidebarSupervisor.classList.remove('collapsed');
+    sidebarSuperadmin.classList.remove('collapsed');
     sidebarHamburger.style.display = 'none';
   });
   // Hide hamburger by default if sidebar is visible
   if (!sidebar.classList.contains('collapsed')) {
     sidebarSupervisor.classList.remove('collapsed');
+    sidebarSuperadmin.classList.remove('collapsed');
     sidebarHamburger.style.display = 'none';
   }
 }
+
 function logout() {
   const confirmLogout = confirm("Are you sure you want to log out?");
   if (confirmLogout) {
@@ -64,32 +69,32 @@ document.addEventListener('DOMContentLoaded', function() {
   const role = localStorage.getItem('userRole');
   const sidebarNormal = document.getElementById('sidebar-normal');
   const sidebarSupervisor = document.getElementById('sidebar-supervisor');
-  if (sidebarNormal && sidebarSupervisor) {
+  const sidebarSuperadmin = document.getElementById('sidebar-superadmin');
+  
+  if (sidebarNormal && sidebarSupervisor && sidebarSuperadmin) {
+    // Hide all sidebars first
+    sidebarNormal.style.display = 'none';
+    sidebarSupervisor.style.display = 'none';
+    sidebarSuperadmin.style.display = 'none';
+    
+    // Show appropriate sidebar based on role
     if (role === 'supervisor') {
       sidebarSupervisor.style.display = '';
-      sidebarNormal.style.display = 'none';
-      // Optionally, make page read-only here
+    } else if (role === 'superadmin') {
+      sidebarSuperadmin.style.display = '';
     } else {
       sidebarNormal.style.display = '';
-      sidebarSupervisor.style.display = 'none';
     }
   }
+  
   console.log('userRole', localStorage.getItem('userRole'));
 
   // Set up sidebar toggle logic AFTER visibility is set
   const sidebarArrowNormal = document.getElementById('sidebarArrowNormal');
   const sidebarArrowSupervisor = document.getElementById('sidebarArrowSupervisor');
+  const sidebarArrowSuperadmin = document.getElementById('sidebarArrow');
   const sidebarHamburger = document.getElementById('sidebarHamburger');
 
-  // console.log('🔍 DEBUG: Sidebar toggle setup -');
-  // console.log('  sidebarArrowNormal found:', !!sidebarArrowNormal);
-  // console.log('  sidebarArrowSupervisor found:', !!sidebarArrowSupervisor);
-  // console.log('  sidebarHamburger found:', !!sidebarHamburger);
-  // console.log('  sidebarArrowNormal element:', sidebarArrowNormal);
-  // console.log('  sidebarArrowSupervisor element:', sidebarArrowSupervisor);
-  // console.log('  sidebarHamburger element:', sidebarHamburger);
-
-  // Get the active arrow button based on which sidebar is visible
   function getActiveArrowButton() {
     if (sidebarNormal && sidebarNormal.style.display !== 'none' && sidebarArrowNormal) {
       return sidebarArrowNormal;
@@ -97,32 +102,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none' && sidebarArrowSupervisor) {
       return sidebarArrowSupervisor;
     }
+    if (sidebarSuperadmin && sidebarSuperadmin.style.display !== 'none' && sidebarArrowSuperadmin) {
+      return sidebarArrowSuperadmin;
+    }
     return null;
   }
 
   const activeArrowButton = getActiveArrowButton();
   console.log('  Active arrow button:', activeArrowButton);
 
-  // if (activeArrowButton) {
-  //   console.log('  Active arrow button disabled:', activeArrowButton.disabled);
-  //   console.log('  Active arrow button display:', activeArrowButton.style.display);
-  //   console.log('  Active arrow button visibility:', activeArrowButton.style.visibility);
-  //   console.log('  Active arrow button onclick:', activeArrowButton.onclick);
-  //   console.log('  Active arrow button event listeners:', activeArrowButton.onclick ? 'has onclick' : 'no onclick');
-  // }
-
-  // if (sidebarHamburger) {
-  //   console.log('  sidebarHamburger disabled:', sidebarHamburger.disabled);
-  //   console.log('  sidebarHamburger display:', sidebarHamburger.style.display);
-  //   console.log('  sidebarHamburger visibility:', sidebarHamburger.style.visibility);
-  //   console.log('  sidebarHamburger onclick:', sidebarHamburger.onclick);
-  //   console.log('  sidebarHamburger event listeners:', sidebarHamburger.onclick ? 'has onclick' : 'no onclick');
-  // }
-
   function getActiveSidebar() {
     // Only one sidebar is visible at a time
     if (sidebarNormal && sidebarNormal.style.display !== 'none') return sidebarNormal;
     if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none') return sidebarSupervisor;
+    if (sidebarSuperadmin && sidebarSuperadmin.style.display !== 'none') return sidebarSuperadmin;
     return null;
   }
 
@@ -135,55 +128,28 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('  Set pointer-events to auto for both buttons');
 
     activeArrowButton.addEventListener('click', function(e) {
-      // console.log('🔄 DEBUG: Sidebar arrow clicked!');
-      // console.log('  Event:', e);
-      // console.log('  Target:', e.target);
-      // console.log('  Current target:', e.currentTarget);
       e.preventDefault();
       e.stopPropagation();
 
       const activeSidebar = getActiveSidebar();
       console.log('  Active sidebar found:', !!activeSidebar);
       if (activeSidebar) {
-        // console.log('  Adding collapsed class to:', activeSidebar.id);
-        // console.log('  Before - has collapsed class:', activeSidebar.classList.contains('collapsed'));
         activeSidebar.classList.add('collapsed');
-        // console.log('  After - has collapsed class:', activeSidebar.classList.contains('collapsed'));
-        // console.log('  Sidebar display style:', activeSidebar.style.display);
-        // console.log('  Sidebar transform style:', activeSidebar.style.transform);
       }
-      //console.log('  Setting hamburger display to block');
-      //console.log('  Hamburger before - display:', sidebarHamburger.style.display);
       sidebarHamburger.style.display = 'block';
-      //console.log('  Hamburger after - display:', sidebarHamburger.style.display);
-      //console.log('  Hamburger computed display:', window.getComputedStyle(sidebarHamburger).display);
     });
 
     sidebarHamburger.addEventListener('click', function(e) {
-      // console.log('🔄 DEBUG: Sidebar hamburger clicked!');
-      // console.log('  Event:', e);
-      // console.log('  Target:', e.target);
-      // console.log('  Current target:', e.currentTarget);
       e.preventDefault();
       e.stopPropagation();
 
       const activeSidebar = getActiveSidebar();
       console.log('  Active sidebar found:', !!activeSidebar);
       if (activeSidebar) {
-        // console.log('  Removing collapsed class from:', activeSidebar.id);
-        // console.log('  Before - has collapsed class:', activeSidebar.classList.contains('collapsed'));
         activeSidebar.classList.remove('collapsed');
-        // console.log('  After - has collapsed class:', activeSidebar.classList.contains('collapsed'));
-        // console.log('  Sidebar display style:', activeSidebar.style.display);
-        // console.log('  Sidebar transform style:', activeSidebar.style.transform);
       }
-      // console.log('  Setting hamburger display to none');
-      // console.log('  Hamburger before - display:', sidebarHamburger.style.display);
       sidebarHamburger.style.display = 'none';
-      // console.log('  Hamburger after - display:', sidebarHamburger.style.display);
-      // console.log('  Hamburger computed display:', window.getComputedStyle(sidebarHamburger).display);
     });
-
 
     // Hide hamburger by default if sidebar is visible
     const activeSidebar = getActiveSidebar();
@@ -259,9 +225,37 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// XLS export using SheetJS
+// Date/Time formatting function
+function getCurrentDateTime() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
+// Add this function to get user information
+function getUserInfo() {
+  const username = localStorage.getItem('username') || 'Unknown';
+  const role = localStorage.getItem('userRole') || 'Unknown';
+  const userId = localStorage.getItem('userId') || 'Unknown';
+  
+  return {
+    username: username,
+    role: role,
+    userId: userId
+  };
+}
+
+// Updated XLS export function with user information
 function downloadXLSFromDevices(devices) {
   if (!devices.length) return;
+  
+  const userInfo = getUserInfo();
   const columns = [
     { header: 'Device Name', key: 'device_name' },
     { header: 'Device Id', key: 'DeviceId' },
@@ -270,7 +264,7 @@ function downloadXLSFromDevices(devices) {
     { header: 'Location', key: 'Location' },
     { header: 'Status', key: 'Status' }
   ];
-  // Prepare data rows
+  
   const data = devices.map(dev => ({
     device_name: dev.device_name || '',
     DeviceId: dev.DeviceId || '',
@@ -279,9 +273,10 @@ function downloadXLSFromDevices(devices) {
     Location: dev.Location || '',
     Status: dev.Status || ''
   }));
-  // SheetJS
+  
   const ws_data = [columns.map(col => col.header), ...data.map(row => columns.map(col => row[col.key]))];
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  
   // Center align all cells
   const range = XLSX.utils.decode_range(ws['!ref']);
   for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -296,25 +291,48 @@ function downloadXLSFromDevices(devices) {
       }
     }
   }
-  // Add company name and logo as a title row (SheetJS Community doesn't support images, so just add a title row)
+  
+  // Add title and metadata
   XLSX.utils.sheet_add_aoa(ws, [["ADLEX - Devices List"]], { origin: 'A1' });
-  // Shift data down by 2 rows
-  XLSX.utils.sheet_add_aoa(ws, [columns.map(col => col.header)], { origin: 'A3' });
-  XLSX.utils.sheet_add_aoa(ws, data.map(row => columns.map(col => row[col.key])), { origin: 'A4' });
+  const dateTime = getCurrentDateTime();
+  XLSX.utils.sheet_add_aoa(ws, [[dateTime]], { origin: 'F1' });
+  
+  // Add user information
+  XLSX.utils.sheet_add_aoa(ws, [["Downloaded by:"]], { origin: 'A2' });
+  XLSX.utils.sheet_add_aoa(ws, [[`User: ${userInfo.username}`]], { origin: 'B2' });
+  XLSX.utils.sheet_add_aoa(ws, [[`Role: ${userInfo.role}`]], { origin: 'C2' });
+  XLSX.utils.sheet_add_aoa(ws, [[`ID: ${userInfo.userId}`]], { origin: 'D2' });
+  
+  // Shift data down by 3 rows (title + user info)
+  XLSX.utils.sheet_add_aoa(ws, [columns.map(col => col.header)], { origin: 'A4' });
+  XLSX.utils.sheet_add_aoa(ws, data.map(row => columns.map(col => row[col.key])), { origin: 'A5' });
+  
   // Merge title row
   ws['!merges'] = ws['!merges'] || [];
   ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: columns.length - 1 } });
   ws['A1'].s = { font: { bold: true, sz: 16 }, alignment: { horizontal: 'center', vertical: 'center' } };
+  ws['F1'].s = { font: { sz: 10 }, alignment: { horizontal: 'right', vertical: 'top' } };
+  
+  // Style user info
+  ws['A2'].s = { font: { bold: true, sz: 12 } };
+  ws['B2'].s = { font: { sz: 10 } };
+  ws['C2'].s = { font: { sz: 10 } };
+  ws['D2'].s = { font: { sz: 10 } };
+  
   // Set column widths
   ws['!cols'] = columns.map(() => ({ wch: 20 }));
+  
   // Create workbook and export
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Devices');
-  XLSX.writeFile(wb, 'devices.xlsx');
+  XLSX.writeFile(wb, `devices_${getCurrentDateTime().replace(/[\/:]/g, '-')}_${userInfo.username}.xlsx`);
 }
-// PDF export using jsPDF + autotable
+
+// Updated PDF export function with user information
 function downloadPDFfromDevices(devices) {
   if (!devices.length) return;
+  
+  const userInfo = getUserInfo();
   const columns = [
     { header: 'Device Name', dataKey: 'device_name' },
     { header: 'Device Id', dataKey: 'DeviceId' },
@@ -323,6 +341,7 @@ function downloadPDFfromDevices(devices) {
     { header: 'Location', dataKey: 'Location' },
     { header: 'Status', dataKey: 'Status' }
   ];
+  
   const data = devices.map(dev => ({
     device_name: dev.device_name || '',
     DeviceId: dev.DeviceId || '',
@@ -331,44 +350,211 @@ function downloadPDFfromDevices(devices) {
     Location: dev.Location || '',
     Status: dev.Status || ''
   }));
+  
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape' });
-  // Add logo and title
+  
   const img = new Image();
-  img.src = 'assets/adlex_logo.png';
+  img.src = 'assets/logoadlex.png';
   img.onload = function() {
     doc.addImage(img, 'PNG', 15, 10, 30, 20);
     doc.setFontSize(18);
     doc.text('ADLEX - Devices List', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+    
+    // Add date/time at top right
+    const dateTime = getCurrentDateTime();
+    doc.setFontSize(10);
+    doc.text(dateTime, doc.internal.pageSize.getWidth() - 15, 15, { align: 'right' });
+    
+    // Add user information
+    doc.setFontSize(10);
+    doc.text(`Downloaded by: ${userInfo.username}`, 15, 35);
+    doc.text(`Role: ${userInfo.role}`, 15, 42);
+    doc.text(`ID: ${userInfo.userId}`, 15, 49);
+    
     doc.autoTable({
       head: [columns.map(col => col.header)],
       body: data.map(row => columns.map(col => row[col.dataKey])),
-      startY: 35,
+      startY: 60, // Increased startY to accommodate user info
       styles: { halign: 'center', valign: 'middle' },
       headStyles: { fillColor: [0, 123, 255], textColor: 255, fontStyle: 'bold', halign: 'center' },
       bodyStyles: { halign: 'center' },
       theme: 'grid',
-      margin: { left: 15, right: 15 }
+      margin: { left: 15, right: 15 },
+      didDrawPage: function (data) {
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageNumber = doc.internal.getNumberOfPages();
+    
+        // Footer text centered
+        const footerText = "Copyright 2025@ Samsan Labs";
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    
+        // Page number in bottom-right corner
+        doc.text(`Page ${pageNumber}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
+      }
     });
-    doc.save('devices.pdf');
+    doc.save(`devices_${getCurrentDateTime().replace(/[\/:]/g, '-')}_${userInfo.username}.pdf`);
   };
-  // If image fails to load, fallback to no logo
+  
   img.onerror = function() {
     doc.setFontSize(18);
     doc.text('ADLEX - Devices List', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+    
+    const dateTime = getCurrentDateTime();
+    doc.setFontSize(10);
+    doc.text(dateTime, doc.internal.pageSize.getWidth() - 15, 15, { align: 'right' });
+    
+    // Add user information
+    doc.setFontSize(10);
+    doc.text(`Downloaded by: ${userInfo.username}`, 15, 35);
+    doc.text(`Role: ${userInfo.role}`, 15, 42);
+    doc.text(`ID: ${userInfo.userId}`, 15, 49);
+    
     doc.autoTable({
       head: [columns.map(col => col.header)],
       body: data.map(row => columns.map(col => row[col.dataKey])),
-      startY: 35,
+      startY: 60, // Increased startY to accommodate user info
       styles: { halign: 'center', valign: 'middle' },
       headStyles: { fillColor: [0, 123, 255], textColor: 255, fontStyle: 'bold', halign: 'center' },
       bodyStyles: { halign: 'center' },
       theme: 'grid',
-      margin: { left: 15, right: 15 }
+      margin: { left: 15, right: 15 },
+      didDrawPage: function (data) {
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageNumber = doc.internal.getNumberOfPages();
+    
+        // Footer text centered
+        const footerText = "Copyright 2025@ Samsan Labs";
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    
+        // Page number in bottom-right corner
+        doc.text(`Page ${pageNumber}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
+      }
     });
-    doc.save('devices.pdf');
+    doc.save(`devices_${getCurrentDateTime().replace(/[\/:]/g, '-')}_${userInfo.username}.pdf`);
   };
 }
+
+// Updated CSV export function with user information
+// function downloadCSVFromDevices(devices) {
+//   if (!devices.length) return;
+  
+//   const userInfo = getUserInfo();
+//   const dateTime = getCurrentDateTime();
+  
+//   // Define the columns you want to export
+//   const columns = ['Device_name', 'DeviceId', 'SerialNum', 'Address', 'Location', 'Status'];
+  
+//   // Add metadata rows
+//   const metadataRows = [
+//     ['ADLEX - Devices List'],
+//     [''],
+//     [`Downloaded by: ${userInfo.username}`],
+//     [`Role: ${userInfo.role}`],
+//     [`ID: ${userInfo.userId}`],
+//     [`Date: ${dateTime}`],
+//     ['']
+//   ];
+  
+//   const header = columns.map(col => `"${col}"`).join(',');
+//   const rows = devices.map(dev =>
+//     columns.map(col => `"${dev[col] || ''}"`).join(',')
+//   );
+  
+//   const csvContent = [
+//     ...metadataRows.map(row => row.join(',')),
+//     header,
+//     ...rows
+//   ].join('\r\n');
+  
+//   const blob = new Blob([csvContent], { type: 'text/csv' });
+//   const url = URL.createObjectURL(blob);
+
+//   const a = document.createElement('a');
+//   a.href = url;
+//   a.download = `devices_${getCurrentDateTime().replace(/[\/:]/g, '-')}_${userInfo.username}.csv`;
+//   document.body.appendChild(a);
+//   a.click();
+//   document.body.removeChild(a);
+//   URL.revokeObjectURL(url);
+// }
+
+// Pagination functions
+function createPagination(currentPage, totalPages, onPageChange) {
+  const paginationContainer = document.createElement('div');
+  paginationContainer.className = 'pagination-container';
+  paginationContainer.style.cssText = `
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 10px;
+  `;
+
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '← Previous';
+  prevBtn.disabled = currentPage <= 1;
+  prevBtn.style.cssText = `
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: ${currentPage <= 1 ? '#f5f5f5' : '#fff'};
+    cursor: ${currentPage <= 1 ? 'not-allowed' : 'pointer'};
+    border-radius: 4px;
+  `;
+  prevBtn.onclick = () => onPageChange(currentPage - 1);
+
+  const pageNumbers = document.createElement('div');
+  pageNumbers.style.cssText = `
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  `;
+
+  const startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, currentPage + 2);
+
+  for (let i = startPage; i <= endPage; i++) {
+    const pageBtn = document.createElement('button');
+    pageBtn.textContent = i;
+    pageBtn.style.cssText = `
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      background: ${i === currentPage ? '#007bff' : '#fff'};
+      color: ${i === currentPage ? '#fff' : '#333'};
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: ${i === currentPage ? 'bold' : 'normal'};
+    `;
+    pageBtn.onclick = () => onPageChange(i);
+    pageNumbers.appendChild(pageBtn);
+  }
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Next →';
+  nextBtn.disabled = currentPage >= totalPages;
+  nextBtn.style.cssText = `
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: ${currentPage >= totalPages ? '#f5f5f5' : '#fff'};
+    cursor: ${currentPage >= totalPages ? 'not-allowed' : 'pointer'};
+    border-radius: 4px;
+  `;
+  nextBtn.onclick = () => onPageChange(currentPage + 1);
+
+  paginationContainer.appendChild(prevBtn);
+  paginationContainer.appendChild(pageNumbers);
+  paginationContainer.appendChild(nextBtn);
+
+  return paginationContainer;
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------
 // Help Widget JavaScript
 class HelpWidget {  

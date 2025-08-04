@@ -12,7 +12,7 @@
 <body class="dashboard-body">
     <header class="topbar">
         <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-            <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+            <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Location Devices</h2>
       <span class="user-role-container">
         <span class="user-icon">👤</span>
@@ -47,6 +47,19 @@
         <div class="logout-link" onclick="logout()">Logout</div>
         <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button>
     </aside>
+    <!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <ul>
+    <li class="nav-link " onclick="navigate('superadmin-dashboard.html')">Dashboard</li>
+    <li class="nav-link active" onclick="navigate('users.html')">Location Management</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">User Management</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Device Management</li>
+    <li class="nav-link" onclick="navigate('logs.html')">System Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+  </ul>
+  <div class="logout-link" onclick="logout()">Logout</div>
+  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
     <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 
     <main class="main-content">

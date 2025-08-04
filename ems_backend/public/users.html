@@ -20,7 +20,7 @@
   <!-- Topbar/Header -->
   <header class="topbar">
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Location List</h2>
       <span class="user-role-container">
         <span class="user-icon">👤</span>
@@ -49,6 +49,20 @@
   <ul>
     <li class="nav-link active" onclick="navigate('super_device_overview.html')">My Devices</li>
     <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+  </ul>
+  <div class="logout-link" onclick="logout()">Logout</div>
+  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
+
+<!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <ul>
+    <li class="nav-link" onclick="navigate('superadmin-dashboard.html')">Dashboard</li>
+    <li class="nav-link active" onclick="navigate('users.html')">Location Management</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">User Management</li>
+    <li class="nav-link" onclick="navigate('devices.html')">Device Management</li>
+    <li class="nav-link" onclick="navigate('logs.html')">System Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
@@ -106,6 +120,14 @@
       } catch (error) {
         document.getElementById('user-table-body').innerHTML = '<tr><td colspan="4">Error loading users</td></tr>';
       }
+      // Make the row clickable to view user_device_overview.html
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', function(e) {
+        if (e.target.tagName.toLowerCase() === 'input') return;
+          window.location.href = `user_device_overview.html?address=${address}`;
+      });
+        table.appendChild(row);
+          
     }
   
     async function renderUsers(users, supervisors) {
@@ -154,6 +176,47 @@
             </span>
           </td>
         `;
+
+        // Add clickable row functionality (but exclude checkboxes and action buttons)
+        row.addEventListener('click', function(e) {
+          // Don't trigger navigation if clicking on:
+          // - Checkboxes
+          // - Action buttons (edit, delete, confirm, cancel)
+          // - Dropdowns
+          // - Links that already have their own click handlers
+          if (e.target.tagName.toLowerCase() === 'input' || 
+              e.target.classList.contains('edit-user-btn') ||
+              e.target.classList.contains('delete-user-btn') ||
+              e.target.classList.contains('confirm-delete-btn') ||
+              e.target.classList.contains('cancel-delete-btn') ||
+              e.target.tagName.toLowerCase() === 'select' ||
+              e.target.tagName.toLowerCase() === 'a' ||
+              e.target.classList.contains('user-link')) {
+            return;
+          }
+          
+          // Navigate to user device overview
+          window.location.href = `user_device_overview.html?address=${user.address}`;
+        });
+
+        // Make the row look clickable
+        row.style.cursor = 'pointer';
+
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+          this.style.backgroundColor = '#f5f5f5';
+        });
+
+        row.addEventListener('mouseleave', function() {
+          this.style.backgroundColor = '';
+        });
+
+        // Prevent event bubbling for interactive elements
+        row.querySelector('.user-row-checkbox').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.edit-user-btn').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.delete-user-btn').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.confirm-delete-btn').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.cancel-delete-btn').addEventListener('click', e => e.stopPropagation());
 
         const supervisorDropdown = row.querySelector('.assign-supervisor-dropdown');
         if (supervisorDropdown) {

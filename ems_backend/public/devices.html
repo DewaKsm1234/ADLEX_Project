@@ -19,7 +19,7 @@
   <!-- Topbar/Header -->
   <header class="topbar">
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Devices</h2>
       <span class="user-role-container">
         <span class="user-icon">👤</span>
@@ -52,6 +52,19 @@
     <div class="logout-link" onclick="logout()">Logout</div>
     <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
 </aside>
+<!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <ul>
+    <li class="nav-link " onclick="navigate('superadmin-dashboard.html')">Dashboard</li>
+    <li class="nav-link" onclick="navigate('users.html')">Location Management</li>
+    <li class="nav-link" onclick="navigate('supervisors.html')">User Management</li>
+    <li class="nav-link active" onclick="navigate('devices.html')">Device Management</li>
+    <li class="nav-link" onclick="navigate('logs.html')">System Logs</li>
+    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+  </ul>
+  <div class="logout-link" onclick="logout()">Logout</div>
+  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+</aside>
   
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <div class="main-content">
@@ -76,7 +89,7 @@
       <!-- <button class="download" id="downloadDevicesBtn" >⬇️ Download</button> -->
       <button class="download" id="downloadSelectedBtn">Download</button>
       <div id="exportOptions" style="display:none; position:absolute; z-index:10; background:#fff; border:1px solid #ccc; border-radius:6px; padding:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-        <button class="download" id="exportCSV">CSV</button>
+        <!-- <button class="download" id="exportCSV">CSV</button> -->
         <button class="download" id="exportXLS">XLS</button>
         <button class="download" id="exportPDF">PDF</button>
       </div>
@@ -104,6 +117,8 @@
     </tr>
       </tbody>
     </table>
+    <!-- Add pagination container after the table -->
+    <div id="paginationContainer"></div>
   </div>
   <script>
     async function loadDevices() {
@@ -224,10 +239,10 @@
         exportOptions.style.display = 'none';
       }
     });
-    document.getElementById('exportCSV').onclick = function() {
-      downloadCSVFromDevices(window.selectedDevicesForExport || []);
-      document.getElementById('exportOptions').style.display = 'none';
-    };
+    //document.getElementById('exportCSV').onclick = function() {
+    //  downloadCSVFromDevices(window.selectedDevicesForExport || []);
+    //  document.getElementById('exportOptions').style.display = 'none';
+    //};
     document.getElementById('exportXLS').onclick = function() {
       downloadXLSFromDevices(window.selectedDevicesForExport || []);
       document.getElementById('exportOptions').style.display = 'none';
@@ -236,26 +251,7 @@
       downloadPDFfromDevices(window.selectedDevicesForExport || []);
       document.getElementById('exportOptions').style.display = 'none';
     };
-    function downloadCSVFromDevices(devices) {
-      if (!devices.length) return;
-      // Define the columns you want to export
-      const columns = ['Device_name', 'DeviceId', 'SerialNum', 'Address', 'Location', 'Status'];
-      const header = columns.map(col => `"${col}"`).join(',');
-      const rows = devices.map(dev =>
-        columns.map(col => `"${dev[col] || ''}"`).join(',')
-      );
-      const csvContent = [header, ...rows].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
     
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'devices.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
   </script>
   <script src="js/script.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>

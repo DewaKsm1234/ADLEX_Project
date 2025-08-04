@@ -40,7 +40,7 @@
       </div>
     </div>
   
-  <img src="/assets/adlex_logo.png" alt="ADLEX" class="footer-logo" />
+  <img src="/assets/logoadlex.png" alt="ADLEX" class="footer-logo" />
 <div class="footer-text">
   Powered by Samsan | © 2025 Revision
 </div>
@@ -83,8 +83,8 @@
             console.log('Supervisor ID:', sessionStorage.getItem('supervisor_id'));
             console.log('Role:', localStorage.getItem('userRole'));
             window.location.href = `super_device_overview.html?supervisor_id=${data.username}`;
-          } else {
-            window.location.href = 'specific_userdevice.html';
+          } else if(data.role==='superadmin') {
+            window.location.href = 'superadmin-dashboard.html';
           }
           
         } else {

@@ -200,6 +200,12 @@ const requireRole = (...roles) => {
 const requireAdmin = requireRole('admin');
 const requireSupervisorOrAdmin = requireRole('supervisor', 'admin');
 
+// NEW: Add superadmin middleware
+const requireSuperAdmin = requireRole('superadmin');
+const requireSuperAdminOrAdmin = requireRole('superadmin', 'admin');
+const requireSuperAdminOrAdminOrSupervisor = requireRole('superadmin', 'admin', 'supervisor');
+
+
 /**
  * Clear authentication cookie and token
  * @param {Object} res - Express response object
@@ -326,7 +332,7 @@ app.get('/api/protected-data', authenticateToken, (req, res) => {
 });
 
 // Example of admin-only route
-app.get('/api/admin-only', authenticateToken, requireAdmin, (req, res) => {
+app.get('/api/admin-only', authenticateToken, requireSuperAdminOrAdmin, (req, res) => {
   res.json({
     success: true,
     data: 'Admin-only data',
@@ -346,7 +352,7 @@ app.get('/api/supervisor-data', authenticateToken, requireSupervisorOrAdmin, (re
 // ==================== EXISTING ROUTES (UPDATED WITH AUTH) ====================
 
 // Update existing routes to use new authentication
-app.post('/api/register', authenticateToken, requireAdmin, async (req, res) => {
+app.post('/api/register', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const {
     address, password, email, phone, first_name, last_name, tb_device_id, supervisor_id
   } = req.body;
@@ -382,7 +388,7 @@ app.post('/api/register', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Fetch all users (with supervisor name join)
-app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/users', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT u.*, s.first_name as supervisor_first_name, s.last_name as supervisor_last_name 
@@ -396,7 +402,7 @@ app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Assign supervisor to user
-app.post('/api/assign-supervisor', authenticateToken, requireAdmin, async (req, res) => {
+app.post('/api/assign-supervisor', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const { address, supervisor_id } = req.body;
 
   // 🔍 Validate input
@@ -433,7 +439,7 @@ app.post('/api/assign-supervisor', authenticateToken, requireAdmin, async (req, 
 
 
 // Assign Device to User
-app.post('/api/assign-device',  authenticateToken, requireAdmin, async (req, res) => {
+app.post('/api/assign-device',  authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const { address, tb_device_id } = req.body;
   try {
     // Get user_id from address
@@ -482,7 +488,7 @@ app.post('/api/assign-device',  authenticateToken, requireAdmin, async (req, res
 });
 
 // Devices mapped for a specific user
-app.get('/api/user-devices/:address', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/user-devices/:address', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT d.* FROM devices d
@@ -498,7 +504,7 @@ app.get('/api/user-devices/:address', authenticateToken, requireAdmin, async (re
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/unassigned-devices', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/unassigned-devices', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   try {
     // Get all device IDs from devices
     const [allDevices] = await db.execute('SELECT tb_device_id, DeviceId FROM devices');
@@ -512,22 +518,6 @@ app.get('/api/unassigned-devices', authenticateToken, requireAdmin, async (req, 
     res.status(500).json({ error: 'Failed to fetch unassigned devices', details: err.message });
   }
 });
-// Get full details of a single device
-// app.get('/api/device-details/:tb_device_id', requireAdmin, async (req, res) => {
-//   const { tb_device_id } = req.params;
-//   try {
-//     const [rows] = await db.execute(
-//       `SELECT DeviceId, SerialNum, MacAddress, Location 
-//        FROM devices 
-//        WHERE tb_device_id = ?`,
-//       [tb_device_id]
-//     );
-//     if (rows.length === 0) return res.status(404).json({ error: 'Device not found' });
-//     res.json(rows[0]);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
 
 // Get user information for a specific device
 app.get('/api/device-user/:tb_device_id', async (req, res) => {
@@ -550,7 +540,7 @@ app.get('/api/device-user/:tb_device_id', async (req, res) => {
 
 // ---------------- SUPERVISORS ENDPOINTS -------------------
 // Register supervisor
-app.post('/api/register-supervisor', authenticateToken, requireAdmin, async (req, res) => {
+app.post('/api/register-supervisor', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
   try {
     // Hash password with bcrypt (salt rounds = 10)
@@ -570,7 +560,7 @@ app.post('/api/register-supervisor', authenticateToken, requireAdmin, async (req
 });
 
 // Fetch all supervisors
-app.get('/api/supervisors', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/supervisors', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM supervisors');
     res.json(rows);
@@ -775,7 +765,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
 
 
     // ---------------- SYNC DEVICES ENDPOINT -------------------
-    app.post('/api/sync-thingsboard-devices', authenticateToken, requireAdmin, async (req, res) => {
+    app.post('/api/sync-thingsboard-devices', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
       try {
         console.log('🔄 Starting device sync from ThingsBoard...');
     
@@ -949,8 +939,8 @@ app.get('/api/user-devices', async (req, res) => {
   res.json(rows);
 });
 //only for devices page (loading all devices)
-app.get('/api/devices', authenticateToken, requireAdmin, async (req, res) => {
-  try {
+app.get('/api/devices', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  try { 
     const [rows] = await db.execute(`
       SELECT d.*, u.address
       FROM devices d
@@ -1119,7 +1109,36 @@ app.get('/api/logs/download-selected', async (req, res) => {
       WHERE d.tb_device_id = ? AND d.log_time BETWEEN ? AND ?
       ORDER BY d.log_time
     `, [tb_device_id, from, to]);
-    if (!rows.length) continue;
+    if (!rows.length) {
+      // No logs → write empty file with inactive message
+      const inactivityNote = `Device was inactive from ${from} to ${to}`;
+      
+      if (format === 'csv') {
+        const csvContent = `Device ID: ${tb_device_id}\nNote: ${inactivityNote}`;
+        if (isZip) {
+          archive.append(csvContent, { name: `${tb_device_id}_inactive.csv` });
+        } else {
+          res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_inactive.csv`);
+          res.set('Content-Type', 'text/csv');
+          return res.send(csvContent);
+        }
+      } else if (format === 'xls') {
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('Logs');
+        ws.addRow([`Device ${tb_device_id} was inactive from ${from} to ${to}`]);
+        const buffer = await workbook.xlsx.writeBuffer();
+        if (isZip) {
+          archive.append(buffer, { name: `${tb_device_id}_inactive.xlsx` });
+        } else {
+          res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_inactive.xlsx`);
+          res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+          return res.send(Buffer.from(buffer));
+        }
+      }
+      continue;
+    }
+    
     const address = rows[0].address || '-';
     const header = ['Date and Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'];
     const dataRows = rows.map(r => [
@@ -1348,6 +1367,222 @@ app.post('/api/check-duplicate/:field', async (req, res) => {
   }
 });
 
+// ------------------------------------------------------------------------------------------------------
+//SUPERADMIN ONLY ENDPOINTS
 
+// ==================== SUPERADMIN ENDPOINTS ====================
 
+/**
+ * Create new admin (superadmin only)
+ * POST /api/admins
+ */
+// Get all admins
+app.get('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const [admins] = await db.execute(`
+      SELECT a.*, ul.username
+      FROM admins a 
+      LEFT JOIN users_login ul ON a.admin_id = ul.username 
+      WHERE ul.role = 'admin' OR ul.role IS NULL
+      ORDER BY a.created_at DESC
+    `);
+    res.json({ success: true, admins });
+  } catch (error) {
+    console.error('Error fetching admins:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch admins' });
+  }
+});
 
+// Create new admin
+app.post('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { admin_id, first_name, last_name, email, phone, password } = req.body;
+    
+    // Validate required fields
+    if (!admin_id || !password) {
+      return res.status(400).json({ success: false, message: 'Admin ID and password are required' });
+    }
+
+    // Check if admin already exists
+    const [existingAdmin] = await db.execute('SELECT id FROM admins WHERE admin_id = ?', [admin_id]);
+    if (existingAdmin.length > 0) {
+      return res.status(400).json({ success: false, message: 'Admin with this ID already exists' });
+    }
+
+    // Check if username already exists in users_login
+    const [existingUser] = await db.execute('SELECT id FROM users_login WHERE username = ?', [admin_id]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ success: false, message: 'Username already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert into admins table
+    const [adminResult] = await db.execute(
+      'INSERT INTO admins (admin_id, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?)',
+      [admin_id, first_name, last_name, email, phone]
+    );
+
+    // Insert into users_login table
+    await db.execute(
+      'INSERT INTO users_login (username, password, role) VALUES (?, ?, ?)',
+      [admin_id, hashedPassword, 'admin']
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Admin created successfully',
+      adminId: adminResult.insertId 
+    });
+  } catch (error) {
+    console.error('Error creating admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to create admin' });
+  }
+});
+
+/**
+ * Update admin (superadmin only)
+ * PUT /api/admins/:id
+ */
+app.put('/api/admins/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, address, password } = req.body;
+
+    // Check if admin exists
+    const [admin] = await db.execute('SELECT admin_id FROM admins WHERE id = ?', [id]);
+    if (admin.length === 0) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+
+    const oldAdminId = admin[0].admin_id;
+
+    // Update admins table
+    await db.execute(
+      'UPDATE admins SET admin_id = ?, first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?',
+      [admin_id, first_name, last_name, email, phone, id]
+    );
+
+    // Update users_login table if admin_id changed
+    if (admin_id !== oldAdminId) {
+      await db.execute(
+        'UPDATE users_login SET username = ? WHERE username = ? AND role = "admin"',
+        [admin_id, oldAdminId]
+      );
+    }
+
+    // Update password if provided
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await db.execute(
+        'UPDATE users_login SET password = ? WHERE username = ? AND role = "admin"',
+        [hashedPassword, admin_id]
+      );
+    }
+
+    res.json({ success: true, message: 'Admin updated successfully' });
+  } catch (error) {
+    console.error('Error updating admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to update admin' });
+  }
+});
+
+/**
+ * Delete admin (superadmin only)
+ * DELETE /api/admins/:id
+ */
+app.delete('/api/admins/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get admin_id before deletion
+    const [admin] = await db.execute('SELECT admin_id FROM admins WHERE id = ?', [id]);
+    if (admin.length === 0) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+
+    const adminId = admin[0].admin_id;
+
+    // Delete from admins table
+    await db.execute('DELETE FROM admins WHERE id = ?', [id]);
+
+    // Delete from users_login table
+    await db.execute('DELETE FROM users_login WHERE username = ? AND role = "admin"', [adminId]);
+
+    res.json({ success: true, message: 'Admin deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete admin' });
+  }
+});
+
+/**
+ * Change admin password (superadmin only)
+ * POST /api/admins/:id/change-password
+ */
+app.post('/api/admins/:id/change-password', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    // Get admin_id
+    const [admin] = await db.execute('SELECT admin_id FROM admins WHERE id = ?', [id]);
+    if (admin.length === 0) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    await db.execute(
+      'UPDATE users_login SET password = ? WHERE username = ? AND role = "admin"',
+      [hashedPassword, admin[0].admin_id]
+    );
+    
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ success: false, message: 'Failed to change password' });
+  }
+});
+
+/**
+ * Get system statistics (superadmin only)
+ * GET /api/system-stats
+ */
+
+// app.get('/api/admin-stats', authenticateToken, requireSuperAdmin, async (req, res) => {
+//   try {
+//     const [adminCount] = await db.execute('SELECT COUNT(*) as count FROM admins');
+    
+//     res.json({ 
+//       success: true, 
+//       stats: {
+//         totalAdmins: adminCount[0].count
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error fetching admin stats:', error);
+//     res.status(500).json({ success: false, message: 'Failed to fetch admin statistics' });
+//   }
+// });
+// app.get('/api/system-stats', authenticateToken, requireSuperAdmin, async (req, res) => {
+//   try {
+//     const [userCount] = await db.execute('SELECT COUNT(*) as count FROM users');
+//     // const [adminCount] = await db.execute('SELECT COUNT(*) as count FROM users_login WHERE role = "admin"');
+//     const [adminCount] = await db.execute('SELECT COUNT(*) as count FROM admins');
+//     const [supervisorCount] = await db.execute('SELECT COUNT(*) as count FROM users_login WHERE role = "supervisor"');
+//     const [deviceCount] = await db.execute('SELECT COUNT(*) as count FROM devices');
+//     const [activeDeviceCount] = await db.execute('SELECT COUNT(*) as count FROM telemetry_device WHERE active = 1');
+    
+//     res.json({
+//       totalUsers: userCount[0].count,
+//       totalAdmins: adminCount[0].count,
+//       totalSupervisors: supervisorCount[0].count,
+//       totalDevices: deviceCount[0].count,
+//       activeDevices: activeDeviceCount[0].count
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });

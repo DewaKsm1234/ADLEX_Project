@@ -251,7 +251,7 @@ body, html {
     .user-table td a:hover { text-decoration: underline; }
     .user-table td .add-device-link { color: #007bff; text-decoration: underline; cursor: pointer; }
     .user-table td .add-device-link:hover { color: #0056b3; }
-    .user-table td .user-link { cursor: pointer; color: #222; font-weight: 500; }
+    .user-table td .user-link { cursor: pointer; color: #222; }/*css of location data in user table*/
     .user-table td .user-link:hover { color: #fff; text-decoration: underline; }
     .user-table tr:hover { background: #007bff !important; color: #fff; }
     .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
