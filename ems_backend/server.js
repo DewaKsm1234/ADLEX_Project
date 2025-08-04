@@ -1,28 +1,50 @@
-// server.js - EMS Backend API
-// Provides endpoints for user, device, supervisor management, and authentication
+// server.js - EMS Backend API with JWT Authentication
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 const path = require('path');
 const cors = require('cors');
+const config = require('./config');
 const app = express();
-// Middleware
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken'); // JWT for secure token-based authentication
+const cookieParser = require('cookie-parser'); // Parse HTTP-only cookies
+
+// JWT Configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+const JWT_EXPIRES_IN = '24h'; // Token expires in 24 hours
+
+// Cookie settings for security
+const COOKIE_OPTIONS = {
+  httpOnly: true,        // Prevents JavaScript access (XSS protection)
+  secure: false,         // Set to true in production with HTTPS
+  sameSite: 'strict',    // Prevents CSRF attacks
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  path: '/'              // Cookie available across entire site
+};
+
+// Middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cookieParser()); // Enable cookie parsing
+app.use(cors({
+  origin: true, // Allow all origins (configure for production)
+  credentials: true // Allow cookies to be sent with requests
+}));
 app.use(express.static(path.join(__dirname, 'public')));
+
 // Import axios for HTTP requests to ThingsBoard
 const axios = require('axios');
-const PDFDocument = require('pdfkit');
-const archiver = require('archiver'); // Add at the top if not present
-const ExcelJS = require('exceljs'); // Add at the top if not present
+const archiver = require('archiver');
+const ExcelJS = require('exceljs');
 
-const TB_BASE_URL = 'https://thingsboard.cloud';
-const TB_USERNAME = 'rutuja.arekar@samsanlabs.com';
-const TB_PASSWORD = 'Rutuja@Samsan113';
+// ThingsBoard configuration
+const TB_BASE_URL = config.thingsboard.baseUrl;
+const TB_USERNAME = config.thingsboard.username;
+const TB_PASSWORD = config.thingsboard.password;
 
 let tbToken = '';
-let tbTokenExpiry = 0; // Unix timestamp
+let tbTokenExpiry = 0;
 
 // Function to login and get a new token
 async function loginToThingsBoard() {
@@ -31,12 +53,8 @@ async function loginToThingsBoard() {
     password: TB_PASSWORD
   });
   tbToken = response.data.token;
-  // Token is valid for 1 hour (3600s); set expiry 5 min before
   tbTokenExpiry = Date.now() + (55 * 60 * 1000);
 }
-
-// Function to get a valid token (login if expired)
-console.log('Fetching ThingsBoard token...');
 
 async function getThingsBoardToken() {
   if (!tbToken || Date.now() > tbTokenExpiry) {
@@ -45,50 +63,195 @@ async function getThingsBoardToken() {
   return tbToken;
 }
 
-const PORT = 3000;
+const PORT = config.server.port;
+const db = mysql.createPool(config.database).promise();
 
-// MySQL connection configuration
-const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '1234',
-  database: 'ems_dbnew'
-}).promise();
+// Password hashing utility functions
+const hashPassword = async (password) => {
+  return await bcrypt.hash(password, 10);
+};
 
+const comparePassword = async (password, hashedPassword) => {
+  return await bcrypt.compare(password, hashedPassword);
+};
 
+// ==================== JWT AUTHENTICATION FUNCTIONS ====================
 
-// Example: Assume you use JWT or session for authentication
-function requireAdmin(req, res, next) {
-  // If using JWT, you would decode the token and check the role
-  // For this example, let's assume you send the role in a custom header for simplicity
-  const userRole = req.headers['x-user-role'];
-  if (userRole === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ error: 'Forbidden: Admins only' });
+/**
+ * Generate JWT token for a user
+ * @param {Object} user - User object containing id, username, role
+ * @returns {string} JWT token
+ */
+const generateToken = (user) => {
+  // Create payload with user information (avoid sensitive data)
+  const payload = {
+    userId: user.id,           // User ID from database
+    username: user.username,   // Username for display
+    role: user.role,          // User role for authorization
+    iat: Math.floor(Date.now() / 1000) // Issued at timestamp
+    // Remove the manual 'exp' property - let jwt.sign() handle it
+  };
+
+  // Sign the token with our secret key
+  // jwt.sign() will automatically add the 'exp' property based on expiresIn option
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
+
+/**
+ * Verify JWT token and extract user data
+ * @param {string} token - JWT token to verify
+ * @returns {Object|null} Decoded token payload or null if invalid
+ */
+const verifyToken = (token) => {
+  try {
+    // Verify token using our secret key
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded;
+  } catch (error) {
+    // Token is invalid, expired, or malformed
+    console.log('Token verification failed:', error.message);
+    return null;
   }
-}
+};
 
-// ---------------- LOGIN ENDPOINT -------------------
-// Login endpoint
+/**
+ * Middleware to authenticate requests using JWT token
+ * Extracts token from cookies or Authorization header
+ */
+const authenticateToken = (req, res, next) => {
+  // Try to get token from different sources (in order of preference)
+  let token = null;
+
+  // 1. First, try to get token from HTTP-only cookie (most secure)
+  if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+    console.log('Token found in cookie');
+  }
+  // 2. Fallback to Authorization header (for API calls)
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    // Extract token from "Bearer <token>" format
+    token = req.headers.authorization.substring(7);
+    console.log('Token found in Authorization header');
+  }
+
+  // If no token found, return unauthorized
+  if (!token) {
+    console.log('No authentication token found');
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Access denied. No token provided.',
+      redirectTo: '/login' // Frontend can use this to redirect
+    });
+  }
+
+  // Verify the token
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    console.log('Invalid or expired token');
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid or expired token.',
+      redirectTo: '/login'
+    });
+  }
+
+  // Token is valid - attach user data to request object
+  req.user = {
+    userId: decoded.userId,
+    username: decoded.username,
+    role: decoded.role
+  };
+
+  console.log(`Authenticated user: ${decoded.username} (${decoded.role})`);
+  next(); // Continue to next middleware/route handler
+};
+
+/**
+ * Middleware to require specific user roles
+ * @param {...string} roles - Allowed roles
+ */
+const requireRole = (...roles) => {
+  return (req, res, next) => {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication required.',
+        redirectTo: '/login'
+      });
+    }
+
+    // Check if user's role is in the allowed roles list
+    if (!roles.includes(req.user.role)) {
+      console.log(`Access denied: User ${req.user.username} (${req.user.role}) tried to access ${req.path}`);
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Insufficient permissions.',
+        redirectTo: '/dashboard'
+      });
+    }
+
+    console.log(`Role check passed: ${req.user.username} (${req.user.role}) accessing ${req.path}`);
+    next();
+  };
+};
+
+// Role-specific middleware
+const requireAdmin = requireRole('admin');
+const requireSupervisorOrAdmin = requireRole('supervisor', 'admin');
+
+/**
+ * Clear authentication cookie and token
+ * @param {Object} res - Express response object
+ */
+const clearAuthCookie = (res) => {
+  // Clear the authentication cookie by setting it to expire in the past
+  res.clearCookie('authToken', {
+    httpOnly: true,
+    secure: false, // Should match COOKIE_OPTIONS
+    sameSite: 'strict',
+    path: '/'
+  });
+  console.log('Authentication cookie cleared');
+};
+
+// ==================== AUTHENTICATION ENDPOINTS ====================
+
+/**
+ * Login endpoint with JWT token generation
+ * POST /api/login
+ */
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
     console.log('Login attempt:', username);
 
+    // Get user by username only (password will be compared with bcrypt)
     const [rows] = await db.execute(
-      'SELECT * FROM users_login WHERE username = ? AND password = ?',
-      [username, password]
+      'SELECT * FROM users_login WHERE username = ?',
+      [username]
     );
 
     if (rows.length === 0) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    console.log('Login successful. Starting background device sync...');
+    // Compare password with bcrypt hash
+    const isValidPassword = await comparePassword(password, rows[0].password);
+    if (!isValidPassword) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
-    // 🔄 Start background device sync (no await)
+    console.log('Login successful. Generating JWT token...');
+
+    // Generate JWT token
+    const token = generateToken(rows[0]);
+
+    // Set HTTP-only cookie with the token
+    res.cookie('authToken', token, COOKIE_OPTIONS);
+
+    // Start background device sync (no await)
     axios.post(
       'http://localhost:3000/api/sync-thingsboard-devices',
       {},
@@ -97,9 +260,10 @@ app.post('/api/login', async (req, res) => {
     .then(() => console.log('Device sync started in background'))
     .catch(err => console.error('Device sync failed:', err.message));
 
-    // ✅ Respond immediately (don't include sync result)
+    // Respond with success and user data
     res.json({
       success: true,
+      token: token, // Also send token in response for frontend storage
       username: rows[0].username,
       role: rows[0].role,
       name: (rows[0].first_name || '') + ' ' + (rows[0].last_name || ''),
@@ -107,25 +271,93 @@ app.post('/api/login', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Login or sync failed:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Login failed:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
+/**
+ * Logout endpoint
+ * POST /api/logout
+ */
+app.post('/api/logout', (req, res) => {
+  try {
+    // Clear the authentication cookie
+    clearAuthCookie(res);
+    
+    console.log('User logged out successfully');
+    
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ success: false, message: 'Logout failed' });
+  }
+});
 
+/**
+ * Verify authentication status
+ * GET /api/auth/verify
+ */
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+  // If we reach here, the token is valid
+  res.json({
+    success: true,
+    user: {
+      userId: req.user.userId,
+      username: req.user.username,
+      role: req.user.role
+    },
+    message: 'Token is valid'
+  });
+});
 
-// ---------------- USERS ENDPOINTS -------------------
-// Register new user (with device and supervisor assignment)
-app.post('/api/register',requireAdmin, async (req, res) => {
+// ==================== PROTECTED ROUTES ====================
+
+// Example of protected route using authentication middleware
+app.get('/api/protected-data', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    data: 'This is protected data',
+    user: req.user
+  });
+});
+
+// Example of admin-only route
+app.get('/api/admin-only', authenticateToken, requireAdmin, (req, res) => {
+  res.json({
+    success: true,
+    data: 'Admin-only data',
+    user: req.user
+  });
+});
+
+// Example of supervisor or admin route
+app.get('/api/supervisor-data', authenticateToken, requireSupervisorOrAdmin, (req, res) => {
+  res.json({
+    success: true,
+    data: 'Supervisor/Admin data',
+    user: req.user
+  });
+});
+
+// ==================== EXISTING ROUTES (UPDATED WITH AUTH) ====================
+
+// Update existing routes to use new authentication
+app.post('/api/register', authenticateToken, requireAdmin, async (req, res) => {
   const {
     address, password, email, phone, first_name, last_name, tb_device_id, supervisor_id
   } = req.body;
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
+    // Hash password with bcrypt (salt rounds = 10)
+    // const hashedPassword = await bcrypt.hash(password, 10);
     // await conn.execute(
     //   'INSERT INTO users_login (address, password, role) VALUES (?, ?, ?)',
-    //   [address, password, 'user']
+    //   [address, hashedPassword, 'user']
     // );
     const [userResult] = await conn.execute(
       'INSERT INTO users (address, email, phone, first_name, last_name, supervisor_id) VALUES (?, ?, ?, ?, ?, ?)',
@@ -150,7 +382,7 @@ app.post('/api/register',requireAdmin, async (req, res) => {
 });
 
 // Fetch all users (with supervisor name join)
-app.get('/api/users', requireAdmin, async (req, res) => {
+app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT u.*, s.first_name as supervisor_first_name, s.last_name as supervisor_last_name 
@@ -164,7 +396,7 @@ app.get('/api/users', requireAdmin, async (req, res) => {
 });
 
 // Assign supervisor to user
-app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
+app.post('/api/assign-supervisor', authenticateToken, requireAdmin, async (req, res) => {
   const { address, supervisor_id } = req.body;
 
   // 🔍 Validate input
@@ -201,7 +433,7 @@ app.post('/api/assign-supervisor', requireAdmin, async (req, res) => {
 
 
 // Assign Device to User
-app.post('/api/assign-device',  requireAdmin, async (req, res) => {
+app.post('/api/assign-device',  authenticateToken, requireAdmin, async (req, res) => {
   const { address, tb_device_id } = req.body;
   try {
     // Get user_id from address
@@ -250,7 +482,7 @@ app.post('/api/assign-device',  requireAdmin, async (req, res) => {
 });
 
 // Devices mapped for a specific user
-app.get('/api/user-devices/:address', requireAdmin, async (req, res) => {
+app.get('/api/user-devices/:address', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT d.* FROM devices d
@@ -266,7 +498,7 @@ app.get('/api/user-devices/:address', requireAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/unassigned-devices', requireAdmin, async (req, res) => {
+app.get('/api/unassigned-devices', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // Get all device IDs from devices
     const [allDevices] = await db.execute('SELECT tb_device_id, DeviceId FROM devices');
@@ -281,21 +513,21 @@ app.get('/api/unassigned-devices', requireAdmin, async (req, res) => {
   }
 });
 // Get full details of a single device
-app.get('/api/device-details/:tb_device_id', requireAdmin, async (req, res) => {
-  const { tb_device_id } = req.params;
-  try {
-    const [rows] = await db.execute(
-      `SELECT DeviceId, SerialNum, MacAddress, Location 
-       FROM devices 
-       WHERE tb_device_id = ?`,
-      [tb_device_id]
-    );
-    if (rows.length === 0) return res.status(404).json({ error: 'Device not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// app.get('/api/device-details/:tb_device_id', requireAdmin, async (req, res) => {
+//   const { tb_device_id } = req.params;
+//   try {
+//     const [rows] = await db.execute(
+//       `SELECT DeviceId, SerialNum, MacAddress, Location 
+//        FROM devices 
+//        WHERE tb_device_id = ?`,
+//       [tb_device_id]
+//     );
+//     if (rows.length === 0) return res.status(404).json({ error: 'Device not found' });
+//     res.json(rows[0]);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 // Get user information for a specific device
 app.get('/api/device-user/:tb_device_id', async (req, res) => {
@@ -318,12 +550,14 @@ app.get('/api/device-user/:tb_device_id', async (req, res) => {
 
 // ---------------- SUPERVISORS ENDPOINTS -------------------
 // Register supervisor
-app.post('/api/register-supervisor', requireAdmin, async (req, res) => {
+app.post('/api/register-supervisor', authenticateToken, requireAdmin, async (req, res) => {
   const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
   try {
+    // Hash password with bcrypt (salt rounds = 10)
+    const hashedPassword = await hashPassword(password);
     await db.execute(
-      'INSERT INTO users_login (address, password, role) VALUES (?, ?, ?)',
-      [supervisor_id, password, 'supervisor']
+      'INSERT INTO users_login (username, password, role) VALUES (?, ?, ?)',
+      [supervisor_id, hashedPassword, 'supervisor']
     );
     await db.execute(
       'INSERT INTO supervisors (supervisor_id, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?)',
@@ -336,7 +570,7 @@ app.post('/api/register-supervisor', requireAdmin, async (req, res) => {
 });
 
 // Fetch all supervisors
-app.get('/api/supervisors', requireAdmin, async (req, res) => {
+app.get('/api/supervisors', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM supervisors');
     res.json(rows);
@@ -410,20 +644,47 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
   const tb_device_id = req.params.tb_device_id;
   const tbToken = await getThingsBoardToken();//To get token  
 
-  // Fetch device info to get the name
+  // Fetch device info to get the name and active status
   let deviceName = '';
+  let isActive = null;
+  
   try {
-    const deviceInfoRes = await axios.get(
-      `${TB_BASE_URL}/api/device/${tb_device_id}`,
-      { headers: { 'Authorization': `Bearer ${tbToken}` } }
+    // Always use deviceInfos endpoint to get accurate active status
+    const deviceInfosRes = await axios.get(
+      `${TB_BASE_URL}/api/deviceInfos/all?pageSize=1000&page=0`,
+      { headers: { 'X-Authorization': `Bearer ${tbToken}` } }
     );
-    deviceName = deviceInfoRes.data.name || '';
-    const isActive = deviceInfoRes.data.active;
-    if (isActive === false) {
-      console.log('Device Inactive');
-      return res.status(400).json({ error: 'Device is inactive. Telemetry not synced.' });
+    
+    const deviceInfos = deviceInfosRes.data.data || [];
+    const deviceInfo = deviceInfos.find(device => device.id && device.id.id === tb_device_id);
+    
+    if (deviceInfo) {
+      console.log(`✅ Found device in deviceInfos:`, deviceInfo);
+      deviceName = deviceInfo.name || '';
+      isActive = deviceInfo.active;
+      console.log(`  Device name:`, deviceName);
+      console.log(`  Active status:`, isActive);
+      console.log(`  Active status type:`, typeof isActive);
+    } else {
+      console.log(`❌ Device not found in deviceInfos list`);
+      // Fallback to individual device endpoint for name only
+      try {
+        const deviceInfoRes = await axios.get(
+          `${TB_BASE_URL}/api/device/${tb_device_id}`,
+          { headers: { 'Authorization': `Bearer ${tbToken}` } }
+        );
+        deviceName = deviceInfoRes.data.name || '';
+        console.log(`  Fallback - Device name from individual endpoint:`, deviceName);
+      } catch (fallbackErr) {
+        console.error(`❌ ERROR: Fallback individual device call failed:`, fallbackErr.message);
+      }
     }
+    
+    // Do not return early if inactive, just include status
   } catch (err) {
+    console.error(`❌ ERROR: Failed to fetch device info for ${tb_device_id}:`, err.message);
+    console.error(`  Error response:`, err.response?.data);
+    console.error(`  Error status:`, err.response?.status);
     return res.status(500).json({ error: 'Failed to fetch device info' });
   }
 
@@ -478,7 +739,6 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
     LIMIT 1
     `, [tb_device_id]);
 
-
     telemetry.address = userRows.length > 0 ? userRows[0].address : 'NA';
 
     // Step 5: Respond to frontend
@@ -491,8 +751,18 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
     res.json({
       tb_device_id,
       ...telemetry,
-      log_time // <-- include this in the response
+      log_time, // <-- include this in the response
+      active: isActive // <-- always include real-time active status
     });
+    
+    // Debug logging for response
+    console.log(`📤 DEBUG: Sending response to frontend for device ${tb_device_id}:`);
+    console.log(`  active status in response:`, isActive);
+    console.log(`  active status type:`, typeof isActive);
+    console.log(`  active === true:`, isActive === true);
+    console.log(`  active === false:`, isActive === false);
+    console.log(`  active == true:`, isActive == true);
+    console.log(`  active == false:`, isActive == false);
 
   } catch (err) {
     console.error('Telemetry sync error:', err.message);
@@ -505,7 +775,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
 
 
     // ---------------- SYNC DEVICES ENDPOINT -------------------
-    app.post('/api/sync-thingsboard-devices', requireAdmin, async (req, res) => {
+    app.post('/api/sync-thingsboard-devices', authenticateToken, requireAdmin, async (req, res) => {
       try {
         console.log('🔄 Starting device sync from ThingsBoard...');
     
@@ -616,9 +886,13 @@ app.get('/', (req, res) => {
 });
 
 // ---------------- START SERVER -------------------
-app.listen(PORT, () => {
-  console.log(`EMS Backend running on http://localhost:${PORT}`);
-  console.log("✅❌Database: ems_dbnew");
+app.listen(PORT, config.server.host, () => {
+  console.log(`🚀 EMS Backend Server Started!`);
+  console.log(`📍 Local Access: http://localhost:${PORT}`);
+  console.log(`🌐 Network Access: http://192.168.1.40:${PORT}`);
+  console.log(`📊 Database: ${config.database.host}:${config.database.port}/${config.database.database}`);
+  console.log(`🔧 Server listening on: ${config.server.host}:${PORT}`);
+  console.log(`✅ Ready to accept connections from localhost and network devices`);
 });
 
 // Get detailed telemetry devices assigned to a user
@@ -675,7 +949,7 @@ app.get('/api/user-devices', async (req, res) => {
   res.json(rows);
 });
 //only for devices page (loading all devices)
-app.get('/api/devices', requireAdmin, async (req, res) => {
+app.get('/api/devices', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT d.*, u.address
@@ -899,21 +1173,21 @@ app.get('/api/logs/download-selected', async (req, res) => {
         res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         return res.send(Buffer.from(buffer));
       }
-    } else if (format === 'pdf') {
-      const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument({ margin: 30, size: 'A4' });
-      let buffers = [];
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => {
-        const pdfBuffer = Buffer.concat(buffers);
-        if (isZip) {
-          archive.append(pdfBuffer, { name: `${fileName}.pdf` });
-        } else {
-          res.setHeader('Content-disposition', `attachment; filename=${fileName}.pdf`);
-          res.set('Content-Type', 'application/pdf');
-          res.send(pdfBuffer);
-        }
-      });
+    // } else if (format === 'pdf') {
+    //   const PDFDocument = require('pdfkit');
+    //   const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    //   let buffers = [];
+    //   doc.on('data', buffers.push.bind(buffers));
+    //   doc.on('end', () => {
+    //     const pdfBuffer = Buffer.concat(buffers);
+    //     if (isZip) {
+    //       archive.append(pdfBuffer, { name: `${fileName}.pdf` });
+    //     } else {
+    //       res.setHeader('Content-disposition', `attachment; filename=${fileName}.pdf`);
+    //       res.set('Content-Type', 'application/pdf');
+    //       res.send(pdfBuffer);
+    //     }
+    //   });
       doc.fontSize(16).text(`${address} | ${tb_device_id}`, { align: 'center' });
       doc.moveDown();
       doc.fontSize(12);
@@ -1073,5 +1347,7 @@ app.post('/api/check-duplicate/:field', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 

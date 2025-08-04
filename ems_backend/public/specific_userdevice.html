@@ -43,7 +43,7 @@
       <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
       </ul>
       <div class="logout-link" onclick="logout()">Logout</div>
-      <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+      <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button>
   </aside>
     <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
     <div class="main-content">
@@ -96,6 +96,7 @@
     </div>
     
     <script>
+    // Get deviceId from URL (declare only once at the top)
     const urlParams = new URLSearchParams(window.location.search);
     const deviceId = urlParams.get('deviceId');
     const username = sessionStorage.getItem('selectedUsername') || 'NA';
@@ -131,44 +132,87 @@
       });
     }
     
-    // Use this in your page load and sync button
-async function syncAndRenderTelemetry() {
-  if (!deviceId) return;
-  try {
-    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-    if (!res.ok) throw new Error('Failed to sync telemetry');
-    const telemetry = await res.json();
-    renderTelemetryToUI(telemetry);
-    await fetchAndRenderUser(telemetry.tb_device_id); // ← call this
-  } catch (e) {
-    console.error('Error syncing telemetry:', e);
-    alert('Error syncing telemetry: ' + e.message);
-  }
-}
-async function fetchAndRenderUser(tb_device_id) {
-  try {
-    const res = await fetch(`/api/device-user/${tb_device_id}`);
-    if (!res.ok) throw new Error('No user assigned');
-    const user = await res.json();
-    
-    // Update location name (existing field)
-    document.getElementById('deviceUser').textContent = user.address || 'NA';
-    
-    // Update user name field (new field)
-    const fullName = `${user.first_name || ''} ${user.last_name || 'null'}`.trim();
-    document.getElementById('deviceUserName').textContent = fullName || 'NA';
-    
-    // Update contact info field (new field) - show phone or email
-    const contactInfo = user.phone || user.email || 'NA';
-    document.getElementById('deviceUserContact').textContent = contactInfo;
-    
-  } catch (e) {
-    console.error('Error loading user info:', e.message);
-    document.getElementById('deviceUser').textContent = 'NA';
-    document.getElementById('deviceUserName').textContent = 'NA';
-    document.getElementById('deviceUserContact').textContent = 'NA';
-  }
-}
+    // --- Optimized and cleaned up script for telemetry and status loading ---
+
+
+
+    // --- Main function to load device info and status from backend ---
+    async function loadDeviceAndTelemetry(tb_device_id) {
+      try {
+        const res = await fetch(`/api/device/${tb_device_id}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
+        if (!res.ok) throw new Error('Failed to sync telemetry');
+        const device = await res.json();
+        document.getElementById('deviceIdValue').textContent = device.DeviceId || '-';
+        document.getElementById('deviceMac').textContent = device.MacAddress || '-';
+        document.getElementById('deviceSerial').textContent = device.SerialNum || '-';
+        document.getElementById('deviceLocation').textContent = device.Location || '-';
+        document.getElementById('deviceStatus').textContent = device.active === true ? 'Active' : 'Inactive';
+        
+        // Debug logging for active status
+        console.log(`🔍 DEBUG: Frontend received device data:`);
+        console.log(`  device.active value:`, device.active);
+        console.log(`  device.active type:`, typeof device.active);
+        console.log(`  device.active === true:`, device.active === true);
+        console.log(`  device.active === false:`, device.active === false);
+        console.log(`  device.active == true:`, device.active == true);
+        console.log(`  device.active == false:`, device.active == false);
+        console.log(`  Final status text:`, device.active === true ? 'Active' : 'Inactive');
+        // Last upload time
+        if (device.log_time) {
+          const t = new Date(device.log_time);
+          // Format as 'YYYY-MM-DD HH:mm:ss'
+          const dateStr = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+          const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          document.getElementById('deviceLastUpload').textContent = `${dateStr} ${timeStr}`;
+        } else {
+          document.getElementById('deviceLastUpload').textContent = 'NA';
+        }
+        // Stats
+        document.getElementById('stat-DirCount').textContent = device.DIRCNT || 'NA';
+        document.getElementById('stat-DirChangeCount').textContent = device.DIRCHG || 'NA';
+        document.getElementById('stat-TotalWorkCount').textContent = device.TWCOUNT || 'NA';
+        document.getElementById('stat-TotalRoadTime').textContent = device.RDTIME || 'NA';
+        document.getElementById('stat-TotalWorkTime').textContent = device.TWTIME || 'NA';
+        document.getElementById('stat-TotalTravelTime').textContent = device.TRVTIME || 'NA';
+        document.getElementById('stat-TotalStopCount').textContent = device.STPCNT || 'NA';
+        document.getElementById('stat-DoorAStatus').textContent = device.DOORA || 'NA';
+        document.getElementById('stat-DoorBStatus').textContent = device.DOORB || 'NA';
+        document.getElementById('stat-EmergencyAlarm').textContent = device.ERR || 'NA';
+        // ... add more fields as needed ...
+      } catch (e) {
+        console.error('Error loading device and telemetry:', e);
+      }
+    }
+
+    // --- User info loader (keep this if you want user info to update on sync) ---
+    async function fetchAndRenderUser(tb_device_id) {
+      try {
+        const res = await fetch(`/api/device-user/${tb_device_id}`);
+        if (!res.ok) throw new Error('No user assigned');
+        const user = await res.json();
+        document.getElementById('deviceUser').textContent = user.address || 'NA';
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+        document.getElementById('deviceUserName').textContent = fullName || 'NA';
+        const contactInfo = user.phone || user.email || 'NA';
+        document.getElementById('deviceUserContact').textContent = contactInfo;
+      } catch (e) {
+        console.error('Error loading user info:', e.message);
+        document.getElementById('deviceUser').textContent = 'NA';
+        document.getElementById('deviceUserName').textContent = 'NA';
+        document.getElementById('deviceUserContact').textContent = 'NA';
+      }
+    }
+
+    // --- On page load, update device info and user info, and auto-sync every minute ---
+    window.addEventListener('DOMContentLoaded', async function() {
+      await loadDeviceAndTelemetry(deviceId);
+      await fetchAndRenderUser(deviceId);
+      setInterval(() => {
+        loadDeviceAndTelemetry(deviceId);
+        fetchAndRenderUser(deviceId);
+      }, 60000);
+    });
+    // --- All other legacy/unused code remains commented for clarity ---
 
     document.getElementById('tabStats').onclick=function(){};
     document.getElementById('tabAlarms').onclick=function(){if(deviceId) window.location.href=`elevatorerror.html?deviceId=${deviceId}`;};
@@ -184,73 +228,52 @@ async function fetchAndRenderUser(tb_device_id) {
     
     document.getElementById("deviceUser").textContent = username || 'NA';
     
-    // Global variable to store device active status
-    let deviceActiveStatus = 'NA';
 
-    // Function to fetch and set device active status
-    async function fetchAndSetDeviceActiveStatus(deviceId) {
-      try {
-        const deviceInfoRes = await fetch(`https://thingsboard.cloud/api/deviceInfos/${deviceId}`);
-        if (deviceInfoRes.ok) {
-          const deviceInfo = await deviceInfoRes.json();
-          const isActive = deviceInfo.active;
-          deviceActiveStatus = isActive ? 'Active' : 'Inactive';
-        } else {
-          deviceActiveStatus = 'NA';
-        }
-      } catch (e) {
-        deviceActiveStatus = 'NA';
-      }
-      document.getElementById('deviceStatus').textContent = deviceActiveStatus;
-    }
 
-    // Call this once on page load and whenever deviceId changes
-    window.addEventListener('DOMContentLoaded', function() {
-      if (deviceId) fetchAndSetDeviceActiveStatus(deviceId);
-    });
     
     // Handle Sync button click
     // Render telemetry data into device card and stats cards
-    async function renderTelemetryToUI(telemetry) {
-      try {
-        // Device Card
-        //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
-        //document.getElementById('deviceName').textContent = telemetry.DeviceName || 'NA';
-        document.getElementById('deviceIdValue').textContent = telemetry.ID || telemetry.DeviceId || 'NA';
-        document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
-        document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
-        document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
-        // Status is now set globally
-        document.getElementById('deviceStatus').textContent = deviceActiveStatus;
-        // Show only time for log_time
-        if (telemetry.log_time) {
-          const t = new Date(telemetry.log_time);
-          const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          document.getElementById('deviceLastUpload').textContent = timeStr;
-        } else {
-          document.getElementById('deviceLastUpload').textContent = 'NA';
-        }
-        // Stats cards
-        document.getElementById('stat-DirCount').textContent = telemetry.DIRCNT || 'NA';
-        //document.getElementById('stat-TotalDistanceTravelled').textContent = telemetry.TotalDistanceTravelled || 'NA';
-        document.getElementById('stat-DirChangeCount').textContent = telemetry.DIRCHG || 'NA';
-        document.getElementById('stat-TotalWorkCount').textContent = telemetry.TWCOUNT || 'NA';
-        document.getElementById('stat-TotalRoadTime').textContent = telemetry.RDTIME || 'NA';
-        document.getElementById('stat-TotalWorkTime').textContent = telemetry.TWTIME || 'NA';
-        document.getElementById('stat-TotalTravelTime').textContent = telemetry.TRVTIME || 'NA';
-        document.getElementById('stat-TotalStopCount').textContent = telemetry.STPCNT || 'NA';
-        document.getElementById('stat-DoorAStatus').textContent = telemetry.DOORA || 'NA';
-        document.getElementById('stat-DoorBStatus').textContent = telemetry.DOORB || 'NA';
-        //document.getElementById('stat-LastSignalDate').textContent = telemetry.LastSignalDate || 'NA';
-        document.getElementById('stat-EmergencyAlarm').textContent = telemetry.ERR || 'NA';
-        //document.getElementById('stat-Speed').textContent = telemetry.SPD || 'NA';
-        //document.getElementById('stat-Rpm').textContent = telemetry.RPM || 'NA';
-        //document.getElementById('stat-Position').textContent = telemetry.POS || 'NA';
-      } catch (err) {
-        console.error('Error rendering telemetry:', err);
-        alert('Could not update UI with telemetry data.');
-      }
-    }
+    // async function renderTelemetryToUI(telemetry) {
+    //   try {
+    //     // Device Card
+    //     //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
+    //     //document.getElementById('deviceName').textContent = telemetry.DeviceName || 'NA';
+    //     //document.getElementById('deviceStatus').textContent = dev.active===true?'Active':'Inactive';
+    //     document.getElementById('deviceIdValue').textContent = telemetry.ID || telemetry.DeviceId || 'NA';
+    //     document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
+    //     document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
+    //     document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
+    //     // Status is now set globally
+    //     //document.getElementById('deviceStatus').textContent = deviceActiveStatus;
+    //     // Show only time for log_time
+    //     if (telemetry.log_time) {
+    //       const t = new Date(telemetry.log_time);
+    //       const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    //       document.getElementById('deviceLastUpload').textContent = timeStr;
+    //     } else {
+    //       document.getElementById('deviceLastUpload').textContent = 'NA';
+    //     }
+    //     // Stats cards
+    //     document.getElementById('stat-DirCount').textContent = telemetry.DIRCNT || 'NA';
+    //     //document.getElementById('stat-TotalDistanceTravelled').textContent = telemetry.TotalDistanceTravelled || 'NA';
+    //     document.getElementById('stat-DirChangeCount').textContent = telemetry.DIRCHG || 'NA';
+    //     document.getElementById('stat-TotalWorkCount').textContent = telemetry.TWCOUNT || 'NA';
+    //     document.getElementById('stat-TotalRoadTime').textContent = telemetry.RDTIME || 'NA';
+    //     document.getElementById('stat-TotalWorkTime').textContent = telemetry.TWTIME || 'NA';
+    //     document.getElementById('stat-TotalTravelTime').textContent = telemetry.TRVTIME || 'NA';
+    //     document.getElementById('stat-TotalStopCount').textContent = telemetry.STPCNT || 'NA';
+    //     document.getElementById('stat-DoorAStatus').textContent = telemetry.DOORA || 'NA';
+    //     document.getElementById('stat-DoorBStatus').textContent = telemetry.DOORB || 'NA';
+    //     //document.getElementById('stat-LastSignalDate').textContent = telemetry.LastSignalDate || 'NA';
+    //     document.getElementById('stat-EmergencyAlarm').textContent = telemetry.ERR || 'NA';
+    //     //document.getElementById('stat-Speed').textContent = telemetry.SPD || 'NA';
+    //     //document.getElementById('stat-Rpm').textContent = telemetry.RPM || 'NA';
+    //     //document.getElementById('stat-Position').textContent = telemetry.POS || 'NA';
+    //   } catch (err) {
+    //     console.error('Error rendering telemetry:', err);
+    //     alert('Could not update UI with telemetry data.');
+    //   }
+    // }
     
 
     // When telemetry is fetched or synced, call this function
@@ -258,54 +281,70 @@ async function fetchAndRenderUser(tb_device_id) {
     // renderTelemetryToUI(telemetry);
 
     // Update auto-sync to fetch both telemetry and active status every minute
-async function autoSyncTelemetryAndStatus() {
-  if (!deviceId) return;
-  
-  // Fetch and render telemetry first
-  try {
-    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
-    if (!res.ok) throw new Error('Failed to sync telemetry');
-    const telemetry = await res.json();
-    renderTelemetryToUI(telemetry);
-    
-    // Use tb_device_id from telemetry for status check
-    const tbDeviceId = telemetry.tb_device_id || deviceId;
-    console.log(`[DEBUG] Auto-sync using tb_device_id: ${tbDeviceId} for status check`);
-    
-    // Fetch and set active status using correct tb_device_id
-    await fetchAndSetDeviceActiveStatus(tbDeviceId);
-    // Fetch and render user information
-    await fetchAndRenderUser(tbDeviceId);
-  } catch (e) {
-    console.error('Error auto-syncing telemetry:', e.message);
-  }
-}
-// Start auto-sync on page load and every minute
-window.addEventListener('DOMContentLoaded', async function() {
-  let tbDeviceId = deviceId; // Default to deviceId if we can't get tb_device_id
-  
-  // Try to get the correct tb_device_id from device details
-  if (deviceId) {
-    try {
-      const res = await fetch(`/api/device-details/${deviceId}`);
-      if (res.ok) {
-        const device = await res.json();
-        tbDeviceId = device.tb_device_id || deviceId;
-        console.log(`[DEBUG] Using tb_device_id: ${tbDeviceId} for status check`);
-      }
-    } catch (e) {
-      console.error('[DEBUG] Could not fetch device details:', e);
-    }
-    
-    // Fetch status using the correct tb_device_id
-    await fetchAndSetDeviceActiveStatus(tbDeviceId);
-    // Fetch user info
-    await fetchAndRenderUser(tbDeviceId);
-  }
-  
-  autoSyncTelemetryAndStatus();
-  setInterval(autoSyncTelemetryAndStatus, 60000); // 60,000 ms = 1 minute
-});
+    // async function autoSyncTelemetryAndStatus() {
+    //   if (!deviceId) return;
+      
+    //   // Fetch and render telemetry first
+    //   try {
+    //     const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
+    //     if (!res.ok) throw new Error('Failed to sync telemetry');
+    //     const telemetry = await res.json();
+    //     renderTelemetryToUI(telemetry);
+        
+    //     // Use tb_device_id from telemetry for status check
+    //     const tbDeviceId = telemetry.tb_device_id || deviceId;
+    //     console.log(`[DEBUG] Auto-sync using tb_device_id: ${tbDeviceId} for status check`);
+        
+    //     // Fetch and set active status using correct tb_device_id
+    //     //await fetchAndSetDeviceActiveStatus(tbDeviceId);
+    //     // Fetch and render user information
+    //     await fetchAndRenderUser(tbDeviceId);
+    //   } catch (e) {
+    //     console.error('Error auto-syncing telemetry:', e.message);
+    //   }
+    // }
+    // Start auto-sync on page load and every minute
+    // window.addEventListener('DOMContentLoaded', async function() {
+    //   let tbDeviceId = deviceId; // Default to deviceId if we can't get tb_device_id
+      
+    //   // --- Comment out all /api/device-details usage ---
+    //   // (Old code commented out below for reference)
+    //   // try {
+    //   //   const res = await fetch(`/api/device-details/${deviceId}`);
+    //   //   if (res.ok) {
+    //   //     const device = await res.json();
+    //   //     tbDeviceId = device.tb_device_id || deviceId;
+    //   //     console.log(`[DEBUG] Using tb_device_id: ${tbDeviceId} for status check`);
+    //   //   }
+    //   // } catch (e) {
+    //   //   console.error('[DEBUG] Could not fetch device details:', e);
+    //   // }
+    //   // ...
+    //   // (End of /api/device-details usage)
+
+    //   // --- Fill all device info from sync-telemetry ---
+    //   async function loadDeviceAndTelemetry(tb_device_id) {
+    //     try {
+    //       const res = await fetch(`/api/device/${tb_device_id}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
+    //       if (!res.ok) throw new Error('Failed to sync telemetry');
+    //       const device = await res.json();
+    //       document.getElementById('deviceIdValue').textContent = device.DeviceId || '-';
+    //       document.getElementById('deviceMac').textContent = device.MacAddress || '-';
+    //       document.getElementById('deviceSerial').textContent = device.SerialNum || '-';
+    //       console.log('Device ID:', device.DeviceId);
+    //       document.getElementById('deviceLocation').textContent = device.Location || '-';
+    //       console.log('Device active status:', device.active);
+    //       document.getElementById('deviceStatus').textContent = device.active === true ? 'Active' : 'Inactive';
+    //       // ... fill other telemetry/stat fields as needed ...
+    //     } catch (e) {
+    //       console.error('Error loading device and telemetry:', e);
+    //     }
+    //   }
+    //   // Call this function on page load and on sync, passing the correct tb_device_id.
+      
+    //   autoSyncTelemetryAndStatus();
+    //   setInterval(autoSyncTelemetryAndStatus, 60000); // 60,000 ms = 1 minute
+    // });
 
     function navi(url) {
       const role = localStorage.getItem('userRole');

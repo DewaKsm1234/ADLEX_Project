@@ -5,6 +5,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Get references to all input fields and their error message elements
   const inputs = {
+      username: {
+          element: document.getElementById('usernameInput'),
+          errorElement: document.getElementById('usernameInput-error'),
+          maxLength: 15, // Maximum  characters
+          regex: /^[a-zA-Z0-9_]*$/, // Only alphanumeric and underscore, NO spaces
+          invalidCharMsg: 'Only letters, numbers, and underscore allowed. No spaces.',
+          requiredMsg: 'Username is required.',
+          lengthMsg: 'Username must be 3-15 characters long.'
+      },
+      password: {
+          element: document.getElementById('passwordInput'),
+          errorElement: document.getElementById('passwordInput-error'),
+          maxLength: 16, // Maximum 16 characters
+          regex: /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/, // Allow common password characters
+          invalidCharMsg: 'Only letters, numbers, and special characters allowed.',
+          requiredMsg: 'Password is required.',
+          lengthMsg: 'Password must be 8-16 characters long.',
+          formatMsg: 'Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.'
+      },
       address: {
           element: document.getElementById('addressInput'),
           errorElement: document.getElementById('addressInput-error'),
@@ -87,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
           return; // Allow these keys
       }
 
-      // Prevent space key for name fields
-      if ((inputData === inputs.firstName || inputData === inputs.lastName) && e.key === ' ') {
+      // Prevent space key for name fields and username
+      if ((inputData === inputs.firstName || inputData === inputs.lastName || inputData === inputs.username) && e.key === ' ') {
           e.preventDefault();
           showValidationMessage(inputData, 'No spaces allowed');
           return;
@@ -134,10 +153,35 @@ document.addEventListener('DOMContentLoaded', () => {
           return false;
       }
 
-      // 3. Specific length check for phone number (should be exact length)
+      // 3. Specific length checks
       if (inputData === inputs.phoneNumber && value.length > 0 && value.length !== inputData.maxLength) {
           showValidationMessage(inputData, inputData.lengthMsg);
           return false;
+      }
+
+    //   // Username length check (3-20 characters)
+    //   if (inputData === inputs.username && value.length > 0 && (value.length < 3 || value.length > 15)) {
+    //       showValidationMessage(inputData, inputData.lengthMsg);
+    //       return false;
+    //   }
+
+    //   // Password length check (8-16 characters)
+    //   if (inputData === inputs.password && value.length > 0 && (value.length < 8 || value.length > 16)) {
+    //       showValidationMessage(inputData, inputData.lengthMsg);
+    //       return false;
+    //   }
+
+      // Password format validation (at least 1 uppercase, 1 lowercase, 1 number, 1 special character)
+      if (inputData === inputs.password && value.length > 0) {
+          const hasUpperCase = /[A-Z]/.test(value);
+          const hasLowerCase = /[a-z]/.test(value);
+          const hasNumbers = /\d/.test(value);
+          const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
+          
+          if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+              showValidationMessage(inputData, inputData.formatMsg);
+              return false;
+          }
       }
 
       // On blur or submit, check full email format:
@@ -163,6 +207,19 @@ document.addEventListener('DOMContentLoaded', () => {
               // or if it was showing a max length error and user deleted chars
               if (inputData.regex.test(inputData.element.value) && inputData.element.value.length < inputData.maxLength) {
                   clearValidationMessage(inputData);
+              }
+              
+              // Special handling for password field - clear format error as user types
+              if (inputData === inputs.password && inputData.element.value.length > 0) {
+                  const value = inputData.element.value;
+                  const hasUpperCase = /[A-Z]/.test(value);
+                  const hasLowerCase = /[a-z]/.test(value);
+                  const hasNumbers = /\d/.test(value);
+                  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
+                  
+                  if (hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar) {
+                      clearValidationMessage(inputData);
+                  }
               }
           });
 

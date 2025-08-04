@@ -29,39 +29,30 @@ function navi(url) {
   window.location.href = url;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Sidebar toggle logic for hamburger and arrow
-  const sidebarNormal = document.getElementById('sidebar-normal');
-  const sidebarSupervisor = document.getElementById('sidebar-supervisor');
-  const sidebarArrow = document.getElementById('sidebarArrow');
-  const sidebarHamburger = document.getElementById('sidebarHamburger');
 
-  function getActiveSidebar() {
-    // Only one sidebar is visible at a time
-    if (sidebarNormal && sidebarNormal.style.display !== 'none') return sidebarNormal;
-    if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none') return sidebarSupervisor;
-    return null;
+// Sidebar toggle logic for hamburger and arrow
+const sidebar = document.getElementById('sidebar-normal');
+const sidebarSupervisor = document.getElementById('sidebar-supervisor');
+const sidebarArrow = document.getElementById('sidebarArrow');
+const sidebarHamburger = document.getElementById('sidebarHamburger');
+
+if (sidebarArrow && sidebar && sidebarHamburger && sidebarSupervisor) {
+  sidebarArrow.addEventListener('click', function() {
+    sidebar.classList.add('collapsed');
+    sidebarSupervisor.classList.add('collapsed');
+    sidebarHamburger.style.display = 'block';
+  });
+  sidebarHamburger.addEventListener('click', function() {
+    sidebar.classList.remove('collapsed');
+    sidebarSupervisor.classList.remove('collapsed');
+    sidebarHamburger.style.display = 'none';
+  });
+  // Hide hamburger by default if sidebar is visible
+  if (!sidebar.classList.contains('collapsed')) {
+    sidebarSupervisor.classList.remove('collapsed');
+    sidebarHamburger.style.display = 'none';
   }
-
-  if (sidebarArrow && sidebarHamburger) {
-    sidebarArrow.addEventListener('click', function() {
-      const activeSidebar = getActiveSidebar();
-      if (activeSidebar) activeSidebar.classList.add('collapsed');
-      sidebarHamburger.style.display = 'block';
-    });
-    sidebarHamburger.addEventListener('click', function() {
-      const activeSidebar = getActiveSidebar();
-      if (activeSidebar) activeSidebar.classList.remove('collapsed');
-      sidebarHamburger.style.display = 'none';
-    });
-    // Hide hamburger by default if sidebar is visible
-    const activeSidebar = getActiveSidebar();
-    if (activeSidebar && !activeSidebar.classList.contains('collapsed')) {
-      sidebarHamburger.style.display = 'none';
-    }
-  }
-});
-
+}
 function logout() {
   const confirmLogout = confirm("Are you sure you want to log out?");
   if (confirmLogout) {
@@ -84,7 +75,136 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   console.log('userRole', localStorage.getItem('userRole'));
+
+  // Set up sidebar toggle logic AFTER visibility is set
+  const sidebarArrowNormal = document.getElementById('sidebarArrowNormal');
+  const sidebarArrowSupervisor = document.getElementById('sidebarArrowSupervisor');
+  const sidebarHamburger = document.getElementById('sidebarHamburger');
+
+  // console.log('🔍 DEBUG: Sidebar toggle setup -');
+  // console.log('  sidebarArrowNormal found:', !!sidebarArrowNormal);
+  // console.log('  sidebarArrowSupervisor found:', !!sidebarArrowSupervisor);
+  // console.log('  sidebarHamburger found:', !!sidebarHamburger);
+  // console.log('  sidebarArrowNormal element:', sidebarArrowNormal);
+  // console.log('  sidebarArrowSupervisor element:', sidebarArrowSupervisor);
+  // console.log('  sidebarHamburger element:', sidebarHamburger);
+
+  // Get the active arrow button based on which sidebar is visible
+  function getActiveArrowButton() {
+    if (sidebarNormal && sidebarNormal.style.display !== 'none' && sidebarArrowNormal) {
+      return sidebarArrowNormal;
+    }
+    if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none' && sidebarArrowSupervisor) {
+      return sidebarArrowSupervisor;
+    }
+    return null;
+  }
+
+  const activeArrowButton = getActiveArrowButton();
+  console.log('  Active arrow button:', activeArrowButton);
+
+  // if (activeArrowButton) {
+  //   console.log('  Active arrow button disabled:', activeArrowButton.disabled);
+  //   console.log('  Active arrow button display:', activeArrowButton.style.display);
+  //   console.log('  Active arrow button visibility:', activeArrowButton.style.visibility);
+  //   console.log('  Active arrow button onclick:', activeArrowButton.onclick);
+  //   console.log('  Active arrow button event listeners:', activeArrowButton.onclick ? 'has onclick' : 'no onclick');
+  // }
+
+  // if (sidebarHamburger) {
+  //   console.log('  sidebarHamburger disabled:', sidebarHamburger.disabled);
+  //   console.log('  sidebarHamburger display:', sidebarHamburger.style.display);
+  //   console.log('  sidebarHamburger visibility:', sidebarHamburger.style.visibility);
+  //   console.log('  sidebarHamburger onclick:', sidebarHamburger.onclick);
+  //   console.log('  sidebarHamburger event listeners:', sidebarHamburger.onclick ? 'has onclick' : 'no onclick');
+  // }
+
+  function getActiveSidebar() {
+    // Only one sidebar is visible at a time
+    if (sidebarNormal && sidebarNormal.style.display !== 'none') return sidebarNormal;
+    if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none') return sidebarSupervisor;
+    return null;
+  }
+
+  if (activeArrowButton && sidebarHamburger) {
+    console.log('✅ DEBUG: Adding event listeners to sidebar toggle buttons');
+
+    // Test if buttons are clickable
+    activeArrowButton.style.pointerEvents = 'auto';
+    sidebarHamburger.style.pointerEvents = 'auto';
+    console.log('  Set pointer-events to auto for both buttons');
+
+    activeArrowButton.addEventListener('click', function(e) {
+      // console.log('🔄 DEBUG: Sidebar arrow clicked!');
+      // console.log('  Event:', e);
+      // console.log('  Target:', e.target);
+      // console.log('  Current target:', e.currentTarget);
+      e.preventDefault();
+      e.stopPropagation();
+
+      const activeSidebar = getActiveSidebar();
+      console.log('  Active sidebar found:', !!activeSidebar);
+      if (activeSidebar) {
+        // console.log('  Adding collapsed class to:', activeSidebar.id);
+        // console.log('  Before - has collapsed class:', activeSidebar.classList.contains('collapsed'));
+        activeSidebar.classList.add('collapsed');
+        // console.log('  After - has collapsed class:', activeSidebar.classList.contains('collapsed'));
+        // console.log('  Sidebar display style:', activeSidebar.style.display);
+        // console.log('  Sidebar transform style:', activeSidebar.style.transform);
+      }
+      //console.log('  Setting hamburger display to block');
+      //console.log('  Hamburger before - display:', sidebarHamburger.style.display);
+      sidebarHamburger.style.display = 'block';
+      //console.log('  Hamburger after - display:', sidebarHamburger.style.display);
+      //console.log('  Hamburger computed display:', window.getComputedStyle(sidebarHamburger).display);
+    });
+
+    sidebarHamburger.addEventListener('click', function(e) {
+      // console.log('🔄 DEBUG: Sidebar hamburger clicked!');
+      // console.log('  Event:', e);
+      // console.log('  Target:', e.target);
+      // console.log('  Current target:', e.currentTarget);
+      e.preventDefault();
+      e.stopPropagation();
+
+      const activeSidebar = getActiveSidebar();
+      console.log('  Active sidebar found:', !!activeSidebar);
+      if (activeSidebar) {
+        // console.log('  Removing collapsed class from:', activeSidebar.id);
+        // console.log('  Before - has collapsed class:', activeSidebar.classList.contains('collapsed'));
+        activeSidebar.classList.remove('collapsed');
+        // console.log('  After - has collapsed class:', activeSidebar.classList.contains('collapsed'));
+        // console.log('  Sidebar display style:', activeSidebar.style.display);
+        // console.log('  Sidebar transform style:', activeSidebar.style.transform);
+      }
+      // console.log('  Setting hamburger display to none');
+      // console.log('  Hamburger before - display:', sidebarHamburger.style.display);
+      sidebarHamburger.style.display = 'none';
+      // console.log('  Hamburger after - display:', sidebarHamburger.style.display);
+      // console.log('  Hamburger computed display:', window.getComputedStyle(sidebarHamburger).display);
+    });
+
+
+    // Hide hamburger by default if sidebar is visible
+    const activeSidebar = getActiveSidebar();
+    console.log('🔍 DEBUG: Initial sidebar state -');
+    console.log('  Active sidebar:', activeSidebar ? activeSidebar.id : 'none');
+    console.log('  Active sidebar has collapsed class:', activeSidebar ? activeSidebar.classList.contains('collapsed') : 'N/A');
+
+    if (activeSidebar && !activeSidebar.classList.contains('collapsed')) {
+      console.log('  Hiding hamburger button (sidebar is visible)');
+      sidebarHamburger.style.display = 'none';
+    } else {
+      console.log('  Showing hamburger button (sidebar is collapsed or not found)');
+      sidebarHamburger.style.display = 'block';
+    }
+  } else {
+    console.log('❌ DEBUG: Sidebar toggle buttons not found!');
+    console.log('  activeArrowButton:', activeArrowButton);
+    console.log('  sidebarHamburger:', sidebarHamburger);
+  }
 });
+
 function isSupervisor() {
   return localStorage.getItem('userRole') === 'supervisor';
 }

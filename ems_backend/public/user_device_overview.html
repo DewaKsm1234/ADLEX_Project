@@ -45,7 +45,7 @@
             <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
         </ul>
         <div class="logout-link" onclick="logout()">Logout</div>
-        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+        <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button>
     </aside>
     <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 
@@ -73,7 +73,7 @@
                         <th>MAC Address</th>
                         <th>City</th>
                         <!-- <th>Connection</th> -->
-                        <th>Active</th>
+                        <th>Connection</th>
                     </tr>
                 </thead>
                 <tbody id="device-table-body">
@@ -95,14 +95,14 @@
       <form id="addDeviceForm" style="padding:28px;">
         <div class="device-row">
           <select id="modalDeviceDropdown" style="width:100%; padding:8px; margin-bottom:8px;"></select>
-          <div class="device-row" id="deviceDetailsRow1" style="display:flex;flex-direction:column ;gap:10px; display:none;">
-            <input type="text" id="modalElevator" placeholder="Elevator Name" style="width:50%; margin-bottom:8px;" readonly />
-            <input type="text" id="modalSerial" placeholder="Serial Number" style="width:50%; margin-bottom:8px;" readonly />
-          </div>
-          <div class="device-row" id="deviceDetailsRow2" style="display:flex;flex-direction:row;gap:10px; display:none;">
-            <input type="text" id="modalMAC" placeholder="MAC Address" style=" width:50%; margin-bottom:8px;" readonly />
-            <input type="text" id="modalLocation" placeholder="Location" style=" width:50%; margin-bottom:8px;" readonly />
-          </div>
+            <div class="device-row" id="deviceDetailsRow1" style="display:flex;flex-direction:row ;padding:6px;gap:10px; display:none;">
+              <input type="text" id="modalElevator" placeholder="Elevator Name" style="width:50%; margin-bottom:8px;padding:6px" readonly />
+              <input type="text" id="modalSerial" placeholder="Serial Number" style="width:50%; margin-bottom:8px;padding:6px" readonly />
+            </div>
+            <div class="device-row" id="deviceDetailsRow2" style="display:flex;flex-direction:row;padding:6px;gap:10px; display:none;">
+              <input type="text" id="modalMAC" placeholder="MAC Address" style=" width:50%; margin-bottom:8px;padding:6px" readonly />
+              <input type="text" id="modalLocation" placeholder="Location" style=" width:50%; margin-bottom:8px;padding:6px" readonly />
+            </div>
         </div>
         <div style="margin-top:16px; text-align:right;">
           <button type="button" onclick="closeAddDeviceModal()" style="margin-right:10px;">Cancel</button>
@@ -191,37 +191,53 @@
           opt.textContent = dev.DeviceId || 'Unnamed';
           dropdown.appendChild(opt);
         });
+        
+        // Add event listener to populate device details when selection changes
+        dropdown.addEventListener('change', async function() {
+          const selectedDeviceId = this.value;
+          if (!selectedDeviceId) {
+            // Hide device details if no device selected
+            document.getElementById('deviceDetailsRow1').style.display = 'none';
+            document.getElementById('deviceDetailsRow2').style.display = 'none';
+            return;
+          }
+          
+          try {
+            // Fetch device details for the selected device
+            const deviceRes = await fetch(`/api/device/${selectedDeviceId}/sync-telemetry`, {
+              method: 'POST',
+              headers: { 'x-user-role': 'admin' }
+            });
+            
+            if (deviceRes.ok) {
+              const deviceData = await deviceRes.json();
+              
+             
+              document.getElementById('modalSerial').value = deviceData.SerialNum || 'N/A';
+              document.getElementById('modalMAC').value = deviceData.MacAddress || 'N/A';
+              document.getElementById('modalLocation').value = deviceData.Location || 'N/A';
+              
+              // Show the device details rows
+              document.getElementById('deviceDetailsRow1').style.display = 'flex';
+              document.getElementById('deviceDetailsRow2').style.display = 'flex';
+            } else {
+              console.error('Failed to fetch device details');
+              // Hide device details on error
+              document.getElementById('deviceDetailsRow1').style.display = 'none';
+              document.getElementById('deviceDetailsRow2').style.display = 'none';
+            }
+          } catch (error) {
+            console.error('Error fetching device details:', error);
+            // Hide device details on error
+            document.getElementById('deviceDetailsRow1').style.display = 'none';
+            document.getElementById('deviceDetailsRow2').style.display = 'none';
+          }
+        });
+        
       } catch (err) {
         console.error('Failed to load devices:', err);
       }
     }
-
-    document.getElementById('modalDeviceDropdown').addEventListener('change', async function () {
-      const tb_device_id = this.value;
-      if (!tb_device_id) return;
-      try {
-        const res = await fetch(`/api/device-details/${tb_device_id}`, { headers: { 'x-user-role': 'admin' } });
-        const data = await res.json();
-        document.getElementById('modalElevator').value = data.ID || '';
-        document.getElementById('modalSerial').value = data.SerialNum || '';
-        document.getElementById('modalMAC').value = data.MacAddress || '';
-        document.getElementById('modalLocation').value = data.Location || '';
-        document.getElementById('deviceDetailsRow1').style.display = '';
-        document.getElementById('deviceDetailsRow2').style.display = '';
-      } catch (err) {
-        console.error('Device details fetch failed:', err);
-        clearDeviceFields();
-      }
-      function clearDeviceFields() {
-        document.getElementById('elevatorNumber').value = '';
-        document.getElementById('serialNumber').value = '';
-        document.getElementById('macAddress').value = '';
-        document.getElementById('location').value = '';
-        document.getElementById('deviceDetailsRow1').style.display = 'none';
-        document.getElementById('deviceDetailsRow2').style.display = 'none';
-      }
-    });
-
     document.getElementById('addDeviceForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const tb_device_id = document.getElementById('modalDeviceDropdown').value;

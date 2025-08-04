@@ -27,10 +27,9 @@
         <li class="nav-link" onclick="navigate('devices.html')">Devices</li>  
         <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
         <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
-        
         </ul>
         <div class="logout-link" onclick="logout()">Logout</div>
-        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+        <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button>
     </aside>
     
     <!-- Sidebar for supervisors (read-only) -->
@@ -41,8 +40,11 @@
         <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
         </ul>
         <div class="logout-link" onclick="logout()">Logout</div>
-        <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+        <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button>
     </aside>
+    
+    <!-- Common toggle buttons -->
+    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
     <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
     <main class="main-content">
         <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
@@ -74,9 +76,12 @@
           </div>
     </main>
     <script>
+        // Global variables
         const urlParams = new URLSearchParams(window.location.search);
         const supervisor_id = urlParams.get('supervisor_id');
         let allUserDevices = [];
+
+        // Load user devices data
         async function loadUserDevices() {
             if (!supervisor_id) return;
             try {
@@ -84,17 +89,22 @@
                 const userDevices = await res.json();
                 allUserDevices = userDevices;
                 renderUserDevices(userDevices);
-            } catch {
-                document.getElementById('user-table-body').innerHTML = '<tr><td colspan="3">Error loading data</td></tr>';
+            } catch (error) {
+                console.error('Error loading user devices:', error);
+                document.getElementById('user-table-body').innerHTML = '<tr><td colspan="4">Error loading data</td></tr>';
             }
         }
+
+        // Render user devices in table
         function renderUserDevices(userDevices) {
             const table = document.getElementById('user-table-body');
             table.innerHTML = '';
+            
             userDevices.forEach(ud => {
                 const user = ud.user;
                 const devices = ud.devices;
                 const row = document.createElement('tr');
+                
                 row.onclick = () => goToUserDevices(user.address);
                 row.innerHTML = `
                     <td><input type="checkbox" class="super-device-row-checkbox" /></td>
@@ -108,48 +118,76 @@
                       </span>
                     </td>
                 `;
-                // ✅ hide check boxes immediately:
-                if (typeof isSupervisor === 'function' && isSupervisor()) {
-                    row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+
+                // Hide checkboxes for supervisors (this is already handled in script.js)
+                const checkboxes = row.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
                     cb.disabled = true;
                     cb.style.display = 'none';
-                    });
-                }
-                row.querySelector('.super-device-row-checkbox').addEventListener('click', e => e.stopPropagation());
-                row.querySelector('.delete-super-device-btn').addEventListener('click', e => {
-                    e.stopPropagation();
-                    hideAllDeleteConfirmations();
-                    row.querySelector('.delete-super-device-btn').style.display = 'none';
-                    row.querySelector('.delete-confirmation').style.display = '';
                 });
-                row.querySelector('.confirm-delete-btn').addEventListener('click', e => {
-                    e.stopPropagation();
-                    row.remove();
-                    updateActionColumnVisibility();
-                });
-                row.querySelector('.cancel-delete-btn').addEventListener('click', e => {
-                    e.stopPropagation();
-                    row.querySelector('.delete-confirmation').style.display = 'none';
-                    row.querySelector('.delete-super-device-btn').style.display = '';
-                });
-                row.querySelector('.super-device-row-checkbox').addEventListener('change', function() {
-                    row.querySelector('.delete-super-device-btn').style.display = this.checked ? '' : 'none';
-                    if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
-                    updateActionColumnVisibility();
-                });
+
+                // Add event listeners
+                setupRowEventListeners(row);
                 table.appendChild(row);
             });
+            
             updateActionColumnVisibility();
         }
+
+        // Setup event listeners for table row
+        function setupRowEventListeners(row) {
+            const checkbox = row.querySelector('.super-device-row-checkbox');
+            const deleteBtn = row.querySelector('.delete-super-device-btn');
+            const confirmSpan = row.querySelector('.delete-confirmation');
+            const confirmBtn = row.querySelector('.confirm-delete-btn');
+            const cancelBtn = row.querySelector('.cancel-delete-btn');
+
+            // Prevent row click when clicking checkbox
+            checkbox.addEventListener('click', e => e.stopPropagation());
+
+            // Delete button click
+            deleteBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                hideAllDeleteConfirmations();
+                deleteBtn.style.display = 'none';
+                confirmSpan.style.display = '';
+            });
+
+            // Confirm delete
+            confirmBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                row.remove();
+                updateActionColumnVisibility();
+            });
+
+            // Cancel delete
+            cancelBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                confirmSpan.style.display = 'none';
+                deleteBtn.style.display = '';
+            });
+
+            // Checkbox change
+            checkbox.addEventListener('change', function() {
+                deleteBtn.style.display = this.checked ? '' : 'none';
+                if (!this.checked) confirmSpan.style.display = 'none';
+                updateActionColumnVisibility();
+            });
+        }
+
+        // Update action column visibility
         function updateActionColumnVisibility() {
             const checkboxes = document.querySelectorAll('.super-device-row-checkbox');
             const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
             const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
             const userTable = document.querySelector('.user-table');
             const deleteAllBtn = document.getElementById('delete-all-btn');
+            
             if (userTable) userTable.classList.toggle('show-action-col', anyChecked);
             if (deleteAllBtn) deleteAllBtn.style.display = allChecked ? '' : 'none';
         }
+
+        // Hide all delete confirmations
         function hideAllDeleteConfirmations() {
             document.querySelectorAll('.delete-confirmation').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.delete-super-device-btn').forEach(btn => btn.style.display = 'none');
@@ -158,12 +196,17 @@
                 if (row) row.querySelector('.delete-super-device-btn').style.display = '';
             });
         }
+
+        // Navigation functions
         function goToUserDevices(address) {
             window.location.href = `user_device_overview.html?address=${address}`;
         }
+
         function navigate(page) {
             window.location.href = page;
         }
+
+        // Filter users
         function filterUsers() {
             const val = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allUserDevices.filter(ud =>
@@ -171,30 +214,36 @@
             );
             renderUserDevices(filtered);
         }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DEBUG: super_device_overview.html DOMContentLoaded');
+            
+            // Setup select all functionality
             const selectAll = document.getElementById('select-all-super-device');
             const deleteAllBtn = document.getElementById('delete-all-btn');
-            selectAll && selectAll.addEventListener('change', function() {
-                document.querySelectorAll('.super-device-row-checkbox').forEach(cb => {
-                    cb.checked = selectAll.checked;
-                    cb.dispatchEvent(new Event('change'));
+            
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    document.querySelectorAll('.super-device-row-checkbox').forEach(cb => {
+                        cb.checked = selectAll.checked;
+                        cb.dispatchEvent(new Event('change'));
+                    });
+                    updateActionColumnVisibility();
                 });
-                updateActionColumnVisibility();
-            });
-            deleteAllBtn.addEventListener('click', function() {
-                document.querySelectorAll('.super-device-row-checkbox:checked').forEach(cb => {
-                    const row = cb.closest('tr');
-                    if (row) {
-                        row.querySelector('.delete-super-device-btn').style.display = 'none';
-                        row.querySelector('.delete-confirmation').style.display = '';
-                    }
-                });
-            });
+            }
+
+
+            // Hide delete confirmations when clicking outside
             document.addEventListener('click', function(e) {
-                if (!e.target.closest('.action-col')) hideAllDeleteConfirmations();
+                if (!e.target.closest('.action-col')) {
+                    hideAllDeleteConfirmations();
+                }
             });
+
+            // Load initial data
+            loadUserDevices();
         });
-        loadUserDevices();
     </script>
     <script src="js/script.js"></script>
 </body>
