@@ -15,7 +15,7 @@ function togglePassword() {
 // ... existing code ...
 function navi(url) {
   const role = localStorage.getItem('userRole');
-  const username = localStorage.getItem('username'); // this is supervisor_id
+  const username = localStorage.getItem('userId'); // this is supervisor_id
   if (role === 'supervisor' && url.includes('super_device_overview.html')) {
     if (username) {
       url += `?supervisor_id=${username}`;

@@ -69,20 +69,24 @@
         });
         const data = await res.json();
         if (data.success) {
+          //clear previous localStorage
+          localStorage.clear();
           // Store JWT token if provided
           if (data.token) {
             localStorage.setItem('authToken', data.token);
           }
-          
+          //store info of who is logged In:
+          //localStorage.setItem('userID',data.username);//✅ Store username| userId
+          //ocalStorage.setItem('name', data.name); //optional for full name
           // Redirect based on role
           localStorage.setItem('userRole', data.role);
-          sessionStorage.setItem('supervisor_id', data.username || null);
+          localStorage.setItem('userId', data.username || null);
           if (data.role === 'admin') {
             window.location.href = 'users.html';
           } else if (data.role === 'supervisor') {
-            console.log('Supervisor ID:', sessionStorage.getItem('supervisor_id'));
+            console.log('Supervisor ID:', localStorage.getItem('userId'));
             console.log('Role:', localStorage.getItem('userRole'));
-            window.location.href = `super_device_overview.html?supervisor_id=${data.username}`;
+            window.location.href = `super_device_overview.html?userId=${data.username}`;
           } else if(data.role==='superadmin') {
             window.location.href = 'superadmin-dashboard.html';
           }

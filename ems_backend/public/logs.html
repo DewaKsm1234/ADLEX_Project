@@ -44,7 +44,7 @@
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
   <ul>
     <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
-    <li class="nav-link active" onclick="navigaate('logs.html')">Logs</li>
+    <li class="nav-link active" onclick="navigate('logs.html')">Logs</li>
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
@@ -166,9 +166,10 @@
       let data;
       const role = localStorage.getItem('userRole');
       if (role === 'supervisor') {
-        const supervisor_id = sessionStorage.getItem('supervisor_id');
+        const supervisor_id = localStorage.getItem('userId'); // ✅ use localStorage
         if (!supervisor_id) {
-          alert('Supervisor session expired. Please log in again.');
+          alert('Session expired. Please log in again.');
+          localStorage.clear();
           window.location.href = 'login.html';
           return;
         }
@@ -181,6 +182,7 @@
       allLogsData = data;
       renderLogsTable(data);
     }
+    
   
   
     function filterLogs() {

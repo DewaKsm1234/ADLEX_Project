@@ -519,6 +519,22 @@ app.get('/api/unassigned-devices', authenticateToken, requireSuperAdminOrAdmin, 
   }
 });
 
+// Get full details of a single device for add location dropdown
+app.get('/api/device-details/:tb_device_id', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  const { tb_device_id } = req.params;
+  try {
+    const [rows] = await db.execute(
+      `SELECT DeviceId, SerialNum, MacAddress, Location 
+       FROM devices 
+       WHERE tb_device_id = ?`,
+      [tb_device_id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Device not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // Get user information for a specific device
 app.get('/api/device-user/:tb_device_id', async (req, res) => {
   const { tb_device_id } = req.params;
