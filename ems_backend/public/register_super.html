@@ -396,6 +396,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // --- AJAX uniqueness checks ---
+  async function checkUnique(type, value) {
+    if (!value) return false;
+    try {
+      const res = await fetch(`/api/check-unique?type=${type}&value=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      return data.exists;
+    } catch (e) { return false; }
+  }
+
+  fields.email.el.addEventListener('blur', async () => {
+    const value = fields.email.el.value.trim();
+    if (value && fields.email.regex.test(value)) {
+      if (await checkUnique('email', value)) {
+        showError(fields.email, 'Email already exists in the system.');
+      }
+    }
+  });
+  fields.phone.el.addEventListener('blur', async () => {
+    const value = fields.phone.el.value.trim();
+    if (value && fields.phone.regex.test(value)) {
+      if (await checkUnique('phone', value)) {
+        showError(fields.phone, 'Phone already exists in the system.');
+      }
+    }
+  });
+  fields.supervisorId.el.addEventListener('blur', async () => {
+    const value = fields.supervisorId.el.value.trim();
+    if (value && fields.supervisorId.regex.test(value)) {
+      if (await checkUnique('username', value)) {
+        showError(fields.supervisorId, 'Supervisor ID already exists in the system.');
+      }
+    }
+  });
+
   // On submit
   form.addEventListener('submit', e => {
     let valid = true;

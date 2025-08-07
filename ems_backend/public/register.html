@@ -214,7 +214,7 @@
   </div>
   
   <script>
-
+    
     async function loadSupervisors() {
       const res = await fetch('/api/supervisors', { headers: { 'x-user-role': 'admin' } });
       const supervisors = await res.json();
@@ -344,6 +344,7 @@
     document.getElementById('cancelBtn').onclick = function() {
       window.history.back();
     };
+    
   </script>
 </body>
 </html>

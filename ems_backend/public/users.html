@@ -27,7 +27,7 @@
         <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </span>
     </div>
-    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
+    <!-- <button id="darkModeToggle" style="margin-left:20px;">🌙</button> -->
   </header>
   <!-- Sidebar for normal users/admins -->
 <aside class="sidebar" id="sidebar-normal" style="display:none;">
@@ -74,7 +74,7 @@
     <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
       <div class="search-panel">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Search" oninput="filterUsers()" />
+          <input type="text" id="searchInput" placeholder="Search" oninput="filterUsers()" maxlength="30"/>
           <span class="search-icon">🔍</span>
         </div>
       </div>
@@ -120,13 +120,7 @@
       } catch (error) {
         document.getElementById('user-table-body').innerHTML = '<tr><td colspan="4">Error loading users</td></tr>';
       }
-      // Make the row clickable to view user_device_overview.html
-      row.style.cursor = 'pointer';
-      row.addEventListener('click', function(e) {
-        if (e.target.tagName.toLowerCase() === 'input') return;
-          window.location.href = `user_device_overview.html?address=${address}`;
-      });
-        table.appendChild(row);
+      
           
     }
   
@@ -161,7 +155,13 @@
         } else {
           deviceCell = `<select class="assign-device-dropdown" data-address="${user.address}"><option value="">Add Device</option></select>`;
         }
-
+            // Make the row clickable to view user_device_overview.html
+          row.style.cursor = 'pointer';
+          row.addEventListener('click', function(e) {
+            if (e.target.tagName.toLowerCase() === 'input') return;
+              window.location.href = `user_device_overview.html?address=${address}`;
+          });
+            table.appendChild(row);
         row.innerHTML = `
           <td><input type="checkbox" class="user-row-checkbox" /></td>
           <td><span class="user-link" onclick="goToUserDevices('${user.address}')">${user.address}</span></td>
@@ -472,7 +472,7 @@
   
     loadUsers();
   </script>
-  
+  <script src="js/auth.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>

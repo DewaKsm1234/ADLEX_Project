@@ -18,9 +18,10 @@ const JWT_EXPIRES_IN = '24h'; // Token expires in 24 hours
 const COOKIE_OPTIONS = {
   httpOnly: true,        // Prevents JavaScript access (XSS protection)
   secure: false,         // Set to true in production with HTTPS
-  sameSite: 'strict',    // Prevents CSRF attacks
+  sameSite: 'lax',       // Less restrictive for development, prevents CSRF attacks
   maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-  path: '/'              // Cookie available across entire site
+  path: '/',             // Cookie available across entire site
+  domain: undefined      // Will be set automatically based on request
 };
 
 // Middleware setup
@@ -31,6 +32,60 @@ app.use(cors({
   origin: true, // Allow all origins (configure for production)
   credentials: true // Allow cookies to be sent with requests
 }));
+
+// Security headers middleware
+app.use((req, res, next) => {
+  // Prevent caching of sensitive pages
+  if (req.path.includes('.html') && req.path !== '/login.html') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  next();
+});
+
+// Protect HTML routes (except login and static assets) - TEMPORARILY DISABLED FOR TESTING
+// app.use((req, res, next) => {
+//   // Only protect HTML files, not API routes, static assets, or login page
+//   if (req.path.endsWith('.html') && 
+//       req.path !== '/login.html' && 
+//       !req.path.startsWith('/assets/') && 
+//       !req.path.startsWith('/css/') && 
+//       !req.path.startsWith('/js/')) {
+    
+//     // Check for authentication cookie
+//     if (!req.cookies || !req.cookies.authToken) {
+//       console.log(`Unauthorized access attempt to: ${req.path}`);
+//       return res.redirect('/login.html');
+//     }
+    
+//     // Verify token
+//     const token = req.cookies.authToken;
+//     const decoded = verifyToken(token);
+//     if (!decoded) {
+//       console.log(`Invalid token for: ${req.path}`);
+//       res.clearCookie('authToken', {
+//         httpOnly: true,
+//         secure: false,
+//         sameSite: 'lax',
+//         path: '/'
+//       });
+//       return res.redirect('/login.html');
+//     }
+    
+//     console.log(`Authorized access to: ${req.path} by ${decoded.username}`);
+//   }
+  
+//   next();
+// });
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Import axios for HTTP requests to ThingsBoard
@@ -119,6 +174,9 @@ const verifyToken = (token) => {
  * Extracts token from cookies or Authorization header
  */
 const authenticateToken = (req, res, next) => {
+  console.log(`Authenticating request to: ${req.path}`);
+  console.log('Cookies received:', req.cookies);
+  
   // Try to get token from different sources (in order of preference)
   let token = null;
 
@@ -215,7 +273,7 @@ const clearAuthCookie = (res) => {
   res.clearCookie('authToken', {
     httpOnly: true,
     secure: false, // Should match COOKIE_OPTIONS
-    sameSite: 'strict',
+    sameSite: 'lax', // Should match COOKIE_OPTIONS
     path: '/'
   });
   console.log('Authentication cookie cleared');
@@ -256,6 +314,7 @@ app.post('/api/login', async (req, res) => {
 
     // Set HTTP-only cookie with the token
     res.cookie('authToken', token, COOKIE_OPTIONS);
+    console.log('Cookie set with options:', COOKIE_OPTIONS);
 
     // Start background device sync (no await)
     axios.post(
@@ -388,13 +447,34 @@ app.post('/api/register', authenticateToken, requireSuperAdminOrAdmin, async (re
 });
 
 // Fetch all users (with supervisor name join)
+// app.get('/api/users', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+//   try {
+//     const [rows] = await db.execute(`
+//       SELECT u.*, s.first_name as supervisor_first_name, s.last_name as supervisor_last_name 
+//       FROM users u 
+//       LEFT JOIN supervisors s ON u.supervisor_id = s.supervisor_id
+//     `);
+//     res.json(rows);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 app.get('/api/users', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  const { role, username } = req.user;
   try {
-    const [rows] = await db.execute(`
+    let query = `
       SELECT u.*, s.first_name as supervisor_first_name, s.last_name as supervisor_last_name 
       FROM users u 
       LEFT JOIN supervisors s ON u.supervisor_id = s.supervisor_id
-    `);
+    `;
+    let params = [];
+
+    if (role === 'admin') {
+      query += ' WHERE s.admin_id = ?';
+      params.push(username);
+    }
+
+    const [rows] = await db.execute(query, params);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -556,19 +636,47 @@ app.get('/api/device-user/:tb_device_id', async (req, res) => {
 
 // ---------------- SUPERVISORS ENDPOINTS -------------------
 // Register supervisor
+// app.post('/api/register-supervisor', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+//   const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
+//   try {
+//     // Hash password with bcrypt (salt rounds = 10)
+//     const hashedPassword = await hashPassword(password);
+//     await db.execute(
+//       'INSERT INTO users_login (username, password, role) VALUES (?, ?, ?)',
+//       [supervisor_id, hashedPassword, 'supervisor']
+//     );
+//     await db.execute(
+//       'INSERT INTO supervisors (supervisor_id, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?)',
+//       [supervisor_id, first_name, last_name, email, phone]
+//     );
+//     res.json({ success: true });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+// Register supervisor after adding superadmin
 app.post('/api/register-supervisor', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
+  const { role, username } = req.user;
+
   try {
-    // Hash password with bcrypt (salt rounds = 10)
-    const hashedPassword = await hashPassword(password);
+    // Password validation (8-16 chars, 1 upper, 1 lower, 1 number, 1 special)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,16}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ success: false, error: 'Password must be 8-16 chars, include upper, lower, number, and special char.' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
     await db.execute(
       'INSERT INTO users_login (username, password, role) VALUES (?, ?, ?)',
       [supervisor_id, hashedPassword, 'supervisor']
     );
+
+    const admin_id = role === 'admin' ? username : null;
     await db.execute(
-      'INSERT INTO supervisors (supervisor_id, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?)',
-      [supervisor_id, first_name, last_name, email, phone]
+      'INSERT INTO supervisors (supervisor_id, first_name, last_name, email, phone, admin_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [supervisor_id, first_name, last_name, email, phone, admin_id]
     );
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -576,9 +684,24 @@ app.post('/api/register-supervisor', authenticateToken, requireSuperAdminOrAdmin
 });
 
 // Fetch all supervisors
+// app.get('/api/supervisors', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+//   try {
+//     const [rows] = await db.execute('SELECT * FROM supervisors');
+//     res.json(rows);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 app.get('/api/supervisors', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  const { role, username } = req.user;
   try {
-    const [rows] = await db.execute('SELECT * FROM supervisors');
+    let query = 'SELECT * FROM supervisors';
+    let params = [];
+    if (role === 'admin') {
+      query += ' WHERE admin_id = ?';
+      params.push(username);
+    }
+    const [rows] = await db.execute(query, params);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -586,13 +709,56 @@ app.get('/api/supervisors', authenticateToken, requireSuperAdminOrAdmin, async (
 });
 
 // Supervisor summary: supervisor_id, name, contact, assigned_users, assigned_devices
-app.get('/api/supervisors-summary', async (req, res) => {
+// app.get('/api/supervisors-summary', async (req, res) => {
+//   try {
+//     const [supervisors] = await db.execute('SELECT * FROM supervisors');
+//     const summary = await Promise.all(supervisors.map(async (sup) => {
+//       const [userRows] = await db.execute('SELECT id FROM users WHERE supervisor_id = ?', [sup.supervisor_id]);
+//       const assigned_users = userRows.length;
+//       const userIds = userRows.map(u => u.id);
+//       let assigned_devices = 0;
+//       if (userIds.length > 0) {
+//         const placeholders = userIds.map(() => '?').join(',');
+//         const [deviceRows] = await db.execute(
+//           `SELECT COUNT(*) as cnt FROM user_devices WHERE user_id IN (${placeholders})`,
+//           userIds
+//         );
+//         assigned_devices = deviceRows[0].cnt;
+//       } else {
+//         assigned_devices = 0;
+//       }
+//       return {
+//         supervisor_id: sup.supervisor_id,
+//         name: `${sup.first_name || ''} ${sup.last_name || ''}`.trim(),
+//         contact: `${sup.email || ''}${sup.phone ? ' / ' + sup.phone : ''}`.trim(),
+//         assigned_users,
+//         assigned_devices
+//       };
+//     }));
+//     res.json(summary);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+app.get('/api/supervisors-summary', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  const { role, username } = req.user;
   try {
-    const [supervisors] = await db.execute('SELECT * FROM supervisors');
+    let query = 'SELECT * FROM supervisors';
+    let params = [];
+    if (role === 'admin') {
+      query += ' WHERE admin_id = ?';
+      params.push(username);
+    }
+    const [supervisors] = await db.execute(query, params);
+
     const summary = await Promise.all(supervisors.map(async (sup) => {
-      const [userRows] = await db.execute('SELECT id FROM users WHERE supervisor_id = ?', [sup.supervisor_id]);
+      const supervisorId = sup.supervisor_id ?? null;
+      if (!supervisorId) return null;
+
+      const [userRows] = await db.execute('SELECT id FROM users WHERE supervisor_id = ?', [supervisorId]);
       const assigned_users = userRows.length;
       const userIds = userRows.map(u => u.id);
+
       let assigned_devices = 0;
       if (userIds.length > 0) {
         const placeholders = userIds.map(() => '?').join(',');
@@ -601,42 +767,47 @@ app.get('/api/supervisors-summary', async (req, res) => {
           userIds
         );
         assigned_devices = deviceRows[0].cnt;
-      } else {
-        assigned_devices = 0;
       }
+
       return {
-        supervisor_id: sup.supervisor_id,
+        supervisor_id: supervisorId,
         name: `${sup.first_name || ''} ${sup.last_name || ''}`.trim(),
         contact: `${sup.email || ''}${sup.phone ? ' / ' + sup.phone : ''}`.trim(),
         assigned_users,
-        assigned_devices
+        assigned_devices,
+        admin_id: sup.admin_id // Add this line
       };
     }));
-    res.json(summary);
+
+    res.json(summary.filter(Boolean));
   } catch (err) {
+    console.error('Error in /api/supervisors-summary:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Get all users and devices for a supervisor
 app.get('/api/supervisor-users-devices/:supervisor_id', async (req, res) => {
   try {
     const supervisor_id = req.params.supervisor_id;
-    // Get all users assigned to this supervisor
+    console.log('Fetching data for supervisor:', supervisor_id);
+
     const [users] = await db.execute('SELECT * FROM users WHERE supervisor_id = ?', [supervisor_id]);
-    // For each user, get their devices
+    console.log(`Found ${users.length} users for supervisor`);
+
     const userDeviceData = await Promise.all(users.map(async (user) => {
       const [devices] = await db.execute('SELECT * FROM user_devices WHERE user_id = ?', [user.id]);
-      return {
-        user,
-        devices
-      };
-    }))
+      return { user, devices };
+    }));
+
     res.json(userDeviceData);
   } catch (err) {
+    console.error('Error in /api/supervisor-users-devices:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 // ---------------- TELEMETRY SYNC ENDPOINT -------------------
 /**
  * Sync telemetry for a device from ThingsBoard and store in Telemetry_Device table.
@@ -1383,6 +1554,30 @@ app.post('/api/check-duplicate/:field', async (req, res) => {
   }
 });
 
+// Check uniqueness for email, phone, or username
+app.get('/api/check-unique', async (req, res) => {
+  const { type, value } = req.query;
+  if (!type || !value) return res.status(400).json({ exists: false, error: 'Missing type or value' });
+  let exists = false;
+  try {
+    if (type === 'email') {
+      const [u] = await db.execute('SELECT id FROM users WHERE email = ? UNION SELECT supervisor_id FROM supervisors WHERE email = ? UNION SELECT id FROM admins WHERE email = ?', [value, value, value]);
+      exists = u.length > 0;
+    } else if (type === 'phone') {
+      const [u] = await db.execute('SELECT id FROM users WHERE phone = ? UNION SELECT supervisor_id FROM supervisors WHERE phone = ? UNION SELECT id FROM admins WHERE phone = ?', [value, value, value]);
+      exists = u.length > 0;
+    } else if (type === 'username') {
+      const [u] = await db.execute('SELECT id FROM users_login WHERE username = ?', [value]);
+      exists = u.length > 0;
+    } else {
+      return res.status(400).json({ exists: false, error: 'Invalid type' });
+    }
+    res.json({ exists, type });
+  } catch (err) {
+    res.status(500).json({ exists: false, error: err.message });
+  }
+});
+
 // ------------------------------------------------------------------------------------------------------
 //SUPERADMIN ONLY ENDPOINTS
 
@@ -1423,6 +1618,14 @@ app.post('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) =
     const [existingAdmin] = await db.execute('SELECT id FROM admins WHERE admin_id = ?', [admin_id]);
     if (existingAdmin.length > 0) {
       return res.status(400).json({ success: false, message: 'Admin with this ID already exists' });
+    }
+
+    // Check for duplicate email or phone in users, supervisors, or admins
+    const [userEmail] = await db.execute('SELECT id FROM users WHERE email = ? OR phone = ?', [email, phone]);
+    const [supervisorEmail] = await db.execute('SELECT supervisor_id FROM supervisors WHERE email = ? OR phone = ?', [email, phone]);
+    const [adminEmail] = await db.execute('SELECT id FROM admins WHERE (email = ? OR phone = ?) AND admin_id != ?', [email, phone, admin_id]);
+    if (userEmail.length > 0 || supervisorEmail.length > 0 || adminEmail.length > 0) {
+      return res.status(400).json({ success: false, message: 'Email or phone already exists in the system.' });
     }
 
     // Check if username already exists in users_login

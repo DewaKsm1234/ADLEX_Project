@@ -9,6 +9,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/superadmin.css">
     
@@ -25,7 +28,7 @@
         <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </span>
     </div>
-    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
+    <!-- <button id="darkModeToggle" style="margin-left:20px;">🌙</button> -->
   </header>
 
   <!-- Sidebar for superadmin -->
@@ -93,10 +96,9 @@
           <tr>
             <th>ID</th>
             <th>Username</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Phone</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Supervisors</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -120,31 +122,40 @@
       </div>
       <form id="adminForm">
         <div class="form-group">
-          <label class="form-label" for="username">Username *</label>
-          <input type="text" id="username" class="form-input" required maxlength="15">
+          <label class="form-label" for="usernameInput">Username *</label>
+          <input type="text" id="usernameInput" class="form-input" required maxlength="15">
+          <div id="usernameInput-error" class="error-message"></div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="password">Password *</label>
-          <input type="password" id="password" class="form-input" required maxlength="16">
+          <label class="form-label" for="passwordInput">Password *</label>
+          <input type="password" id="passwordInput" class="form-input" required maxlength="16">
+          <div id="passwordInput-error" class="error-message"></div>
+        </div>
+        <div class="form-group-horizontal">
+          <div class="form-field">
+            <label class="form-label" for="firstNameInput">First Name</label>
+            <input type="text" id="firstNameInput" class="form-input" required maxlength="15">
+            <div id="firstNameInput-error" class="error-message"></div>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="lastNameInput">Last Name</label>
+            <input type="text" id="lastNameInput" class="form-input" maxlength="15">
+            <div id="lastNameInput-error" class="error-message"></div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="emailInput">Email</label>
+          <input type="email" id="emailInput" class="form-input" required maxlength="50">
+          <div id="emailInput-error" class="error-message"></div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="firstName">First Name</label>
-          <input type="text" id="firstName" class="form-input" required maxlength="15">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="lastName">Last Name</label>
-          <input type="text" id="lastName" class="form-input" maxlength="15">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="email">Email</label>
-          <input type="email" id="email" class="form-input" required maxlength="50">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="phone">Phone</label>
-          <input type="tel" id="phone" class="form-input" maxlength="10">
+          <label class="form-label" for="phoneNumberInput">Phone</label>
+          <input type="tel" id="phoneNumberInput" class="form-input" maxlength="10">
+          <div id="phoneNumberInput-error" class="error-message"></div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="admin-btn" onclick="closeAdminModal()">Cancel</button>
+          <button type="button" class="admin-btn" id="cancelBtn" onclick="closeAdminModal()">Cancel</button>
           <button type="submit" class="admin-btn success" id="submitBtn">Create Admin</button>
         </div>
       </form>
@@ -160,15 +171,17 @@
       </div>
       <form id="passwordForm">
         <div class="form-group">
-          <label class="form-label" for="newPassword">New Password *</label>
-          <input type="password" id="newPassword" class="form-input" required maxlength="16">
+          <label class="form-label" for="newPasswordInput">New Password *</label>
+          <input type="password" id="newPasswordInput" class="form-input" required maxlength="16">
+          <div id="newPasswordInput-error" class="error-message"></div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="confirmPassword">Confirm Password *</label>
-          <input type="password" id="confirmPassword" class="form-input" required maxlength="16">
+          <label class="form-label" for="confirmPasswordInput">Confirm Password *</label>
+          <input type="password" id="confirmPasswordInput" class="form-input" required maxlength="16">
+          <div id="confirmPasswordInput-error" class="error-message"></div>
         </div>
         <div class="modal-actions">
-          <button type="button" class="admin-btn" onclick="closePasswordModal()">Cancel</button>
+          <button type="button" class="admin-btn" id="cancelPasswordBtn" onclick="closePasswordModal()">Cancel</button>
           <button type="submit" class="admin-btn success">Change Password</button>
         </div>
       </form>
@@ -176,6 +189,8 @@
   </div>
 
   <script src="js/auth.js"></script>
+  
+  
   <script>
     let currentAdminId = null;
     let isEditMode = false;
@@ -224,14 +239,22 @@
     // Load admin list
     async function loadAdminList() {
       try {
-        const response = await fetch('/api/admins', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
+        const [adminRes, supervisorRes] = await Promise.all([
+          fetch('/api/admins', {
+            credentials: 'include' // Use HTTP-only cookies
+          }),
+          fetch('/api/supervisors', {
+            credentials: 'include' // Use HTTP-only cookies
+          })
+        ]);
+        let supervisors = [];
+        if (supervisorRes.ok) {
+          supervisors = await supervisorRes.json();
+        }
+        if (adminRes.ok) {
+          const data = await adminRes.json();
           if (data.success && data.admins) {
-            displayAdminList(data.admins);
+            displayAdminList(data.admins, supervisors);
           } else {
             console.error('Invalid response format');
           }
@@ -244,19 +267,25 @@
     }
 
     // Display admin list
-    function displayAdminList(admins) {
+    function displayAdminList(admins, supervisors = []) {
       const tbody = document.getElementById('adminTableBody');
       tbody.innerHTML = '';
-
+      // Build a map of admin_id to supervisor count
+      const supervisorCountMap = {};
+      supervisors.forEach(sup => {
+        if (sup.admin_id) {
+          supervisorCountMap[sup.admin_id] = (supervisorCountMap[sup.admin_id] || 0) + 1;
+        }
+      });
       admins.forEach(admin => {
         const row = document.createElement('tr');
+        const count = supervisorCountMap[admin.admin_id] || 0;
         row.innerHTML = `
           <td>${admin.id}</td>
-          <td>${admin.admin_id}</td>  <!-- Changed from username to admin_id -->
-          <td>${admin.first_name || '-'}</td>
-          <td>${admin.last_name || '-'}</td>
-          <td>${admin.email || '-'}</td>
-          <td>${admin.phone || '-'}</td>
+          <td>${admin.admin_id}</td>
+          <td>${(admin.first_name || '') + ' ' + (admin.last_name || '')}</td>
+          <td>${(admin.email || '-') + (admin.phone ? ' / ' + admin.phone : '')}</td>
+          <td class="supervisor-count" data-admin-id="${admin.admin_id}"><a href="#" onclick="viewSupervisorsForAdmin('${admin.admin_id}')">${count}</a></td>
           <td>
             <div class="action-buttons">
               <button class="action-btn edit-btn" onclick="editAdmin(${admin.id})">Edit</button>
@@ -283,7 +312,7 @@
     async function editAdmin(adminId) {
       try {
         const response = await fetch(`/api/admins`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+          credentials: 'include' // Use HTTP-only cookies
         });
         
         if (response.ok) {
@@ -297,12 +326,12 @@
               document.getElementById('modalTitle').textContent = 'Edit Admin';
               document.getElementById('submitBtn').textContent = 'Update Admin';
               
-              document.getElementById('username').value = admin.admin_id; // Changed from username to admin_id
-              document.getElementById('firstName').value = admin.first_name || '';
-              document.getElementById('lastName').value = admin.last_name || '';
-              document.getElementById('email').value = admin.email || '';
-              document.getElementById('phone').value = admin.phone || '';
-              document.getElementById('password').required = false;
+              document.getElementById('usernameInput').value = admin.admin_id; // Changed from username to admin_id
+              document.getElementById('firstNameInput').value = admin.first_name || '';
+              document.getElementById('lastNameInput').value = admin.last_name || '';
+              document.getElementById('emailInput').value = admin.email || '';
+              document.getElementById('phoneNumberInput').value = admin.phone || '';
+              document.getElementById('passwordInput').required = false;
               
               document.getElementById('adminModal').style.display = 'flex';
             }
@@ -316,7 +345,7 @@
     // Close admin modal
     function closeAdminModal() {
       document.getElementById('adminModal').style.display = 'none';
-      document.getElementById('password').required = true;
+      document.getElementById('passwordInput').required = true;
     }
 
     // Show password modal
@@ -337,7 +366,7 @@
         try {
           const response = await fetch(`/api/admin/${adminId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            credentials: 'include' // Use HTTP-only cookies
           });
           
           if (response.ok) {
@@ -368,12 +397,12 @@
         e.preventDefault();
         
         const formData = {
-          username: document.getElementById('username').value,
-          password: document.getElementById('password').value,
-          first_name: document.getElementById('firstName').value,
-          last_name: document.getElementById('lastName').value,
-          email: document.getElementById('email').value,
-          phone: document.getElementById('phone').value
+          username: document.getElementById('usernameInput').value,
+          password: document.getElementById('passwordInput').value,
+          first_name: document.getElementById('firstNameInput').value,
+          last_name: document.getElementById('lastNameInput').value,
+          email: document.getElementById('emailInput').value,
+          phone: document.getElementById('phoneNumberInput').value
         };
 
         try {
@@ -382,18 +411,18 @@
             response = await fetch(`/api/admin/${currentAdminId}`, {
               method: 'PUT',
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Content-Type': 'application/json'
               },
+              credentials: 'include', // Use HTTP-only cookies
               body: JSON.stringify(formData)
             });
           } else {
             response = await fetch('/api/register-admin', {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Content-Type': 'application/json'
               },
+              credentials: 'include', // Use HTTP-only cookies
               body: JSON.stringify(formData)
             });
           }
@@ -417,8 +446,8 @@
       document.getElementById('passwordForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
+        const newPassword = document.getElementById('newPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
         
         if (newPassword !== confirmPassword) {
           alert('Passwords do not match');
@@ -429,9 +458,9 @@
           const response = await fetch(`/api/admin/${currentAdminId}/change-password`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+              'Content-Type': 'application/json'
             },
+            credentials: 'include', // Use HTTP-only cookies
             body: JSON.stringify({ newPassword })
           });
           
@@ -458,14 +487,77 @@
       });
 
       // Dark mode toggle
-      document.getElementById('darkModeToggle').addEventListener('click', function() {
-        document.body.classList.toggle('dark-mode');
-      });
+      // document.getElementById('darkModeToggle').addEventListener('click', function() {
+      //   document.body.classList.toggle('dark-mode');
+      // });
     }
+
+    // --- AJAX uniqueness checks for admin creation modal ---
+    async function checkUnique(type, value) {
+      if (!value) return false;
+      try {
+        const res = await fetch(`/api/check-unique?type=${type}&value=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        return data.exists;
+      } catch (e) { return false; }
+    }
+    function showAdminFieldError(fieldId, message) {
+      let el = document.getElementById(fieldId);
+      let err = document.getElementById(fieldId + '-error');
+      if (!err) {
+        err = document.createElement('div');
+        err.className = 'error-message';
+        err.id = fieldId + '-error';
+        el.parentNode.appendChild(err);
+      }
+      err.textContent = message;
+      el.classList.add('invalid');
+    }
+    function clearAdminFieldError(fieldId) {
+      let el = document.getElementById(fieldId);
+      let err = document.getElementById(fieldId + '-error');
+      if (err) err.textContent = '';
+      el.classList.remove('invalid');
+    }
+    document.getElementById('usernameInput').addEventListener('blur', async function() {
+      const value = this.value.trim();
+      if (value) {
+        if (await checkUnique('username', value)) {
+          showAdminFieldError('usernameInput', 'Username already exists in the system.');
+        } else {
+          clearAdminFieldError('usernameInput');
+        }
+      }
+    });
+    document.getElementById('emailInput').addEventListener('blur', async function() {
+      const value = this.value.trim();
+      if (value) {
+        if (await checkUnique('email', value)) {
+          showAdminFieldError('emailInput', 'Email already exists in the system.');
+        } else {
+          clearAdminFieldError('emailInput');
+        }
+      }
+    });
+    document.getElementById('phoneNumberInput').addEventListener('blur', async function() {
+      const value = this.value.trim();
+      if (value) {
+        if (await checkUnique('phone', value)) {
+          showAdminFieldError('phoneNumberInput', 'Phone already exists in the system.');
+        } else {
+          clearAdminFieldError('phoneNumberInput');
+        }
+      }
+    });
 
     // Navigation function
     function navigate(page) {
-      window.location.href = page;
+      // Use the global navigate function from script.js if available
+      if (typeof window.navigate === 'function') {
+        window.navigate(page);
+      } else {
+        window.location.href = page;
+      }
     }
 
     // Update user display
@@ -480,7 +572,13 @@
     if (authManager) {
       updateUserDisplay();
     }
+
+    // Add this function to handle navigation
+    function viewSupervisorsForAdmin(adminId) {
+      window.location.href = `supervisors.html?admin_id=${adminId}`;
+    }
   </script>
+  <script src="js/validation.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html> 

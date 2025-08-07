@@ -836,3 +836,6 @@ body.dark-mode .contact-card button:hover {
     min-width: 0;
   }
 }
+.user-table tr.clickable-row { cursor: pointer; }
+.user-table tr.clickable-row:hover { background: #007bff !important; color: #fff; }
+.user-table tr.clickable-row:hover td, .user-table tr.clickable-row:hover a { color: #fff !important; }

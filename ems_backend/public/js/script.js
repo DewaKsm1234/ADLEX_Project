@@ -2,8 +2,18 @@
 
 // Navigation helper
 function navigate(page) {
-  window.location.href = page;
+  // Check if authManager is available and user is authenticated
+  if (window.authManager && window.authManager.isAuthenticated) {
+    // Use the auth system's navigation protection
+    window.location.href = page;
+  } else {
+    // Fallback to simple navigation
+    window.location.href = page;
+  }
 }
+
+// Global navigate function for use by other scripts
+window.navigate = navigate;
 
 // }
 
@@ -14,8 +24,18 @@ function togglePassword() {
 }
 // ... existing code ...
 function navi(url) {
-  const role = localStorage.getItem('userRole');
-  const username = localStorage.getItem('userId'); // this is supervisor_id
+  // Try to get role and username from authManager first, then fallback to localStorage
+  let role = null;
+  let username = null;
+  
+  if (window.authManager && window.authManager.user) {
+    role = window.authManager.user.role;
+    username = window.authManager.user.username;
+  } else {
+    role = localStorage.getItem('userRole');
+    username = localStorage.getItem('userId'); // this is supervisor_id
+  }
+  
   if (role === 'supervisor' && url.includes('super_device_overview.html')) {
     if (username) {
       url += `?supervisor_id=${username}`;
@@ -61,12 +81,31 @@ if (sidebarArrow && sidebar && sidebarHamburger && sidebarSupervisor && sidebarS
 function logout() {
   const confirmLogout = confirm("Are you sure you want to log out?");
   if (confirmLogout) {
-    window.location.href = "login.html";
+    // Use authManager logout if available, otherwise fallback to simple redirect
+    if (window.authManager && typeof window.authManager.logout === 'function') {
+      window.authManager.logout().then(() => {
+        window.location.href = "login.html";
+      }).catch(() => {
+        window.location.href = "login.html";
+      });
+    } else {
+      window.location.href = "login.html";
+    }
   }
 }
 
+// Global logout function for use by other scripts
+window.logout = logout;
+
 document.addEventListener('DOMContentLoaded', function() {
-  const role = localStorage.getItem('userRole');
+  // Try to get role from authManager first, then fallback to localStorage
+  let role = null;
+  if (window.authManager && window.authManager.user) {
+    role = window.authManager.user.role;
+  } else {
+    role = localStorage.getItem('userRole');
+  }
+  
   const sidebarNormal = document.getElementById('sidebar-normal');
   const sidebarSupervisor = document.getElementById('sidebar-supervisor');
   const sidebarSuperadmin = document.getElementById('sidebar-superadmin');
@@ -87,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  console.log('userRole', localStorage.getItem('userRole'));
+  console.log('userRole', role);
 
   // Set up sidebar toggle logic AFTER visibility is set
   const sidebarArrowNormal = document.getElementById('sidebarArrowNormal');
@@ -172,7 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function isSupervisor() {
-  return localStorage.getItem('userRole') === 'supervisor';
+  // Try to get role from authManager first, then fallback to localStorage
+  let role = null;
+  if (window.authManager && window.authManager.user) {
+    role = window.authManager.user.role;
+  } else {
+    role = localStorage.getItem('userRole');
+  }
+  return role === 'supervisor';
 }
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof isSupervisor === 'function' && isSupervisor()) {
@@ -192,27 +238,34 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-  const role = localStorage.getItem('userRole');
+  // Try to get user info from authManager first, then fallback to localStorage
+  let username = null;
+  if (window.authManager && window.authManager.user) {
+    username = window.authManager.user.username;
+  } else {
+    username = localStorage.getItem('userId');
+  }
+  
   const roleDisplay = document.getElementById('userRoleDisplay');
-  if (roleDisplay && role) {
+  if (roleDisplay && username) {
     // Capitalize first letter for display
-    roleDisplay.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+    roleDisplay.textContent = username.charAt(0).toUpperCase() + username.slice(1);
   }
 });
 
 //Dark mode Logic
-document.getElementById('darkModeToggle').addEventListener('click', function() {
-  document.body.classList.toggle('dark-mode');
-  document.documentElement.classList.toggle('dark-mode');
-  // Optionally, save preference
-  if (document.body.classList.contains('dark-mode')) {
-    localStorage.setItem('theme', 'dark');
-    this.textContent = '☀️';
-  } else {
-    localStorage.setItem('theme', 'light');
-    this.textContent = '🌙';
-  }
-});
+// document.getElementById('darkModeToggle').addEventListener('click', function() {
+//   document.body.classList.toggle('dark-mode');
+//   document.documentElement.classList.toggle('dark-mode');
+//   // Optionally, save preference
+//   if (document.body.classList.contains('dark-mode')) {
+//     localStorage.setItem('theme', 'dark');
+//     this.textContent = '☀️';
+//   } else {
+//     localStorage.setItem('theme', 'light');
+//     this.textContent = '🌙';
+//   }
+// });
 
 // On page load, set theme from localStorage
 document.addEventListener('DOMContentLoaded', function() {
@@ -240,9 +293,20 @@ function getCurrentDateTime() {
 
 // Add this function to get user information
 function getUserInfo() {
-  const username = localStorage.getItem('username') || 'Unknown';
-  const role = localStorage.getItem('userRole') || 'Unknown';
-  const userId = localStorage.getItem('userId') || 'Unknown';
+  // Try to get user info from authManager first, then fallback to localStorage
+  let username = 'Unknown';
+  let role = 'Unknown';
+  let userId = 'Unknown';
+  
+  if (window.authManager && window.authManager.user) {
+    username = window.authManager.user.username || 'Unknown';
+    role = window.authManager.user.role || 'Unknown';
+    userId = window.authManager.user.username || 'Unknown'; // Use username as userId for consistency
+  } else {
+    username = localStorage.getItem('username') || 'Unknown';
+    role = localStorage.getItem('userRole') || 'Unknown';
+    userId = localStorage.getItem('userId') || 'Unknown';
+  }
   
   return {
     username: username,

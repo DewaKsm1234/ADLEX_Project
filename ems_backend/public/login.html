@@ -60,41 +60,34 @@
       const password = form.password.value;
       const errorDiv = document.getElementById('loginError');
       errorDiv.textContent = '';
+      
       try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', // Add this line for JWT cookies
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (data.success) {
-          //clear previous localStorage
+        // Use the AuthManager for login
+        const result = await authManager.login(username, password);
+        
+        if (result.success) {
+          // Clear any existing localStorage
           localStorage.clear();
-          // Store JWT token if provided
-          if (data.token) {
-            localStorage.setItem('authToken', data.token);
-          }
-          //store info of who is logged In:
-          //localStorage.setItem('userID',data.username);//✅ Store username| userId
-          //ocalStorage.setItem('name', data.name); //optional for full name
+          
+          // Store user role for role-based redirects
+          localStorage.setItem('userRole', result.user.role);
+          localStorage.setItem('userId', result.user.username);
+          
           // Redirect based on role
-          localStorage.setItem('userRole', data.role);
-          localStorage.setItem('userId', data.username || null);
-          if (data.role === 'admin') {
+          if (result.user.role === 'admin') {
             window.location.href = 'users.html';
-          } else if (data.role === 'supervisor') {
-            console.log('Supervisor ID:', localStorage.getItem('userId'));
-            console.log('Role:', localStorage.getItem('userRole'));
-            window.location.href = `super_device_overview.html?userId=${data.username}`;
-          } else if(data.role==='superadmin') {
+          } else if (result.user.role === 'supervisor') {
+            console.log('Supervisor ID:', result.user.username);
+            console.log('Role:', result.user.role);
+            window.location.href = `super_device_overview.html?supervisor_id=${result.user.username}`;
+          } else if (result.user.role === 'superadmin') {
             window.location.href = 'superadmin-dashboard.html';
           }
-          
         } else {
-          errorDiv.textContent = data.message || 'Login failed.';
+          errorDiv.textContent = result.message || 'Login failed.';
         }
       } catch (err) {
+        console.error('Login error:', err);
         errorDiv.textContent = 'Server error. Please try again.';
       }
     });
@@ -118,6 +111,7 @@
         }
       });
     }
+    
   </script>
 </body>
 </html>

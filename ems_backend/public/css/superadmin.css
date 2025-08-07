@@ -209,7 +209,7 @@
   }
   
   .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
   
   .form-label {
@@ -221,7 +221,7 @@
   
   .form-input {
     width: 100%;
-    padding: 12px;
+    padding: 6px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 1em;
@@ -232,6 +232,42 @@
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+  }
+
+  .error-message {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .form-input.invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220,53,69,0.25);
+  }
+  .form-group-horizontal {
+    display: flex;
+    gap: 16px; /* Space between inputs */
+    margin-bottom: 16px;
+  }
+  
+  .form-field {
+    flex: 1; /* Equal width for each */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-label {
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+  
+  .form-input {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
   }
   
   .modal-actions {

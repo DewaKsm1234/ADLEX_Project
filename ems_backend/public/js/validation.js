@@ -2,6 +2,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const registerForm = document.getElementById('registerForm');
+  const adminForm = document.getElementById('adminForm');
+  const passwordForm = document.getElementById('passwordForm');
 
   // Get references to all input fields and their error message elements
   const inputs = {
@@ -65,6 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
           invalidCharMsg: 'Only numbers (0-9) allowed.',
           requiredMsg: 'Mobile Number is required.',
           lengthMsg: 'Please enter a 10-digit mobile number.'
+      },
+      newPassword: {
+          element: document.getElementById('newPasswordInput'),
+          errorElement: document.getElementById('newPasswordInput-error'),
+          maxLength: 16, // Maximum 16 characters
+          regex: /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/, // Allow common password characters
+          invalidCharMsg: 'Only letters, numbers, and special characters allowed.',
+          requiredMsg: 'New Password is required.',
+          lengthMsg: 'Password must be 8-16 characters long.',
+          formatMsg: 'Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.'
+      },
+      confirmPassword: {
+          element: document.getElementById('confirmPasswordInput'),
+          errorElement: document.getElementById('confirmPasswordInput-error'),
+          maxLength: 16, // Maximum 16 characters
+          regex: /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/, // Allow common password characters
+          invalidCharMsg: 'Only letters, numbers, and special characters allowed.',
+          requiredMsg: 'Confirm Password is required.',
+          lengthMsg: 'Password must be 8-16 characters long.',
+          formatMsg: 'Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.'
       }
   };
 
@@ -197,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Attach Event Listeners to Each Input ---
   for (const key in inputs) {
       const inputData = inputs[key];
-      if (inputData.element) {
+      if (inputData.element && inputData.errorElement) {
           // Keypress for character restriction and immediate max length feedback
           inputData.element.addEventListener('keypress', (e) => handleGenericKeypress(e, inputData));
 
@@ -209,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   clearValidationMessage(inputData);
               }
               
-              // Special handling for password field - clear format error as user types
-              if (inputData === inputs.password && inputData.element.value.length > 0) {
+              // Special handling for password fields - clear format error as user types
+              if ((inputData === inputs.password || inputData === inputs.newPassword || inputData === inputs.confirmPassword) && inputData.element.value.length > 0) {
                   const value = inputData.element.value;
                   const hasUpperCase = /[A-Z]/.test(value);
                   const hasLowerCase = /[a-z]/.test(value);
@@ -230,31 +252,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // --- Form Submission Validation ---
-  if (registerForm) {
-      registerForm.addEventListener('submit', (e) => {
-          let isFormValid = true;
-          formSubmitted = true; // Mark that form has been submitted
+  function setupFormValidation(form, formName) {
+      if (form) {
+          form.addEventListener('submit', (e) => {
+              let isFormValid = true;
+              formSubmitted = true; // Mark that form has been submitted
 
-          // Run blur validation for all fields on submit
-          for (const key in inputs) {
-              const inputData = inputs[key];
-              if (inputData.element) {
-                  // if handleGenericBlur returns false, it means validation failed for that field
-                  if (!handleGenericBlur(inputData)) {
-                      isFormValid = false; // Mark form as invalid
+              // Run blur validation for fields that exist on this form
+              for (const key in inputs) {
+                  const inputData = inputs[key];
+                  if (inputData.element && inputData.errorElement) {
+                      // Check if this field belongs to the current form
+                      const isFieldInForm = form.contains(inputData.element);
+                      if (isFieldInForm) {
+                          // if handleGenericBlur returns false, it means validation failed for that field
+                          if (!handleGenericBlur(inputData)) {
+                              isFormValid = false; // Mark form as invalid
+                          }
+                      }
                   }
               }
-          }
 
-          if (!isFormValid) {
-              e.preventDefault(); // Stop form submission
-              // No alert here, as the inline messages are now the primary feedback
-              // alert('Please correct the highlighted errors before submitting.');
-              // Optionally, scroll to the first invalid field or highlight it more
-          }
-          // If isFormValid is true, the form will submit normally
-      });
+              // Additional validation for password confirmation
+              if (formName === 'passwordForm' && inputs.newPassword.element && inputs.confirmPassword.element) {
+                  const newPassword = inputs.newPassword.element.value;
+                  const confirmPassword = inputs.confirmPassword.element.value;
+                  
+                  if (newPassword !== confirmPassword) {
+                      showValidationMessage(inputs.confirmPassword, 'Passwords do not match.');
+                      isFormValid = false;
+                  }
+              }
+
+              if (!isFormValid) {
+                  e.preventDefault(); // Stop form submission
+                  // No alert here, as the inline messages are now the primary feedback
+                  // alert('Please correct the highlighted errors before submitting.');
+                  // Optionally, scroll to the first invalid field or highlight it more
+              }
+              // If isFormValid is true, the form will submit normally
+          });
+      }
   }
+
+  // Setup validation for all forms
+  setupFormValidation(registerForm, 'registerForm');
+  setupFormValidation(adminForm, 'adminForm');
+  setupFormValidation(passwordForm, 'passwordForm');
 
 
   // --- Existing Functionalities (from your previous code) ---
@@ -293,23 +337,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Cancel Button functionality
   const cancelBtn = document.getElementById('cancelBtn');
-  if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-          registerForm.reset(); // Resets all form fields
-          formSubmitted = false; // Reset form submission flag
-          
-          if (deviceDetailsRow1) deviceDetailsRow1.style.display = 'none';
-          if (deviceDetailsRow2) deviceDetailsRow2.style.display = 'none';
+  const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+  
+  function resetFormAndValidation() {
+      if (registerForm) registerForm.reset(); // Resets all form fields
+      if (adminForm) adminForm.reset(); // Reset admin form
+      if (passwordForm) passwordForm.reset(); // Reset password form
+      formSubmitted = false; // Reset form submission flag
+      
+      if (deviceDetailsRow1) deviceDetailsRow1.style.display = 'none';
+      if (deviceDetailsRow2) deviceDetailsRow2.style.display = 'none';
 
-          // Clear all validation messages and styles on reset
-          for (const key in inputs) {
-              const inputData = inputs[key];
+      // Clear all validation messages and styles on reset
+      for (const key in inputs) {
+          const inputData = inputs[key];
+          if (inputData.element && inputData.errorElement) {
               clearValidationMessage(inputData);
           }
-          
-          // Reset dropdowns explicitly if they don't reset with form.reset()
-          if (deviceDropdown) deviceDropdown.value = '';
-          if (supervisorDropdown) supervisorDropdown.value = '';
-      });
+      }
+      
+      // Reset dropdowns explicitly if they don't reset with form.reset()
+      if (deviceDropdown) deviceDropdown.value = '';
+      if (supervisorDropdown) supervisorDropdown.value = '';
+  }
+  
+  if (cancelBtn) {
+      cancelBtn.addEventListener('click', resetFormAndValidation);
+  }
+  
+  if (cancelPasswordBtn) {
+      cancelPasswordBtn.addEventListener('click', resetFormAndValidation);
   }
 });
