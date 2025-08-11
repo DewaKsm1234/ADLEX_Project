@@ -42,7 +42,7 @@
       <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button>
   </aside>
 
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
@@ -90,6 +90,12 @@
       </button>
     </div>
 
+    <!-- City filter for admins -->
+    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
+      <label for="adminCityFilter" style="font-weight: 500;">Filter Admins by City:</label>
+      <select id="adminCityFilter" style="padding: 6px 12px; border-radius: 4px; min-width: 120px;"></select>
+    </div>
+
     <div class="table-container">
       <table class="admin-table" id="adminTable">
         <thead>
@@ -98,6 +104,7 @@
             <th>Username</th>
             <th>Name</th>
             <th>Contact</th>
+            <th>Status</th>
             <th>Supervisors</th>
             <th>Actions</th>
           </tr>
@@ -188,6 +195,104 @@
     </div>
   </div>
 
+  <!-- Suspend Admin Modal -->
+  <div class="modal-overlay" id="suspendModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Suspend Admin</h3>
+        <button class="modal-close" onclick="closeSuspendModal()">&times;</button>
+      </div>
+      <form id="suspendForm">
+        <div class="form-group">
+          <label class="form-label">Admin to Suspend</label>
+          <div class="admin-info" id="adminToSuspendInfo"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="supervisorReassignment">Supervisor Reassignment</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="reassignment" value="reassign" checked>
+              Reassign supervisors to another admin
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="reassignment" value="unassign">
+              Leave supervisors unassigned
+            </label>
+          </div>
+        </div>
+        <div class="form-group" id="adminSelectionGroup">
+          <label class="form-label" for="newAdminSelect">Select New Admin *</label>
+          <select id="newAdminSelect" class="form-input" required>
+            <option value="">Select an admin...</option>
+          </select>
+          <div id="newAdminSelect-error" class="error-message"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supervisors to be reassigned</label>
+          <div class="supervisor-list" id="supervisorList"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="admin-btn" onclick="closeSuspendModal()">Cancel</button>
+          <button type="submit" class="admin-btn warning">Suspend Admin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Supervisors Modal -->
+  <div class="modal-overlay" id="manageSupervisorsModal">
+    <div class="modal" style="width: 90%; max-width: 1200px; height: 80%; max-height: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="manageSupervisorsTitle">Manage Supervisors</h3>
+        <button class="modal-close" onclick="closeManageSupervisorsModal()">&times;</button>
+
+      </div>
+      <!-- Filters -->
+      <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 10px;">
+        <div>
+          <label for="cityFilter" style="font-weight: 500;">Location (City):</label>
+          <select id="cityFilter" style="padding: 6px 12px; border-radius: 4px; min-width: 120px;"></select>
+        </div>
+        <div style="flex: 1;">
+          <input id="supervisorSearch" type="text" placeholder="Search by name or ID..." style="width: 100%; padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc;" />
+        </div>
+      </div>
+      <div class="modal-content" style="display: flex; gap: 20px; height: calc(100% - 160px);">
+        <!-- Left side: Unassigned Supervisors -->
+        <div class="supervisor-panel" style="flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">Unassigned Supervisors</h4>
+          <div class="supervisor-list-container" style="height: calc(100% - 40px); overflow-y: auto;">
+            <div id="unassignedSupervisorsList">
+              <!-- Filled by JavaScript -->
+            </div>
+          </div>
+        </div>
+        <!-- Center: Action buttons -->
+        <div class="supervisor-actions" style="display: flex; flex-direction: column; justify-content: center; gap: 10px;">
+          <button class="admin-btn" onclick="assignSelectedSupervisors()" style="white-space: nowrap;">
+            ➡️ Assign
+          </button>
+          <button class="admin-btn" onclick="unassignSelectedSupervisors()" style="white-space: nowrap;">
+            ⬅️ Unassign
+          </button>
+        </div>
+        <!-- Right side: Assigned Supervisors -->
+        <div class="supervisor-panel" style="flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">Assigned Supervisors</h4>
+          <div class="supervisor-list-container" style="height: calc(100% - 40px); overflow-y: auto;">
+            <div id="assignedSupervisorsList">
+              <!-- Filled by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top: 15px;">
+        <button type="button" class="admin-btn" onclick="closeManageSupervisorsModal()">Close</button>
+        <button type="button" class="admin-btn success" onclick="saveSupervisorAssignments()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/auth.js"></script>
   
   
@@ -211,7 +316,7 @@
       statsGrid.innerHTML = `
         <div class="stat-card superadmin">
           <div class="stat-number">1</div>
-          <div class="stat-label">Superadmin</div>
+          <div class="stat-label">Superadmin</div>  
         </div>
         <div class="stat-card admin">
           <div class="stat-number">${stats.totalAdmins}</div>
@@ -270,27 +375,50 @@
     function displayAdminList(admins, supervisors = []) {
       const tbody = document.getElementById('adminTableBody');
       tbody.innerHTML = '';
-      // Build a map of admin_id to supervisor count
+      // Build a map of admin_id to supervisor count and city set
       const supervisorCountMap = {};
+      const adminCityMap = {};
       supervisors.forEach(sup => {
         if (sup.admin_id) {
           supervisorCountMap[sup.admin_id] = (supervisorCountMap[sup.admin_id] || 0) + 1;
+          if (!adminCityMap[sup.admin_id]) adminCityMap[sup.admin_id] = new Set();
+          if (sup.city) adminCityMap[sup.admin_id].add(sup.city);
         }
       });
-      admins.forEach(admin => {
+      // Filter admins by selected city if set
+      let filteredAdmins = admins;
+      if (selectedAdminCity) {
+        filteredAdmins = admins.filter(admin => {
+          const citySet = adminCityMap[admin.admin_id];
+          return citySet && citySet.has(selectedAdminCity);
+        });
+      }
+      filteredAdmins.forEach((admin, index) => {
         const row = document.createElement('tr');
         const count = supervisorCountMap[admin.admin_id] || 0;
+        const status = admin.status || 'active';
+        const statusClass = status === 'suspended' ? 'suspended' : 'active';
+        const statusText = status === 'suspended' ? 'Suspended' : 'Active';
+        
         row.innerHTML = `
-          <td>${admin.id}</td>
+          <td>${index + 1}</td>
           <td>${admin.admin_id}</td>
           <td>${(admin.first_name || '') + ' ' + (admin.last_name || '')}</td>
           <td>${(admin.email || '-') + (admin.phone ? ' / ' + admin.phone : '')}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
           <td class="supervisor-count" data-admin-id="${admin.admin_id}"><a href="#" onclick="viewSupervisorsForAdmin('${admin.admin_id}')">${count}</a></td>
           <td>
             <div class="action-buttons">
+              ${status === 'active' ? 
+                `<button class="action-btn manage-btn" onclick="showManageSupervisorsModal('${admin.admin_id}', '${admin.first_name} ${admin.last_name}')">Manage Supervisors</button>` :
+                `<button class="action-btn manage-btn" disabled style="opacity: 0.5; cursor: not-allowed;" title="Cannot manage supervisors for suspended admin">Manage Supervisors</button>`
+              }
               <button class="action-btn edit-btn" onclick="editAdmin(${admin.id})">Edit</button>
               <button class="action-btn password-btn" onclick="showPasswordModal(${admin.id})">Password</button>
-              <button class="action-btn delete-btn" onclick="deleteAdmin(${admin.id})">Delete</button>
+              ${status === 'active' ? 
+                `<button class="action-btn suspend-btn" onclick="showSuspendModal(${admin.id}, '${admin.admin_id}')">Suspend</button>` :
+                `<button class="action-btn reactivate-btn" onclick="reactivateAdmin(${admin.id})">Reactivate</button>`
+              }
             </div>
           </td>
         `;
@@ -360,34 +488,145 @@
       document.getElementById('passwordModal').style.display = 'none';
     }
 
-    // Delete admin
-    async function deleteAdmin(adminId) {
-      if (confirm('Are you sure you want to delete this admin user? This action cannot be undone.')) {
+    // Suspend admin
+    async function suspendAdmin(adminId, newAdminId = null) {
+      try {
+        const response = await fetch(`/api/admins/${adminId}/suspend`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ newAdminId })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            alert(result.message);
+            closeSuspendModal();
+            loadAdminList();
+          } else {
+            alert('Error suspending admin: ' + result.message);
+          }
+        } else {
+          const error = await response.json();
+          alert('Error suspending admin: ' + (error.message || error.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error suspending admin:', error);
+        alert('Error suspending admin');
+      }
+    }
+
+    // Reactivate admin
+    async function reactivateAdmin(adminId) {
+      if (confirm('Are you sure you want to reactivate this admin?')) {
         try {
-          const response = await fetch(`/api/admin/${adminId}`, {
-            method: 'DELETE',
-            credentials: 'include' // Use HTTP-only cookies
+          const response = await fetch(`/api/admins/${adminId}/reactivate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
           });
           
           if (response.ok) {
-            alert('Admin deleted successfully');
-            loadAdminList();
-            loadSystemStats();
+            const result = await response.json();
+            if (result.success) {
+              alert('Admin reactivated successfully');
+              loadAdminList();
+            } else {
+              alert('Error reactivating admin: ' + result.message);
+            }
           } else {
             const error = await response.json();
-            alert('Error deleting admin: ' + error.error);
+            alert('Error reactivating admin: ' + (error.message || error.error || 'Unknown error'));
           }
         } catch (error) {
-          console.error('Error deleting admin:', error);
-          alert('Error deleting admin');
+          console.error('Error reactivating admin:', error);
+          alert('Error reactivating admin');
         }
       }
+    }
+
+    // Show suspend modal
+    async function showSuspendModal(adminId, adminUsername) {
+      try {
+        // Get admin details
+        const adminResponse = await fetch('/api/admins', {
+          credentials: 'include'
+        });
+        
+        if (adminResponse.ok) {
+          const adminData = await adminResponse.json();
+          const admin = adminData.admins.find(a => a.id == adminId);
+          
+          if (admin) {
+            document.getElementById('adminToSuspendInfo').innerHTML = `
+              <strong>${admin.first_name} ${admin.last_name}</strong> (${admin.admin_id})<br>
+              <small>${admin.email || ''}</small>
+            `;
+          }
+        }
+
+        // Get supervisors for this admin
+        const supervisorResponse = await fetch('/api/supervisors', {
+          credentials: 'include'
+        });
+        
+        if (supervisorResponse.ok) {
+          const supervisorData = await supervisorResponse.json();
+          const supervisors = supervisorData.filter(sup => sup.admin_id === adminUsername);
+          
+          const supervisorList = document.getElementById('supervisorList');
+          if (supervisors.length > 0) {
+            supervisorList.innerHTML = supervisors.map(sup => 
+              `<div class="supervisor-item">• ${sup.first_name} ${sup.last_name} (${sup.supervisor_id})</div>`
+            ).join('');
+          } else {
+            supervisorList.innerHTML = '<div class="no-supervisors">No supervisors assigned to this admin</div>';
+          }
+        }
+
+        // Get available admins for reassignment
+        const availableResponse = await fetch('/api/admins/available', {
+          credentials: 'include'
+        });
+        
+        if (availableResponse.ok) {
+          const availableData = await availableResponse.json();
+          const select = document.getElementById('newAdminSelect');
+          select.innerHTML = '<option value="">Select an admin...</option>';
+          
+          availableData.admins.forEach(admin => {
+            if (admin.admin_id !== adminUsername) {
+              const option = document.createElement('option');
+              option.value = admin.admin_id;
+              option.textContent = `${admin.first_name} ${admin.last_name} (${admin.admin_id})`;
+              select.appendChild(option);
+            }
+          });
+        }
+
+        document.getElementById('suspendModal').style.display = 'flex';
+        currentAdminId = adminId;
+      } catch (error) {
+        console.error('Error loading suspend modal data:', error);
+        alert('Error loading suspend modal data');
+      }
+    }
+
+    // Close suspend modal
+    function closeSuspendModal() {
+      document.getElementById('suspendModal').style.display = 'none';
+      document.getElementById('suspendForm').reset();
     }
 
     // Refresh admin list
     function refreshAdminList() {
       loadAdminList();
-      loadSystemStats();
+      //loadSystemStats();
     }
 
     // Setup event listeners
@@ -397,7 +636,7 @@
         e.preventDefault();
         
         const formData = {
-          username: document.getElementById('usernameInput').value,
+          admin_id: document.getElementById('usernameInput').value,
           password: document.getElementById('passwordInput').value,
           first_name: document.getElementById('firstNameInput').value,
           last_name: document.getElementById('lastNameInput').value,
@@ -408,7 +647,7 @@
         try {
           let response;
           if (isEditMode) {
-            response = await fetch(`/api/admin/${currentAdminId}`, {
+            response = await fetch(`/api/admins/${currentAdminId}`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json'
@@ -417,7 +656,7 @@
               body: JSON.stringify(formData)
             });
           } else {
-            response = await fetch('/api/register-admin', {
+            response = await fetch('/api/admins/create', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -428,13 +667,18 @@
           }
           
           if (response.ok) {
-            alert(isEditMode ? 'Admin updated successfully' : 'Admin created successfully');
-            closeAdminModal();
-            loadAdminList();
-            loadSystemStats();
+            const result = await response.json();
+            if (result.success) {
+              alert(isEditMode ? 'Admin updated successfully' : 'Admin created successfully');
+              closeAdminModal();
+              loadAdminList();
+              //loadSystemStats();
+            } else {
+              alert('Error: ' + result.message);
+            }
           } else {
             const error = await response.json();
-            alert('Error: ' + error.error);
+            alert('Error: ' + (error.message || error.error || 'Unknown error'));
           }
         } catch (error) {
           console.error('Error saving admin:', error);
@@ -455,7 +699,7 @@
         }
 
         try {
-          const response = await fetch(`/api/admin/${currentAdminId}/change-password`, {
+          const response = await fetch(`/api/admins/${currentAdminId}/change-password`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -465,11 +709,16 @@
           });
           
           if (response.ok) {
-            alert('Password changed successfully');
-            closePasswordModal();
+            const result = await response.json();
+            if (result.success) {
+              alert('Password changed successfully');
+              closePasswordModal();
+            } else {
+              alert('Error: ' + result.message);
+            }
           } else {
             const error = await response.json();
-            alert('Error: ' + error.error);
+            alert('Error: ' + (error.message || error.error || 'Unknown error'));
           }
         } catch (error) {
           console.error('Error changing password:', error);
@@ -477,8 +726,39 @@
         }
       });
 
+      // Suspend form submission
+      document.getElementById('suspendForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const reassignment = document.querySelector('input[name="reassignment"]:checked').value;
+        const newAdminId = reassignment === 'reassign' ? document.getElementById('newAdminSelect').value : null;
+        
+        if (reassignment === 'reassign' && !newAdminId) {
+          alert('Please select an admin to reassign supervisors to');
+          return;
+        }
+
+        await suspendAdmin(currentAdminId, newAdminId);
+      });
+
+      // Handle reassignment radio button changes
+      document.querySelectorAll('input[name="reassignment"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+          const adminSelectionGroup = document.getElementById('adminSelectionGroup');
+          const newAdminSelect = document.getElementById('newAdminSelect');
+          
+          if (this.value === 'reassign') {
+            adminSelectionGroup.style.display = 'block';
+            newAdminSelect.required = true;
+          } else {
+            adminSelectionGroup.style.display = 'none';
+            newAdminSelect.required = false;
+          }
+        });
+      });
+
       // Sidebar toggle
-      document.getElementById('sidebarArrow').addEventListener('click', function() {
+      document.getElementById('sidebarArrowSuperadmin').addEventListener('click', function() {
         document.querySelector('.sidebar').classList.toggle('collapsed');
       });
 
@@ -577,6 +857,244 @@
     function viewSupervisorsForAdmin(adminId) {
       window.location.href = `supervisors.html?admin_id=${adminId}`;
     }
+
+    // Supervisor Management Variables
+    let currentManageAdminId = null;
+    let unassignedSupervisors = [];
+    let assignedSupervisors = [];
+    let pendingAssignments = [];
+    let pendingUnassignments = [];
+
+    let allCities = [];
+    let selectedCity = '';
+    let supervisorSearchTerm = '';
+
+    // Fetch unique cities for dropdown
+    async function fetchCities() {
+      // Try to get from /api/supervisors/unassigned, fallback to assigned if needed
+      const res = await fetch('/api/supervisors/unassigned', { credentials: 'include' });
+      let data = [];
+      if (res.ok) data = await res.json();
+      // Also get assigned supervisors for current admin if needed
+      const citySet = new Set();
+      data.forEach(sup => { if (sup.city) citySet.add(sup.city); });
+      allCities = Array.from(citySet).sort();
+      // Populate dropdown
+      const cityFilter = document.getElementById('cityFilter');
+      cityFilter.innerHTML = '<option value="">All Cities</option>' + allCities.map(city => `<option value="${city}">${city}</option>`).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (document.getElementById('cityFilter')) {
+        fetchCities();
+        document.getElementById('cityFilter').addEventListener('change', e => {
+          selectedCity = e.target.value;
+          loadManageSupervisorsData();
+        });
+      }
+      if (document.getElementById('supervisorSearch')) {
+        document.getElementById('supervisorSearch').addEventListener('input', e => {
+          supervisorSearchTerm = e.target.value.toLowerCase();
+          renderSupervisorLists();
+        });
+      }
+    });
+
+    // Override showManageSupervisorsModal to support city
+    async function showManageSupervisorsModal(adminId, adminName) {
+      currentManageAdminId = adminId;
+      document.getElementById('manageSupervisorsTitle').textContent = `Manage Supervisors - ${adminName}`;
+      selectedCity = document.getElementById('cityFilter') ? document.getElementById('cityFilter').value : '';
+      supervisorSearchTerm = '';
+      if (document.getElementById('supervisorSearch')) document.getElementById('supervisorSearch').value = '';
+      await loadManageSupervisorsData();
+      document.getElementById('manageSupervisorsModal').style.display = 'flex';
+    }
+
+    async function loadManageSupervisorsData() {
+      // Load unassigned supervisors for selected city
+      let unassignedUrl = '/api/supervisors/unassigned';
+      if (selectedCity) unassignedUrl += `?city=${encodeURIComponent(selectedCity)}`;
+      const unassignedRes = await fetch(unassignedUrl, { credentials: 'include' });
+      unassignedSupervisors = unassignedRes.ok ? await unassignedRes.json() : [];
+      // Load assigned supervisors for this admin and city
+      let assignedUrl = `/api/admins/${currentManageAdminId}/supervisors`;
+      if (selectedCity) assignedUrl += `?city=${encodeURIComponent(selectedCity)}`;
+      const assignedRes = await fetch(assignedUrl, { credentials: 'include' });
+      assignedSupervisors = assignedRes.ok ? await assignedRes.json() : [];
+      renderSupervisorLists();
+    }
+
+    // Update renderSupervisorLists to support search and color coding
+    function renderSupervisorLists() {
+      // Helper for color class
+      function getStatusClass(sup) {
+        if (sup.status === 'suspended') return 'supervisor-suspended';
+        if (!sup.admin_id) return 'supervisor-unassigned';
+        return 'supervisor-active';
+      }
+      // Filter by search
+      const filterFn = sup => {
+        if (!supervisorSearchTerm) return true;
+        return (
+          (sup.first_name && sup.first_name.toLowerCase().includes(supervisorSearchTerm)) ||
+          (sup.last_name && sup.last_name.toLowerCase().includes(supervisorSearchTerm)) ||
+          (sup.supervisor_id && sup.supervisor_id.toLowerCase().includes(supervisorSearchTerm))
+        );
+      };
+      // Unassigned
+      const unassignedList = document.getElementById('unassignedSupervisorsList');
+      const filteredUnassigned = unassignedSupervisors.filter(filterFn);
+      unassignedList.innerHTML = filteredUnassigned.length ? '' : '<p style="color: #666; text-align: center;">No unassigned supervisors</p>';
+      filteredUnassigned.forEach(supervisor => {
+        const item = document.createElement('div');
+        item.className = 'supervisor-item ' + getStatusClass(supervisor);
+        item.style.cssText = 'padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px;';
+        item.innerHTML = `
+          <input type="checkbox" class="supervisor-checkbox" data-id="${supervisor.supervisor_id}" style="margin: 0;">
+          <div>
+            <strong>${supervisor.first_name} ${supervisor.last_name}</strong><br>
+            <small>${supervisor.supervisor_id}</small> <span style="color:#888;">${supervisor.city ? ' | ' + supervisor.city : ''}</span>
+          </div>
+        `;
+        unassignedList.appendChild(item);
+      });
+      // Assigned
+      const assignedList = document.getElementById('assignedSupervisorsList');
+      const filteredAssigned = assignedSupervisors.filter(filterFn);
+      assignedList.innerHTML = filteredAssigned.length ? '' : '<p style="color: #666; text-align: center;">No assigned supervisors</p>';
+      filteredAssigned.forEach(supervisor => {
+        const item = document.createElement('div');
+        item.className = 'supervisor-item ' + getStatusClass(supervisor);
+        item.style.cssText = 'padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px;';
+        item.innerHTML = `
+          <input type="checkbox" class="supervisor-checkbox" data-id="${supervisor.supervisor_id}" style="margin: 0;">
+          <div>
+            <strong>${supervisor.first_name} ${supervisor.last_name}</strong><br>
+            <small>${supervisor.supervisor_id}</small> <span style="color:#888;">${supervisor.city ? ' | ' + supervisor.city : ''}</span>
+          </div>
+        `;
+        assignedList.appendChild(item);
+      });
+    }
+
+    // Assign selected supervisors
+    function assignSelectedSupervisors() {
+      const selectedCheckboxes = document.querySelectorAll('#unassignedSupervisorsList .supervisor-checkbox:checked');
+      const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+      
+      if (selectedIds.length === 0) {
+        alert('Please select supervisors to assign');
+        return;
+      }
+
+      // Move selected supervisors from unassigned to assigned
+      const selectedSupervisors = unassignedSupervisors.filter(sup => selectedIds.includes(sup.supervisor_id));
+      assignedSupervisors.push(...selectedSupervisors);
+      unassignedSupervisors = unassignedSupervisors.filter(sup => !selectedIds.includes(sup.supervisor_id));
+      
+      // Add to pending assignments
+      pendingAssignments.push(...selectedIds);
+      
+      renderSupervisorLists();
+    }
+
+    // Unassign selected supervisors
+    function unassignSelectedSupervisors() {
+      const selectedCheckboxes = document.querySelectorAll('#assignedSupervisorsList .supervisor-checkbox:checked');
+      const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+      
+      if (selectedIds.length === 0) {
+        alert('Please select supervisors to unassign');
+        return;
+      }
+
+      // Move selected supervisors from assigned to unassigned
+      const selectedSupervisors = assignedSupervisors.filter(sup => selectedIds.includes(sup.supervisor_id));
+      unassignedSupervisors.push(...selectedSupervisors);
+      assignedSupervisors = assignedSupervisors.filter(sup => !selectedIds.includes(sup.supervisor_id));
+      
+      // Add to pending unassignments
+      pendingUnassignments.push(...selectedIds);
+      
+      renderSupervisorLists();
+    }
+
+    // Save supervisor assignments
+    async function saveSupervisorAssignments() {
+      try {
+        // Process assignments
+        if (pendingAssignments.length > 0) {
+          const assignRes = await fetch(`/api/admins/${currentManageAdminId}/supervisors`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ supervisorIds: pendingAssignments, city: selectedCity })
+          });
+          
+          if (!assignRes.ok) {
+            const err = await assignRes.json();
+            throw new Error(err.message || 'Failed to assign supervisors');
+          }
+        }
+
+        // Process unassignments
+        for (const supervisorId of pendingUnassignments) {
+          const unassignRes = await fetch(`/api/admins/${currentManageAdminId}/supervisors/${supervisorId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          
+          if (!unassignRes.ok) {
+            throw new Error(`Failed to unassign supervisor ${supervisorId}`);
+          }
+        }
+
+        alert('Supervisor assignments saved successfully');
+        closeManageSupervisorsModal();
+        loadAdminList(); // Refresh the admin list to update supervisor counts
+      } catch (error) {
+        console.error('Error saving supervisor assignments:', error);
+        alert('Error saving supervisor assignments: ' + error.message);
+      }
+    }
+
+    // Modal close function (fixes ReferenceError)
+    function closeManageSupervisorsModal() {
+      document.getElementById('manageSupervisorsModal').style.display = 'none';
+      // Reset pending changes
+      pendingAssignments = [];
+      pendingUnassignments = [];
+    }
+
+    // City filter for admins
+    let allAdminCities = [];
+    let selectedAdminCity = '';
+
+    async function fetchAdminCities() {
+      // Get all unique cities from supervisors
+      const res = await fetch('/api/supervisors', { credentials: 'include' });
+      let data = [];
+      if (res.ok) data = await res.json();
+      const citySet = new Set();
+      data.forEach(sup => { if (sup.city) citySet.add(sup.city); });
+      allAdminCities = Array.from(citySet).sort();
+      // Populate dropdown
+      const adminCityFilter = document.getElementById('adminCityFilter');
+      adminCityFilter.innerHTML = '<option value="">All Cities</option>' + allAdminCities.map(city => `<option value="${city}">${city}</option>`).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (document.getElementById('adminCityFilter')) {
+        fetchAdminCities();
+        document.getElementById('adminCityFilter').addEventListener('change', e => {
+          selectedAdminCity = e.target.value;
+          loadAdminList();
+        });
+      }
+    });
   </script>
   <script src="js/validation.js"></script>
   <script src="js/script.js"></script>

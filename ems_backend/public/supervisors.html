@@ -1,7 +1,7 @@
 <!--
   supervisors.html - Supervisor Management Dashboard
   - Displays all supervisors, their assigned users and devices
-  - Allows deleting supervisors and navigating to supervisor device details
+  - Allows navigating to supervisor device details
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +36,7 @@
     
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button>
 </aside>
 
 <!-- Sidebar for supervisors (read-only) -->
@@ -47,7 +47,7 @@
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button>
 </aside>
 
 <!-- Sidebar for superadmin -->
@@ -61,7 +61,7 @@
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button>
 </aside>
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <main class="main-content">
@@ -77,7 +77,6 @@
     </div>
     <!-- Supervisor table -->
     <div class="table-container">
-      <button id="delete-all-btn">Delete All</button>
       <table class="user-table">
         <thead>
           <tr>
@@ -85,9 +84,11 @@
             <th>Supervisor ID</th>
             <th>Name</th>
             <th>Contact Details</th>
+            <th>Status</th>
+            <th>Assigned To</th>
             <th>Assigned Location</th>
             <th>Assigned Device</th>
-            <th class="action-col">Action</th>
+            <th class="action-col">Actions</th>
           </tr>
         </thead>
         <tbody id="supervisor-table-body">
@@ -99,6 +100,74 @@
       Powered by Samsan | © 2025 Revision
     </div>
   </main>
+
+  <!-- Suspend Supervisor Modal -->
+  <div class="modal-overlay" id="suspendModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Suspend Supervisor</h3>
+        <button class="modal-close" onclick="closeSuspendModal()">&times;</button>
+      </div>
+      <form id="suspendForm">
+        <div class="form-group">
+          <label class="form-label">Supervisor to Suspend</label>
+          <div class="admin-info" id="supervisorToSuspendInfo"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="supervisorReassignment">Location Reassignment</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="reassignment" value="reassign" checked>
+              Reassign locations to another supervisor (same admin)
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="reassignment" value="unassign">
+              Leave locations unassigned
+            </label>
+          </div>
+        </div>
+        <div class="form-group" id="supervisorSelectionGroup">
+          <label class="form-label" for="newSupervisorSelect">Select New Supervisor *</label>
+          <select id="newSupervisorSelect" class="form-input" required>
+            <option value="">Select a supervisor...</option>
+          </select>
+          <div id="newSupervisorSelect-error" class="error-message"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="admin-btn" onclick="closeSuspendModal()">Cancel</button>
+          <button type="submit" class="admin-btn warning">Suspend Supervisor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="passwordModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Change Supervisor Password</h3>
+        <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+      </div>
+      <form id="passwordForm">
+        <div class="form-group">
+          <label class="form-label" for="newPasswordInput">New Password *</label>
+          <input type="password" id="newPasswordInput" class="form-input" required maxlength="16">
+          <div id="newPasswordInput-error" class="error-message"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirmPasswordInput">Confirm Password *</label>
+          <input type="password" id="confirmPasswordInput" class="form-input" required maxlength="16">
+          <div id="confirmPasswordInput-error" class="error-message"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="admin-btn" onclick="closePasswordModal()">Cancel</button>
+          <button type="submit" class="admin-btn success">Change Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="js/auth.js"></script>
+  <script src="js/script.js"></script>
   <script>
     // State for all supervisors
     let allSupervisors = [];
@@ -118,7 +187,7 @@
         renderSupervisors(filtered);
       } catch (err) {
         console.error('Fetch failed:', err);
-        document.getElementById('supervisor-table-body').innerHTML = '<tr><td colspan="7" style="color:red;text-align:center;font-weight:bold;">Error loading supervisors. Please check your connection or contact support.</td></tr>';
+        document.getElementById('supervisor-table-body').innerHTML = '<tr><td colspan="8" style="color:red;text-align:center;font-weight:bold;">Error loading supervisors. Please check your connection or contact support.</td></tr>';
       }
     }
     
@@ -135,69 +204,58 @@
       }
       
       supervisors.forEach(sup => {
+        const status = sup.status || 'active';
+        const statusClass = status === 'suspended' ? 'suspended' : 'active';
+        const statusText = status === 'suspended' ? 'Suspended' : 'Active';
+        
         const row = document.createElement('tr');
         row.classList.add('clickable-row');
         row.innerHTML = `
-          <td><input type="checkbox" class="supervisor-row-checkbox" /></td>
+          <td><input type="checkbox" class="supervisor-checkbox" value="${sup.id}" /></td>
           <td>${sup.supervisor_id}</td>
           <td>${sup.name}</td>
           <td>${sup.contact || ''}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td>${sup.admin_id ? sup.admin_id : 'Unassigned'}</td>
           <td>${sup.assigned_users}</td>
           <td>${sup.assigned_devices}</td>
           <td class="action-col">
-            <button class="delete-supervisor-btn" style="display:none;" title="Delete Supervisor">🗑️</button>
-            <span class="delete-confirmation" style="display:none;">
-              <button class="confirm-delete-btn" title="Confirm">✔️</button>
-              <button class="cancel-delete-btn" title="Cancel">❌</button>
-            </span>
+            <div class="action-buttons">
+              <button class="action-btn edit-btn" onclick="editSupervisor(${sup.id})" title="Edit">Edit</button>
+              <button class="action-btn password-btn" onclick="showPasswordModal(${sup.id})" title="Change Password">Password</button>
+              ${status === 'active' ? 
+                `<button class="action-btn suspend-btn" onclick="showSuspendModal(${sup.id}, '${sup.supervisor_id}')" title="Suspend">Suspend</button>` :
+                `<button class="action-btn reactivate-btn" onclick="reactivateSupervisor(${sup.id})" title="Reactivate">Reactivate</button>`
+              }
+            </div>
           </td>
         `;
-        // Make the row clickable except for checkboxes and action buttons
+        // Make the row clickable except for action buttons
         row.addEventListener('click', function(e) {
           if (
-            e.target.classList.contains('supervisor-row-checkbox') ||
-            e.target.classList.contains('delete-supervisor-btn') ||
-            e.target.classList.contains('confirm-delete-btn') ||
-            e.target.classList.contains('cancel-delete-btn')
+            e.target.classList.contains('action-btn') ||
+            e.target.closest('.action-buttons') ||
+            e.target.classList.contains('supervisor-checkbox')
           ) return;
           goToSupervisor(sup.supervisor_id);
         });
-        // Checkbox and delete logic
-        row.querySelector('.supervisor-row-checkbox').addEventListener('click', e => e.stopPropagation());
-        row.querySelector('.delete-supervisor-btn').addEventListener('click', e => {
-          e.stopPropagation();
-          hideAllDeleteConfirmations();
-          row.querySelector('.delete-supervisor-btn').style.display = 'none';
-          row.querySelector('.delete-confirmation').style.display = '';
-        });
-        row.querySelector('.confirm-delete-btn').addEventListener('click', e => {
-          e.stopPropagation();
-          row.remove();
+        
+        // Checkbox event listener
+        const checkbox = row.querySelector('.supervisor-checkbox');
+        checkbox.addEventListener('click', e => e.stopPropagation());
+        checkbox.addEventListener('change', function() {
           updateActionColumnVisibility();
         });
-        row.querySelector('.cancel-delete-btn').addEventListener('click', e => {
-          e.stopPropagation();
-          row.querySelector('.delete-confirmation').style.display = 'none';
-          row.querySelector('.delete-supervisor-btn').style.display = '';
-        });
-        row.querySelector('.supervisor-row-checkbox').addEventListener('change', function() {
-          row.querySelector('.delete-supervisor-btn').style.display = this.checked ? '' : 'none';
-          if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
-          updateActionColumnVisibility();
-        });
+        
         table.appendChild(row);
       });
       updateActionColumnVisibility();
     }
 
-    // Hide all delete confirmations
-    function hideAllDeleteConfirmations() {
-      document.querySelectorAll('.delete-confirmation').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.delete-supervisor-btn').forEach(btn => btn.style.display = 'none');
-      document.querySelectorAll('.supervisor-row-checkbox:checked').forEach(cb => {
-        const row = cb.closest('tr');
-        if (row) row.querySelector('.delete-supervisor-btn').style.display = '';
-      });
+    // Update action column visibility for supervisor table
+    function updateActionColumnVisibility() {
+      const anyChecked = Array.from(document.querySelectorAll('.supervisor-checkbox')).some(cb => cb.checked);
+      document.querySelector('.user-table').classList.toggle('show-action-col', anyChecked);
     }
 
     // Navigation and search helpers
@@ -216,12 +274,158 @@
       renderSupervisors(filtered);
     }
 
-    // Update action column visibility for supervisor table
-    function updateActionColumnVisibility() {
-      const anyChecked = Array.from(document.querySelectorAll('.supervisor-row-checkbox')).some(cb => cb.checked);
-      const allChecked = Array.from(document.querySelectorAll('.supervisor-row-checkbox')).length > 0 && Array.from(document.querySelectorAll('.supervisor-row-checkbox')).every(cb => cb.checked);
-      document.querySelector('.user-table').classList.toggle('show-action-col', anyChecked);
-      document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
+    // Global variables for modals
+    let currentSupervisorId = null;
+
+    // Suspend supervisor
+    async function suspendSupervisor(supervisorId, newSupervisorId = null) {
+      try {
+        const response = await fetch(`/api/supervisors/${supervisorId}/suspend`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ newSupervisorId })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            alert(result.message);
+            closeSuspendModal();
+            loadSupervisors();
+          } else {
+            alert('Error suspending supervisor: ' + result.message);
+          }
+        } else {
+          const error = await response.json();
+          alert('Error suspending supervisor: ' + (error.message || error.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error suspending supervisor:', error);
+        alert('Error suspending supervisor');
+      }
+    }
+
+    // Reactivate supervisor
+    async function reactivateSupervisor(supervisorId) {
+      if (confirm('Are you sure you want to reactivate this supervisor?')) {
+        try {
+          const response = await fetch(`/api/supervisors/${supervisorId}/reactivate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              alert('Supervisor reactivated successfully');
+              loadSupervisors();
+            } else {
+              alert('Error reactivating supervisor: ' + result.message);
+            }
+          } else {
+            const error = await response.json();
+            alert('Error reactivating supervisor: ' + (error.message || error.error || 'Unknown error'));
+          }
+        } catch (error) {
+          console.error('Error reactivating supervisor:', error);
+          alert('Error reactivating supervisor');
+        }
+      }
+    }
+
+    // Show suspend modal
+    async function showSuspendModal(supervisorId, supervisorUsername) {
+      try {
+        // Get supervisor details
+        const supervisorResponse = await fetch('/api/supervisors-summary', {
+          credentials: 'include'
+        });
+        
+        if (supervisorResponse.ok) {
+          const supervisorData = await supervisorResponse.json();
+          const supervisor = supervisorData.find(s => s.id == supervisorId);
+          
+          if (supervisor) {
+            document.getElementById('supervisorToSuspendInfo').innerHTML = `
+              <strong>${supervisor.name}</strong> (${supervisor.supervisor_id})<br>
+              <small>${supervisor.contact || ''}</small>
+            `;
+          }
+
+          // Populate supervisors under the same admin for reassignment
+          const adminId = supervisor?.admin_id || null;
+          const select = document.getElementById('newSupervisorSelect');
+          select.innerHTML = '<option value="">Select a supervisor...</option>';
+          if (adminId) {
+            const availableResponse = await fetch(`/api/admins/${encodeURIComponent(adminId)}/supervisors`, { credentials: 'include' });
+            if (availableResponse.ok) {
+              const list = await availableResponse.json();
+              list
+                .filter(s => String(s.id) !== String(supervisorId) && (s.status || 'active') === 'active')
+                .forEach(s => {
+                  const option = document.createElement('option');
+                  option.value = s.supervisor_id;
+                  const displayName = [s.first_name, s.last_name].filter(Boolean).join(' ').trim();
+                  option.textContent = `${displayName || s.supervisor_id} (${s.supervisor_id})`;
+                  select.appendChild(option);
+                });
+            }
+          } else {
+            // Fallback: current supervisor has no admin assigned
+            // Load all active supervisors and allow choosing any (excluding current)
+            const allRes = await fetch('/api/supervisors', { credentials: 'include' });
+            if (allRes.ok) {
+              const allSup = await allRes.json();
+              allSup
+                .filter(s => String(s.id) !== String(supervisorId) && (s.status || 'active') === 'active')
+                .forEach(s => {
+                  const option = document.createElement('option');
+                  option.value = s.supervisor_id;
+                  const displayName = [s.first_name, s.last_name].filter(Boolean).join(' ').trim();
+                  const adminLabel = s.admin_id ? ` - Admin: ${s.admin_id}` : '';
+                  option.textContent = `${displayName || s.supervisor_id} (${s.supervisor_id})${adminLabel}`;
+                  select.appendChild(option);
+                });
+            }
+          }
+        }
+
+        document.getElementById('suspendModal').style.display = 'flex';
+        currentSupervisorId = supervisorId;
+      } catch (error) {
+        console.error('Error loading suspend modal data:', error);
+        alert('Error loading suspend modal data');
+      }
+    }
+
+    // Close suspend modal
+    function closeSuspendModal() {
+      document.getElementById('suspendModal').style.display = 'none';
+      document.getElementById('suspendForm').reset();
+    }
+
+    // Show password modal
+    function showPasswordModal(supervisorId) {
+      currentSupervisorId = supervisorId;
+      document.getElementById('passwordForm').reset();
+      document.getElementById('passwordModal').style.display = 'flex';
+    }
+
+    // Close password modal
+    function closePasswordModal() {
+      document.getElementById('passwordModal').style.display = 'none';
+    }
+
+    // Edit supervisor (placeholder function)
+    function editSupervisor(supervisorId) {
+      // Navigate to edit page or show edit modal
+      alert('Edit functionality to be implemented');
     }
 
     // Initial load
@@ -235,36 +439,93 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+      // Select all checkbox functionality
       const selectAll = document.getElementById('select-all-supervisors');
-      const deleteAllBtn = document.getElementById('delete-all-btn');
       if (selectAll) {
         selectAll.addEventListener('change', function () {
-          document.querySelectorAll('.supervisor-row-checkbox').forEach(cb => {
+          document.querySelectorAll('.supervisor-checkbox').forEach(cb => {
             cb.checked = this.checked;
-            // Show/hide delete button
-            const row = cb.closest('tr');
-            if (row) {
-              row.querySelector('.delete-supervisor-btn').style.display = cb.checked ? '' : 'none';
-              if (!cb.checked) row.querySelector('.delete-confirmation').style.display = 'none';
-            }
           });
           updateActionColumnVisibility();
         });
       }
-      if (deleteAllBtn) {
-        deleteAllBtn.addEventListener('click', function() {
-          document.querySelectorAll('.supervisor-row-checkbox:checked').forEach(cb => {
-            const row = cb.closest('tr');
-            if (row) {
-              row.querySelector('.delete-supervisor-btn').style.display = 'none';
-              row.querySelector('.delete-confirmation').style.display = '';
-            }
+
+      // Suspend form submission
+      document.getElementById('suspendForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const reassignment = document.querySelector('input[name="reassignment"]:checked').value;
+        const newSupervisorId = reassignment === 'reassign' ? document.getElementById('newSupervisorSelect').value : null;
+        
+        if (reassignment === 'reassign' && !newSupervisorId) {
+          alert('Please select a supervisor for reassignment');
+          return;
+        }
+
+        try {
+          await suspendSupervisor(currentSupervisorId, newSupervisorId);
+        } catch (error) {
+          console.error('Error in suspend form submission:', error);
+        }
+      });
+
+      // Password form submission
+      document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const newPassword = document.getElementById('newPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
+        
+        if (newPassword !== confirmPassword) {
+          alert('Passwords do not match');
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/supervisors/${currentSupervisorId}/change-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ newPassword })
           });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              alert('Password changed successfully');
+              closePasswordModal();
+            } else {
+              alert('Error changing password: ' + result.message);
+            }
+          } else {
+            const error = await response.json();
+            alert('Error changing password: ' + (error.message || error.error || 'Unknown error'));
+          }
+        } catch (error) {
+          console.error('Error changing password:', error);
+          alert('Error changing password');
+        }
+      });
+
+      // Radio button change handler for reassignment options
+      document.querySelectorAll('input[name="reassignment"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+          const adminSelectionGroup = document.getElementById('supervisorSelectionGroup');
+          const newAdminSelect = document.getElementById('newSupervisorSelect');
+          
+          if (this.value === 'reassign') {
+            adminSelectionGroup.style.display = 'block';
+            newAdminSelect.required = true;
+          } else {
+            adminSelectionGroup.style.display = 'none';
+            newAdminSelect.required = false;
+          }
         });
-      }
+      });
     });
   </script>
-  <script src="js/auth.js"></script>
-  <script src="js/script.js"></script>
+  
 </body>
 </html>

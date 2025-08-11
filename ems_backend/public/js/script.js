@@ -131,10 +131,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set up sidebar toggle logic AFTER visibility is set
   const sidebarArrowNormal = document.getElementById('sidebarArrowNormal');
   const sidebarArrowSupervisor = document.getElementById('sidebarArrowSupervisor');
-  const sidebarArrowSuperadmin = document.getElementById('sidebarArrow');
+  const sidebarArrowSuperadmin = document.getElementById('sidebarArrowSuperadmin');
+  const sidebarArrowCommon = document.getElementById('sidebarArrowCommon');
   const sidebarHamburger = document.getElementById('sidebarHamburger');
 
   function getActiveArrowButton() {
+    // Check for specific arrow buttons first
     if (sidebarNormal && sidebarNormal.style.display !== 'none' && sidebarArrowNormal) {
       return sidebarArrowNormal;
     }
@@ -144,6 +146,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebarSuperadmin && sidebarSuperadmin.style.display !== 'none' && sidebarArrowSuperadmin) {
       return sidebarArrowSuperadmin;
     }
+    
+    // Fallback: use common arrow button if available
+    if (sidebarArrowCommon) {
+      return sidebarArrowCommon;
+    }
+    
+    // Final fallback: find any sidebar arrow button that's visible
+    const allArrowButtons = document.querySelectorAll('.sidebar-arrow');
+    for (let button of allArrowButtons) {
+      if (button.offsetParent !== null) { // Check if button is visible
+        return button;
+      }
+    }
+    
     return null;
   }
 
@@ -253,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-//Dark mode Logic
+// Dark mode Logic
 // document.getElementById('darkModeToggle').addEventListener('click', function() {
 //   document.body.classList.toggle('dark-mode');
 //   document.documentElement.classList.toggle('dark-mode');
@@ -624,6 +640,7 @@ function createPagination(currentPage, totalPages, onPageChange) {
 class HelpWidget {  
   constructor() {
     this.currentPage = this.getCurrentPage();
+    this.userRole = this.getUserRole();
     this.faqData = this.getFAQData();
     this.init();
   }
@@ -634,125 +651,367 @@ class HelpWidget {
     return filename || 'index.html';
   }
 
+  getUserRole() {
+    // Try to get role from authManager first, then fallback to localStorage
+    let role = null;
+    if (window.authManager && window.authManager.user) {
+      role = window.authManager.user.role;
+    } else {
+      role = localStorage.getItem('userRole');
+    }
+    return role || 'admin'; // Default to admin if no role found
+  }
+
   getFAQData() {
-    return {
-      general: [
-        {
-          question: "How do I add a new device?",
-          answer: "Navigate to the Devices page and click the 'Add Device' button. Fill in the required information including device name, ID, serial number, and location."
-        },
-        {
-          question: "How to reset my password?",
-          answer: "Contact your system administrator to reset your password. You can also use the 'Forgot Password' option on the login page if available."
-        },
-        {
-          question: "Where can I find device error logs?",
-          answer: "Go to the Logs page to view all device error logs. You can filter by device, date range, or error type."
-        },
-        {
-          question: "How to add new users and view stats?",
-          answer: "Navigate to the Users page to add new users. Statistics are available on the dashboard and can be exported in various formats."
-        }
-      ],
-      devices: [
-        {
-          question: "What do device statuses mean?",
-          answer: "Active: Device is online and functioning. Inactive: Device is offline or has issues. Mapped: Device is assigned to a location. Unmapped: Device is not yet assigned."
-        },
-        {
-          question: "How to assign a device to a location?",
-          answer: "In the Devices page, click on the device row and use the assignment dropdown to select a location."
-        },
-        {
-          question: "How to export device data?",
-          answer: "Use the Download button in the Devices page to export data in CSV, XLS, or PDF formats."
-        }
-      ],
-      users: [
-        {
-          question: "How to create a new user account?",
-          answer: "Go to the Users page and click 'Add User'. Fill in the required fields including username, email, and role."
-        },
-        {
-          question: "What are the different user roles?",
-          answer: "Admin: Full access to all features. Supervisor: Read-only access to assigned devices. User: Limited access based on permissions."
-        },
-        {
-          question: "How to assign devices to users?",
-          answer: "In the Users page, click on a user and use the device assignment feature to link devices to that user."
-        }
-      ],
-      logs: [
-        {
-          question: "How to filter log entries?",
-          answer: "Use the search box and date filters on the Logs page to find specific entries."
-        },
-        {
-          question: "What information is shown in logs?",
-          answer: "Logs show device status changes, error messages, user actions, and system events with timestamps."
-        }
-      ]
-    };
+    const role = this.userRole;
+    
+    if (role === 'superadmin') {
+      return {
+        general: [
+          {
+            question: "How do I manage the entire system?",
+            answer: "As a Superadmin, you have full control over the entire EMS system. You can manage all locations, users, devices, and system settings."
+          },
+          {
+            question: "How to create and manage admin users?",
+            answer: "Go to the User Management page to create new admin users. You can assign them to specific locations and manage their permissions."
+          },
+          {
+            question: "How to view system-wide statistics?",
+            answer: "Access the Dashboard to view comprehensive system statistics including total devices, users, and system performance metrics."
+          },
+          {
+            question: "How to manage system logs and monitoring?",
+            answer: "Use the System Logs page to monitor all system activities, device status changes, and user actions across the entire platform."
+          }
+        ],
+        devices: [
+          {
+            question: "What are the system-wide device management features?",
+            answer: "You can view all devices across all locations, assign devices to locations, monitor device status, and manage device configurations system-wide."
+          },
+          {
+            question: "How to manage device assignments across locations?",
+            answer: "Use the Device Management page to assign devices to different locations and manage device-to-location mappings across the entire system."
+          },
+          {
+            question: "How to export system-wide device data?",
+            answer: "Use the Download button in the Device Management page to export comprehensive device data from all locations in various formats."
+          }
+        ],
+        users: [
+          {
+            question: "How to create and manage location administrators?",
+            answer: "Go to the User Management page to create new location administrators. Assign them to specific locations and set appropriate permissions."
+          },
+          {
+            question: "What are the different user roles in the system?",
+            answer: "Superadmin: Full system control. Admin: Location-specific management. Supervisor: Read-only access to assigned devices. User: Limited access based on permissions."
+          },
+          {
+            question: "How to manage user permissions across locations?",
+            answer: "In the User Management page, you can assign users to specific locations and manage their access permissions across the entire system."
+          }
+        ],
+        logs: [
+          {
+            question: "How to monitor system-wide activities?",
+            answer: "Use the System Logs page to view all system activities, including user actions, device status changes, and system events across all locations."
+          },
+          {
+            question: "What system-wide information is shown in logs?",
+            answer: "System logs show comprehensive data including all user actions, device status changes, system events, and administrative activities across the entire platform."
+          }
+        ],
+        system: [
+          {
+            question: "How to manage system settings and configurations?",
+            answer: "Access system settings through the dashboard to configure global parameters, manage system-wide policies, and set up monitoring rules."
+          },
+          {
+            question: "How to perform system maintenance and updates?",
+            answer: "Use the system administration tools to perform maintenance tasks, update system configurations, and manage system-wide security settings."
+          },
+          {
+            question: "How to monitor system performance and health?",
+            answer: "Access the dashboard to view real-time system performance metrics, health status, and system-wide monitoring data."
+          }
+        ]
+      };
+    } else if (role === 'supervisor') {
+      return {
+        general: [
+          {
+            question: "How do I view my assigned devices?",
+            answer: "Navigate to the 'My Devices' page to view all devices assigned to you. You have read-only access to monitor device status and view device information."
+          },
+          {
+            question: "How to access device logs and reports?",
+            answer: "Go to the Logs page to view logs for your assigned devices. You can filter by device and date range to find specific information."
+          },
+          {
+            question: "What can I do with my assigned devices?",
+            answer: "As a supervisor, you can view device status, monitor device performance, access device logs, and view device statistics. You have read-only access."
+          },
+          {
+            question: "How to get support for device issues?",
+            answer: "Use the Support Center to contact technical support for any issues with your assigned devices or to request assistance."
+          }
+        ],
+        devices: [
+          {
+            question: "What do device statuses mean?",
+            answer: "Active: Device is online and functioning. Inactive: Device is offline or has issues. You can monitor these statuses for your assigned devices."
+          },
+          {
+            question: "How to view device details and statistics?",
+            answer: "Click on any device in your device list to view detailed information, statistics, and performance data for that specific device."
+          },
+          {
+            question: "How to export device data for reporting?",
+            answer: "Use the download options available in your device view to export device data and statistics for reporting purposes."
+          }
+        ],
+        logs: [
+          {
+            question: "How to filter log entries for my devices?",
+            answer: "Use the search box and date filters on the Logs page to find specific log entries for your assigned devices."
+          },
+          {
+            question: "What information is shown in device logs?",
+            answer: "Device logs show status changes, error messages, performance data, and operational events for your assigned devices with timestamps."
+          }
+        ],
+        support: [
+          {
+            question: "How to report device issues?",
+            answer: "Use the Support Center to report any issues with your assigned devices. Include device ID and detailed description of the problem."
+          },
+          {
+            question: "How to request additional device access?",
+            answer: "Contact your system administrator through the Support Center to request access to additional devices or locations."
+          },
+          {
+            question: "How to get training and documentation?",
+            answer: "Access the Support Center for training materials, user guides, and documentation specific to your role and assigned devices."
+          }
+        ]
+      };
+    } else {
+      // Admin role (default)
+      return {
+        general: [
+          {
+            question: "How do I add a new device?",
+            answer: "Navigate to the Devices page and click the 'Add Device' button. Fill in the required information including device name, ID, serial number, and location."
+          },
+          {
+            question: "How to reset my password?",
+            answer: "Contact your system administrator to reset your password. You can also use the 'Forgot Password' option on the login page if available."
+          },
+          {
+            question: "Where can I find device error logs?",
+            answer: "Go to the Logs page to view all device error logs. You can filter by device, date range, or error type."
+          },
+          {
+            question: "How to add new users and view stats?",
+            answer: "Navigate to the Users page to add new users. Statistics are available on the dashboard and can be exported in various formats."
+          }
+        ],
+        devices: [
+          {
+            question: "What do device statuses mean?",
+            answer: "Active: Device is online and functioning. Inactive: Device is offline or has issues. Mapped: Device is assigned to a location. Unmapped: Device is not yet assigned."
+          },
+          {
+            question: "How to assign a device to a location?",
+            answer: "In the Devices page, click on the device row and use the assignment dropdown to select a location."
+          },
+          {
+            question: "How to export device data?",
+            answer: "Use the Download button in the Devices page to export data in CSV, XLS, or PDF formats."
+          }
+        ],
+        users: [
+          {
+            question: "How to create a new user account?",
+            answer: "Go to the Users page and click 'Add User'. Fill in the required fields including username, email, and role."
+          },
+          {
+            question: "What are the different user roles?",
+            answer: "Admin: Full access to all features. Supervisor: Read-only access to assigned devices. User: Limited access based on permissions."
+          },
+          {
+            question: "How to assign devices to users?",
+            answer: "In the Users page, click on a user and use the device assignment feature to link devices to that user."
+          }
+        ],
+        logs: [
+          {
+            question: "How to filter log entries?",
+            answer: "Use the search box and date filters on the Logs page to find specific entries."
+          },
+          {
+            question: "What information is shown in logs?",
+            answer: "Logs show device status changes, error messages, user actions, and system events with timestamps."
+          }
+        ]
+      };
+    }
   }
 
   getContextualHelp() {
-    const contextualHelp = {
-      'devices.html': {
-        title: "Device Management Help",
+    const role = this.userRole;
+    
+    if (role === 'superadmin') {
+      const contextualHelp = {
+        'superadmin-dashboard.html': {
+          title: "Superadmin Dashboard Help",
+          items: [
+            "Managing system-wide statistics",
+            "Creating and managing admin users",
+            "System-wide device management",
+            "Monitoring system performance"
+          ]
+        },
+        'users.html': {
+          title: "Location Management Help",
+          items: [
+            "Creating new locations",
+            "Managing location administrators",
+            "Assigning devices to locations",
+            "System-wide location monitoring"
+          ]
+        },
+        'supervisors.html': {
+          title: "User Management Help",
+          items: [
+            "Creating location administrators",
+            "Managing user permissions",
+            "Assigning users to locations",
+            "System-wide user monitoring"
+          ]
+        },
+        'devices.html': {
+          title: "Device Management Help",
+          items: [
+            "System-wide device monitoring",
+            "Managing device assignments",
+            "Device configuration management",
+            "Exporting system-wide data"
+          ]
+        },
+        'logs.html': {
+          title: "System Logs Help",
+          items: [
+            "Monitoring system-wide activities",
+            "Viewing all user actions",
+            "System performance monitoring",
+            "Administrative activity tracking"
+          ]
+        }
+      };
+
+      return contextualHelp[this.currentPage] || {
+        title: "System Administration Help",
         items: [
-          "How to add a new device",
-          "Understanding device statuses",
-          "Assigning devices to locations",
-          "Exporting device data"
+          "Managing the entire system",
+          "System-wide monitoring",
+          "Administrative controls",
+          "System configuration"
         ]
-      },
-      'users.html': {
-        title: "User Management Help",
+      };
+    } else if (role === 'supervisor') {
+      const contextualHelp = {
+        'super_device_overview.html': {
+          title: "My Devices Help",
+          items: [
+            "Viewing assigned devices",
+            "Monitoring device status",
+            "Accessing device information",
+            "Getting support for issues"
+          ]
+        },
+        'logs.html': {
+          title: "Device Logs Help",
+          items: [
+            "Viewing device logs",
+            "Filtering log entries",
+            "Understanding device status",
+            "Reporting device issues"
+          ]
+        },
+        'support.html': {
+          title: "Support Center Help",
+          items: [
+            "Reporting device issues",
+            "Requesting assistance",
+            "Accessing documentation",
+            "Contacting technical support"
+          ]
+        }
+      };
+
+      return contextualHelp[this.currentPage] || {
+        title: "Supervisor Help",
         items: [
-          "Creating new user accounts",
-          "Understanding user roles",
-          "Assigning devices to users",
-          "Managing user permissions"
-        ]
-      },
-      'supervisors.html': {
-        title: "Supervisor Management Help",
-        items: [
-          "Adding new supervisors",
-          "Assigning devices to supervisors",
-          "Managing supervisor permissions",
-          "Viewing supervisor statistics"
-        ]
-      },
-      'logs.html': {
-        title: "Log Management Help",
-        items: [
-          "Understanding log entries",
-          "Filtering and searching logs",
-          "Exporting log data",
-          "Interpreting error messages"
-        ]
-      },
-      'super_device_overview.html': {
-        title: "Supervisor Dashboard Help",
-        items: [
-          "Viewing assigned devices",
-          "Understanding device status",
+          "Managing assigned devices",
+          "Monitoring device status",
           "Accessing device logs",
           "Getting support"
         ]
-      }
-    };
+      };
+    } else {
+      // Admin role (default)
+      const contextualHelp = {
+        'devices.html': {
+          title: "Device Management Help",
+          items: [
+            "How to add a new device",
+            "Understanding device statuses",
+            "Assigning devices to locations",
+            "Exporting device data"
+          ]
+        },
+        'users.html': {
+          title: "Location Management Help",
+          items: [
+            "Creating new locations",
+            "Managing location data",
+            "Assigning devices to locations",
+            "Location statistics"
+          ]
+        },
+        'supervisors.html': {
+          title: "User Management Help",
+          items: [
+            "Adding new users",
+            "Understanding user roles",
+            "Assigning devices to users",
+            "Managing user permissions"
+          ]
+        },
+        'logs.html': {
+          title: "Log Management Help",
+          items: [
+            "Understanding log entries",
+            "Filtering and searching logs",
+            "Exporting log data",
+            "Interpreting error messages"
+          ]
+        }
+      };
 
-    return contextualHelp[this.currentPage] || {
-      title: "General Help",
-      items: [
-        "Navigating the dashboard",
-        "Understanding the interface",
-        "Getting support",
-        "Managing your account"
-      ]
-    };
+      return contextualHelp[this.currentPage] || {
+        title: "General Help",
+        items: [
+          "Navigating the dashboard",
+          "Understanding the interface",
+          "Getting support",
+          "Managing your account"
+        ]
+      };
+    }
   }
 
   createHelpButton() {
@@ -790,10 +1049,77 @@ class HelpWidget {
 
   getModalContent() {
     const contextualHelp = this.getContextualHelp();
+    const role = this.userRole;
+    
+    // Generate quick links based on role
+    let quickLinks = '';
+    if (role === 'superadmin') {
+      quickLinks = `
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('general')">
+          <span class="help-quick-link-icon">❓</span>
+          <span>System FAQ</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('devices')">
+          <span class="help-quick-link-icon">📱</span>
+          <span>Device Management</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('users')">
+          <span class="help-quick-link-icon">👥</span>
+          <span>User Management</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('logs')">
+          <span class="help-quick-link-icon">📊</span>
+          <span>System Logs</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('system')">
+          <span class="help-quick-link-icon">⚙️</span>
+          <span>System Admin</span>
+        </a>
+      `;
+    } else if (role === 'supervisor') {
+      quickLinks = `
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('general')">
+          <span class="help-quick-link-icon">❓</span>
+          <span>Device FAQ</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('devices')">
+          <span class="help-quick-link-icon">📱</span>
+          <span>My Devices</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('logs')">
+          <span class="help-quick-link-icon">📊</span>
+          <span>Device Logs</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('support')">
+          <span class="help-quick-link-icon">🆘</span>
+          <span>Support</span>
+        </a>
+      `;
+    } else {
+      // Admin role (default)
+      quickLinks = `
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('general')">
+          <span class="help-quick-link-icon">❓</span>
+          <span>FAQ</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('devices')">
+          <span class="help-quick-link-icon">📱</span>
+          <span>Device Help</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('users')">
+          <span class="help-quick-link-icon">👥</span>
+          <span>User Management</span>
+        </a>
+        <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('logs')">
+          <span class="help-quick-link-icon">📊</span>
+          <span>Logs Help</span>
+        </a>
+      `;
+    }
     
     return `
       <div class="help-modal-header">
-        <h2 class="help-modal-title">Help & Support Center</h2>
+        <h2 class="help-modal-title">Help & Support Center - ${role.charAt(0).toUpperCase() + role.slice(1)}</h2>
         <button class="help-modal-close" onclick="helpWidget.closeHelpModal()">&times;</button>
       </div>
       <div class="help-modal-content">
@@ -815,22 +1141,7 @@ class HelpWidget {
 
         <!-- Quick Links -->
         <div class="help-quick-links">
-          <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('general')">
-            <span class="help-quick-link-icon">❓</span>
-            <span>FAQ</span>
-          </a>
-          <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('devices')">
-            <span class="help-quick-link-icon"></span>
-            <span>Device Help</span>
-          </a>
-          <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('users')">
-            <span class="help-quick-link-icon"></span>
-            <span>User Management</span>
-          </a>
-          <a href="#" class="help-quick-link" onclick="helpWidget.showFAQ('logs')">
-            <span class="help-quick-link-icon"></span>
-            <span>Logs Help</span>
-          </a>
+          ${quickLinks}
         </div>
 
         <!-- FAQ Section -->

@@ -34,7 +34,7 @@
     
     </ul>
     <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button>
 </aside>
 
 <!-- Sidebar for supervisors (read-only) -->
@@ -58,7 +58,7 @@
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button>
 </aside>
     <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
 
@@ -124,9 +124,11 @@
             </form>
         </div>
     </div>
-
+    <script src="js/auth.js"></script>
+    <script src="js/script.js"></script>
     <script>
     const address = new URLSearchParams(window.location.search).get('address');
+    let allDevices = []; // Add this to store all devices for filtering
     document.getElementById('userLabel').textContent = address;
 
     function navigate(page) {
@@ -137,47 +139,54 @@
       window.location.href = 'login.html';
     }
 
-    document.getElementById('sidebarArrow').onclick = () => {
-      document.getElementById('sidebar').classList.toggle('collapsed');
-    };
-    document.getElementById('sidebarHamburger').onclick = () => {
-      document.getElementById('sidebar').classList.toggle('collapsed');
-    };
+    // Legacy sidebar handlers (guarded); main logic is in js/script.js
+    const legacySidebarArrow = document.getElementById('sidebarArrow');
+    const legacySidebar = document.getElementById('sidebar');
+    const legacySidebarHamburger = document.getElementById('sidebarHamburger');
+    if (legacySidebarArrow && legacySidebar) {
+      legacySidebarArrow.onclick = () => legacySidebar.classList.toggle('collapsed');
+    }
+    if (legacySidebarHamburger && legacySidebar) {
+      legacySidebarHamburger.onclick = () => legacySidebar.classList.toggle('collapsed');
+    }
 
-    async function loadDevices() {
-      const res = await fetch(`/api/user-devices-details/${address}`, { headers: { 'x-user-role': 'admin' } });
-      const devices = await res.json();
+    function renderDevices(devices) {
       const table = document.getElementById('device-table-body');
       table.innerHTML = devices.length ? '' : '<tr><td colspan="7">No devices assigned.</td></tr>';
       devices.forEach(dev => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><input type="checkbox" class="user-device-row-checkbox" /></td>
-                    <td>${dev.ID || dev.DeviceId || '-'}</td>
-                    <td>${dev.DeviceName || '-'}</td>
-                    <td>${dev.SerialNum || '-'}</td>
-                    <td>${dev.MacAddress || '-'}</td>
-                    <td>${dev.Location || '-'}</td>
-                    <!-- <td>${dev.Status || '-'}</td> -->
-                    <td>${dev.active === true ? 'Active' : 'Inactive'}</td> 
-                  `;
-        // ✅ hide check boxes immediately:
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input type="checkbox" class="user-device-row-checkbox" /></td>
+          <td>${dev.ID || dev.DeviceId || '-'}</td>
+          <td>${dev.DeviceName || '-'}</td>
+          <td>${dev.SerialNum || '-'}</td>
+          <td>${dev.MacAddress || '-'}</td>
+          <td>${dev.Location || '-'}</td>
+          <!-- <td>${dev.Status || '-'}</td> -->
+          <td>${dev.active === true ? 'Active' : 'Inactive'}</td>
+        `;
         if (typeof isSupervisor === 'function' && isSupervisor()) {
           row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
             cb.disabled = true;
             cb.style.display = 'none';
           });
         }
-        // Make the row clickable to view telemetry details
         row.style.cursor = 'pointer';
         row.addEventListener('click', function(e) {
           if (e.target.tagName.toLowerCase() === 'input') return;
           sessionStorage.setItem('selectedAddress', address);
           window.location.href = `specific_userdevice.html?deviceId=${dev.tb_device_id}&address=${encodeURIComponent(address)}`;
         });
-                table.appendChild(row);
-            });
-        }
+        table.appendChild(row);
+      });
+    }
+
+    async function loadDevices() {
+      const res = await fetch(`/api/user-devices-details/${address}`, { credentials: 'include', headers: { 'x-user-role': 'admin' } });
+      const devices = await res.json();
+      allDevices = Array.isArray(devices) ? devices : [];
+      renderDevices(allDevices);
+    }
         
     document.getElementById('addDeviceBtn').onclick = () => {
       openAddDeviceModal();
@@ -196,7 +205,7 @@
       const dropdown = document.getElementById('modalDeviceDropdown');
       dropdown.innerHTML = '<option value="">Select Device</option>';
       try {
-        const res = await fetch('/api/unassigned-devices', { headers: { 'x-user-role': 'admin' } });
+        const res = await fetch('/api/unassigned-devices', { credentials: 'include', headers: { 'x-user-role': 'admin' } });
         const devices = await res.json();
         devices.forEach(dev => {
           const opt = document.createElement('option');
@@ -219,6 +228,7 @@
             // Fetch device details for the selected device
             const deviceRes = await fetch(`/api/device/${selectedDeviceId}/sync-telemetry`, {
               method: 'POST',
+              credentials: 'include',
               headers: { 'x-user-role': 'admin' }
             });
             
@@ -259,6 +269,7 @@
       try {
         const res = await fetch('/api/assign-device', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json','x-user-role': 'admin' },
           body: JSON.stringify({ address, tb_device_id })
         });
@@ -294,7 +305,6 @@
     });
     
     </script>
-  <script src="js/auth.js"></script>
-  <script src="js/script.js"></script>
+  
 </body>
 </html>

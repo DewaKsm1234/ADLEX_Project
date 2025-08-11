@@ -301,8 +301,15 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    const user = rows[0];
+
+    // Check if user is suspended
+    if (user.status === 'suspended') {
+      return res.status(401).json({ success: false, message: 'Your account has been suspended. Please contact the administrator.' });
+    }
+
     // Compare password with bcrypt hash
-    const isValidPassword = await comparePassword(password, rows[0].password);
+    const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -310,7 +317,7 @@ app.post('/api/login', async (req, res) => {
     console.log('Login successful. Generating JWT token...');
 
     // Generate JWT token
-    const token = generateToken(rows[0]);
+    const token = generateToken(user);
 
     // Set HTTP-only cookie with the token
     res.cookie('authToken', token, COOKIE_OPTIONS);
@@ -329,9 +336,9 @@ app.post('/api/login', async (req, res) => {
     res.json({
       success: true,
       token: token, // Also send token in response for frontend storage
-      username: rows[0].username,
-      role: rows[0].role,
-      name: (rows[0].first_name || '') + ' ' + (rows[0].last_name || ''),
+      username: user.username,
+      role: user.role,
+      name: (user.first_name || '') + ' ' + (user.last_name || ''),
       message: 'Login successful. Device sync running in background.'
     });
 
@@ -484,34 +491,50 @@ app.get('/api/users', authenticateToken, requireSuperAdminOrAdmin, async (req, r
 // Assign supervisor to user
 app.post('/api/assign-supervisor', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const { address, supervisor_id } = req.body;
+  const connection = await db.getConnection();
 
   // 🔍 Validate input
   if (!address || !supervisor_id) {
+    connection.release();
     return res.status(400).json({ error: 'Missing address or supervisor_id' });
   }
 
   try {
+    // Start transaction
+    await connection.beginTransaction();
+
     // ✅ Check if user exists
-    const [userRows] = await db.execute('SELECT id FROM users WHERE address = ?', [address]);
+    const [userRows] = await connection.execute('SELECT id FROM users WHERE address = ?', [address]);
     if (userRows.length === 0) {
+      await connection.rollback();
+      connection.release();
       return res.status(404).json({ error: 'User not found' });
     }
 
     // ✅ Check if supervisor exists (optional but recommended)
-    const [supRows] = await db.execute('SELECT * FROM supervisors WHERE supervisor_id = ?', [supervisor_id]);
+    const [supRows] = await connection.execute('SELECT * FROM supervisors WHERE supervisor_id = ?', [supervisor_id]);
     if (supRows.length === 0) {
+      await connection.rollback();
+      connection.release();
       return res.status(404).json({ error: 'Supervisor not found' });
     }
 
     // 🔁 Update supervisor assignment
-    await db.execute(
+    await connection.execute(
       'UPDATE users SET supervisor_id = ? WHERE address = ?',
       [supervisor_id, address]
     );
 
+    // Commit transaction
+    await connection.commit();
+    connection.release();
+
     res.json({ success: true, message: 'Supervisor assigned successfully' });
 
   } catch (err) {
+    // Rollback transaction on error
+    await connection.rollback();
+    connection.release();
     console.error('[assign-supervisor ERROR]', err); // log full error
     res.status(500).json({ error: 'Internal server error', details: err.message });
   }
@@ -521,10 +544,17 @@ app.post('/api/assign-supervisor', authenticateToken, requireSuperAdminOrAdmin, 
 // Assign Device to User
 app.post('/api/assign-device',  authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
   const { address, tb_device_id } = req.body;
+  const connection = await db.getConnection();
+  
   try {
+    // Start transaction
+    await connection.beginTransaction();
+
     // Get user_id from address
-    const [userRows] = await db.execute('SELECT id FROM users WHERE address = ?', [address]);
+    const [userRows] = await connection.execute('SELECT id FROM users WHERE address = ?', [address]);
     if (userRows.length === 0) {
+      await connection.rollback();
+      connection.release();
       return res.status(404).json({ error: 'User not found' });
     }
     const user_id = userRows[0].id;
@@ -546,23 +576,32 @@ app.post('/api/assign-device',  authenticateToken, requireSuperAdminOrAdmin, asy
         ? tbData[key][0].value
         : null;
     });
+    
     // Upsert telemetry into database
     const columns = ['tb_device_id', ...telemetryKeys];
     const values = [tb_device_id, ...telemetryKeys.map(k => telemetry[k])];
     const updateClause = telemetryKeys.map(k => `${k} = VALUES(${k})`).join(', ');
-    await db.execute(
+    await connection.execute(
       `INSERT INTO telemetry_device (${columns.join(', ')}) VALUES (${columns.map(_ => '?').join(', ')})
        ON DUPLICATE KEY UPDATE ${updateClause}`,
       values
     );
 
     // Insert mapping into user_devices
-    await db.execute(
+    await connection.execute(
       'INSERT INTO user_devices (user_id, tb_device_id) VALUES (?, ?)',
       [user_id, tb_device_id]
     );
+    
+    // Commit transaction
+    await connection.commit();
+    connection.release();
+    
     res.json({ success: true });
   } catch (err) {
+    // Rollback transaction on error
+    await connection.rollback();
+    connection.release();
     res.status(500).json({ error: err.message });
   }
 });
@@ -775,7 +814,9 @@ app.get('/api/supervisors-summary', authenticateToken, requireSuperAdminOrAdmin,
         contact: `${sup.email || ''}${sup.phone ? ' / ' + sup.phone : ''}`.trim(),
         assigned_users,
         assigned_devices,
-        admin_id: sup.admin_id // Add this line
+        admin_id: sup.admin_id,
+        status: sup.status || 'active',
+        id: sup.id
       };
     }));
 
@@ -805,6 +846,184 @@ app.get('/api/supervisor-users-devices/:supervisor_id', async (req, res) => {
   } catch (err) {
     console.error('Error in /api/supervisor-users-devices:', err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- SUPERVISOR MANAGEMENT APIs -------------------
+/**
+ * Get unassigned supervisors (admin_id IS NULL)
+ * GET /api/supervisors/unassigned?city=CityName
+ */
+app.get('/api/supervisors/unassigned', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { city } = req.query;
+    let query = 'SELECT * FROM supervisors WHERE admin_id IS NULL AND status = "active"';
+    let params = [];
+    if (city) {
+      query += ' AND city = ?';
+      params.push(city);
+    }
+    query += ' ORDER BY first_name, last_name';
+    const [supervisors] = await db.execute(query, params);
+    res.json(supervisors);
+  } catch (error) {
+    console.error('Error fetching unassigned supervisors:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch unassigned supervisors' });
+  }
+});
+
+/**
+ * Get supervisors assigned to a specific admin
+ * GET /api/admins/:id/supervisors?city=CityName
+ */
+app.get('/api/admins/:adminId/supervisors', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { city } = req.query;
+    // Verify admin exists and is not suspended
+    const [admin] = await db.execute(`
+      SELECT a.admin_id, ul.status as login_status 
+      FROM admins a 
+      LEFT JOIN users_login ul ON a.admin_id = ul.username 
+      WHERE a.admin_id = ? AND (ul.status = 'active' OR ul.status IS NULL)
+    `, [adminId]);
+    if (admin.length === 0) {
+      return res.status(404).json({ success: false, message: 'Admin not found or is suspended' });
+    }
+    let query = 'SELECT * FROM supervisors WHERE admin_id = ? AND status = "active"';
+    let params = [adminId];
+    if (city) {
+      query += ' AND city = ?';
+      params.push(city);
+    }
+    query += ' ORDER BY first_name, last_name';
+    const [supervisors] = await db.execute(query, params);
+    res.json(supervisors);
+  } catch (error) {
+    console.error('Error fetching admin supervisors:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch admin supervisors' });
+  }
+});
+
+/**
+ * Bulk assign supervisors to an admin
+ * POST /api/admins/:id/supervisors
+ * Optionally accepts { city: 'CityName', supervisorIds: [...] }
+ */
+app.post('/api/admins/:adminId/supervisors', authenticateToken, requireSuperAdmin, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    const { adminId } = req.params;
+    const { supervisorIds, city } = req.body;
+    if (!supervisorIds || !Array.isArray(supervisorIds) || supervisorIds.length === 0) {
+      connection.release();
+      return res.status(400).json({ success: false, message: 'Supervisor IDs array is required' });
+    }
+    // Verify admin exists and is not suspended
+    const [admin] = await connection.execute(`
+      SELECT a.admin_id, ul.status as login_status 
+      FROM admins a 
+      LEFT JOIN users_login ul ON a.admin_id = ul.username 
+      WHERE a.admin_id = ? AND (ul.status = 'active' OR ul.status IS NULL)
+    `, [adminId]);
+    if (admin.length === 0) {
+      connection.release();
+      return res.status(404).json({ success: false, message: 'Admin not found or is suspended' });
+    }
+    // Start transaction
+    await connection.beginTransaction();
+    // Verify all supervisors exist and are unassigned (and match city if provided)
+    const placeholders = supervisorIds.map(() => '?').join(',');
+    let query = `SELECT supervisor_id FROM supervisors WHERE supervisor_id IN (${placeholders}) AND admin_id IS NULL AND status = "active"`;
+    let params = [...supervisorIds];
+    if (city) {
+      query += ' AND city = ?';
+      params.push(city);
+    }
+    const [supervisors] = await connection.execute(query, params);
+    if (supervisors.length !== supervisorIds.length) {
+      await connection.rollback();
+      connection.release();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Some supervisors are not available for assignment (already assigned, inactive, or city mismatch)' 
+      });
+    }
+    // Assign supervisors to admin
+    await connection.execute(
+      'UPDATE supervisors SET admin_id = ? WHERE supervisor_id IN (' + placeholders + ')',
+      [adminId, ...supervisorIds]
+    );
+    // Commit transaction
+    await connection.commit();
+    connection.release();
+    res.json({ 
+      success: true, 
+      message: `Successfully assigned ${supervisorIds.length} supervisor(s) to admin ${adminId}` 
+    });
+  } catch (error) {
+    await connection.rollback();
+    connection.release();
+    console.error('Error assigning supervisors to admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to assign supervisors to admin' });
+  }
+});
+
+/**
+ * Unassign a supervisor from an admin
+ * DELETE /api/admins/:id/supervisors/:supervisorId
+ */
+app.delete('/api/admins/:adminId/supervisors/:supervisorId', authenticateToken, requireSuperAdmin, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    const { adminId, supervisorId } = req.params;
+
+    // Verify admin exists and is not suspended
+    const [admin] = await connection.execute(`
+      SELECT a.admin_id, ul.status as login_status 
+      FROM admins a 
+      LEFT JOIN users_login ul ON a.admin_id = ul.username 
+      WHERE a.admin_id = ? AND (ul.status = 'active' OR ul.status IS NULL)
+    `, [adminId]);
+    
+    if (admin.length === 0) {
+      connection.release();
+      return res.status(404).json({ success: false, message: 'Admin not found or is suspended' });
+    }
+
+    // Verify supervisor exists and is assigned to this admin
+    const [supervisor] = await connection.execute(
+      'SELECT supervisor_id FROM supervisors WHERE supervisor_id = ? AND admin_id = ? AND status = "active"',
+      [supervisorId, adminId]
+    );
+    if (supervisor.length === 0) {
+      connection.release();
+      return res.status(404).json({ success: false, message: 'Supervisor not found or not assigned to this admin' });
+    }
+
+    // Start transaction
+    await connection.beginTransaction();
+
+    // Unassign supervisor (set admin_id to NULL)
+    await connection.execute(
+      'UPDATE supervisors SET admin_id = NULL WHERE supervisor_id = ?',
+      [supervisorId]
+    );
+
+    // Commit transaction
+    await connection.commit();
+
+    res.json({ 
+      success: true, 
+      message: `Successfully unassigned supervisor ${supervisorId} from admin ${adminId}` 
+    });
+  } catch (error) {
+    // Rollback transaction on error
+    await connection.rollback();
+    console.error('Error unassigning supervisor from admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to unassign supervisor from admin' });
+  } finally {
+    connection.release();
   }
 });
 
@@ -1591,7 +1810,7 @@ app.get('/api/check-unique', async (req, res) => {
 app.get('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const [admins] = await db.execute(`
-      SELECT a.*, ul.username
+      SELECT a.*, ul.username, ul.status as login_status
       FROM admins a 
       LEFT JOIN users_login ul ON a.admin_id = ul.username 
       WHERE ul.role = 'admin' OR ul.role IS NULL
@@ -1605,7 +1824,7 @@ app.get('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) =>
 });
 
 // Create new admin
-app.post('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) => {
+app.post('/api/admins/create', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { admin_id, first_name, last_name, email, phone, password } = req.body;
     
@@ -1667,7 +1886,7 @@ app.post('/api/admins', authenticateToken, requireSuperAdmin, async (req, res) =
 app.put('/api/admins/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, address, password } = req.body;
+    const { admin_id, first_name, last_name, email, phone, password } = req.body;
 
     // Check if admin exists
     const [admin] = await db.execute('SELECT admin_id FROM admins WHERE id = ?', [id]);
@@ -1756,6 +1975,297 @@ app.post('/api/admins/:id/change-password', authenticateToken, requireSuperAdmin
     await db.execute(
       'UPDATE users_login SET password = ? WHERE username = ? AND role = "admin"',
       [hashedPassword, admin[0].admin_id]
+    );
+    
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ success: false, message: 'Failed to change password' });
+  }
+});
+
+/**
+ * Suspend admin and reassign supervisors (superadmin only)
+ * POST /api/admins/:id/suspend
+ */
+app.post('/api/admins/:id/suspend', authenticateToken, requireSuperAdmin, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    const { id } = req.params;
+    const { newAdminId } = req.body;
+    
+    // Get admin details
+    const [admin] = await connection.execute('SELECT admin_id FROM admins WHERE id = ? AND status = "active"', [id]);
+    if (admin.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Active admin not found' });
+    }
+    
+    const adminId = admin[0].admin_id;
+    
+    // Validate new admin exists and is active
+    if (newAdminId) {
+      const [newAdmin] = await connection.execute(
+        'SELECT admin_id FROM admins WHERE admin_id = ? AND status = "active"', 
+        [newAdminId]
+      );
+      if (newAdmin.length === 0) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: 'Target admin not found or not active' });
+      }
+      
+      // Reassign supervisors to new admin
+      await connection.execute(
+        'UPDATE supervisors SET admin_id = ? WHERE admin_id = ?',
+        [newAdminId, adminId]
+      );
+    } else {
+      // Remove admin_id from supervisors (they become unassigned)
+      await connection.execute(
+        'UPDATE supervisors SET admin_id = NULL WHERE admin_id = ?',
+        [adminId]
+      );
+    }
+    
+    // Suspend admin in admins table
+    await connection.execute(
+      'UPDATE admins SET status = "suspended" WHERE id = ?',
+      [id]
+    );
+    
+    // Suspend admin in users_login table
+    await connection.execute(
+      'UPDATE users_login SET status = "suspended" WHERE username = ? AND role = "admin"',
+      [adminId]
+    );
+    
+    await connection.commit();
+    
+    res.json({ 
+      success: true, 
+      message: `Admin suspended successfully${newAdminId ? ` and supervisors reassigned to ${newAdminId}` : ' and supervisors unassigned'}`
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error suspending admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to suspend admin' });
+  } finally {
+    connection.release();
+  }
+});
+
+/**
+ * Reactivate admin (superadmin only)
+ * POST /api/admins/:id/reactivate
+ */
+app.post('/api/admins/:id/reactivate', authenticateToken, requireSuperAdmin, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    const { id } = req.params;
+    
+    // Get admin details
+    const [admin] = await connection.execute('SELECT admin_id FROM admins WHERE id = ? AND status = "suspended"', [id]);
+    if (admin.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Suspended admin not found' });
+    }
+    
+    const adminId = admin[0].admin_id;
+    
+    // Reactivate admin in admins table
+    await connection.execute(
+      'UPDATE admins SET status = "active" WHERE id = ?',
+      [id]
+    );
+    
+    // Reactivate admin in users_login table
+    await connection.execute(
+      'UPDATE users_login SET status = "active" WHERE username = ? AND role = "admin"',
+      [adminId]
+    );
+    
+    await connection.commit();
+    
+    res.json({ success: true, message: 'Admin reactivated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error reactivating admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to reactivate admin' });
+  } finally {
+    connection.release();
+  }
+});
+
+/**
+ * Get available admins for supervisor reassignment (superadmin only)
+ * GET /api/admins/available
+ */
+app.get('/api/admins/available', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const [admins] = await db.execute(`
+      SELECT a.admin_id, a.first_name, a.last_name, a.email
+      FROM admins a 
+      WHERE a.status = 'active'
+      ORDER BY a.first_name, a.last_name
+    `);
+    
+    res.json({ success: true, admins });
+  } catch (error) {
+    console.error('Error fetching available admins:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch available admins' });
+  }
+});
+
+/**
+ * Suspend supervisor (superadmin only)
+ * POST /api/supervisors/:id/suspend
+ */
+app.post('/api/supervisors/:id/suspend', authenticateToken, requireSuperAdmin, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    const { id } = req.params;
+    const { newSupervisorId } = req.body;
+    
+    // Get supervisor details
+    const [supervisor] = await connection.execute('SELECT supervisor_id, admin_id FROM supervisors WHERE id = ? AND status = "active"', [id]);
+    if (supervisor.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Active supervisor not found' });
+    }
+    
+    const supervisorId = supervisor[0].supervisor_id;
+    const adminId = supervisor[0].admin_id || null;
+
+    // Handle location (users) reassignment
+    if (newSupervisorId) {
+      // Validate target supervisor exists, is active, and under same admin
+      const [targetRows] = await connection.execute(
+        'SELECT supervisor_id, admin_id, status FROM supervisors WHERE supervisor_id = ?',
+        [newSupervisorId]
+      );
+      if (targetRows.length === 0) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: 'Target supervisor not found' });
+      }
+      const target = targetRows[0];
+      if (target.status !== 'active') {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: 'Target supervisor is not active' });
+      }
+      if (adminId && target.admin_id && String(adminId) !== String(target.admin_id)) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: 'Target supervisor must be under the same admin' });
+      }
+      // Reassign all locations (users) from current supervisor to target supervisor
+      await connection.execute(
+        'UPDATE users SET supervisor_id = ? WHERE supervisor_id = ?',
+        [newSupervisorId, supervisorId]
+      );
+    } else {
+      // Leave locations unassigned: set supervisor_id to NULL for users under this supervisor
+      await connection.execute(
+        'UPDATE users SET supervisor_id = NULL WHERE supervisor_id = ?',
+        [supervisorId]
+      );
+    }
+    
+    // Suspend supervisor in supervisors table
+    await connection.execute(
+      'UPDATE supervisors SET status = "suspended" WHERE id = ?',
+      [id]
+    );
+    
+    // Suspend supervisor in users_login table
+    await connection.execute(
+      'UPDATE users_login SET status = "suspended" WHERE username = ? AND role = "supervisor"',
+      [supervisorId]
+    );
+    
+    await connection.commit();
+    
+    res.json({ 
+      success: true, 
+      message: `Supervisor suspended successfully${newSupervisorId ? ` and locations moved to ${newSupervisorId}` : ' and locations left unassigned'}`
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error suspending supervisor:', error);
+    res.status(500).json({ success: false, message: 'Failed to suspend supervisor' });
+  } finally {
+    connection.release();
+  }
+});
+
+/**
+ * Reactivate supervisor (superadmin only)
+ * POST /api/supervisors/:id/reactivate
+ */
+app.post('/api/supervisors/:id/reactivate', authenticateToken, requireSuperAdmin, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    const { id } = req.params;
+    
+    // Get supervisor details
+    const [supervisor] = await connection.execute('SELECT supervisor_id FROM supervisors WHERE id = ? AND status = "suspended"', [id]);
+    if (supervisor.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Suspended supervisor not found' });
+    }
+    
+    const supervisorId = supervisor[0].supervisor_id;
+    
+    // Reactivate supervisor in supervisors table
+    await connection.execute(
+      'UPDATE supervisors SET status = "active" WHERE id = ?',
+      [id]
+    );
+    
+    // Reactivate supervisor in users_login table
+    await connection.execute(
+      'UPDATE users_login SET status = "active" WHERE username = ? AND role = "supervisor"',
+      [supervisorId]
+    );
+    
+    await connection.commit();
+    
+    res.json({ success: true, message: 'Supervisor reactivated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error reactivating supervisor:', error);
+    res.status(500).json({ success: false, message: 'Failed to reactivate supervisor' });
+  } finally {
+    connection.release();
+  }
+});
+
+/**
+ * Change supervisor password (superadmin only)
+ * POST /api/supervisors/:id/change-password
+ */
+app.post('/api/supervisors/:id/change-password', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    // Get supervisor_id
+    const [supervisor] = await db.execute('SELECT supervisor_id FROM supervisors WHERE id = ?', [id]);
+    if (supervisor.length === 0) {
+      return res.status(404).json({ success: false, message: 'Supervisor not found' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    await db.execute(
+      'UPDATE users_login SET password = ? WHERE username = ? AND role = "supervisor"',
+      [hashedPassword, supervisor[0].supervisor_id]
     );
     
     res.json({ success: true, message: 'Password changed successfully' });

@@ -41,7 +41,7 @@
     
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button>
 </aside>
 
 <!-- Sidebar for supervisors (read-only) -->
@@ -52,7 +52,7 @@
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button>
 </aside>
 
 <!-- Sidebar for superadmin -->
@@ -66,7 +66,7 @@
     <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
   </ul>
   <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button>
 </aside>
   <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
   <main class="main-content">
@@ -102,6 +102,8 @@
       Powered by Samsan | © 2025 Revision
     </div>
   </main>
+  <script src="js/auth.js"></script>
+  <script src="js/script.js"></script>
   <script>
     let allUsers = [];
     let allSupervisors = [];
@@ -159,7 +161,7 @@
           row.style.cursor = 'pointer';
           row.addEventListener('click', function(e) {
             if (e.target.tagName.toLowerCase() === 'input') return;
-              window.location.href = `user_device_overview.html?address=${address}`;
+              window.location.href = `user_device_overview.html?address=${user.address}`;
           });
             table.appendChild(row);
         row.innerHTML = `
@@ -472,7 +474,6 @@
   
     loadUsers();
   </script>
-  <script src="js/auth.js"></script>
-  <script src="js/script.js"></script>
+  
 </body>
 </html>
