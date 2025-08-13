@@ -2,6 +2,167 @@
 
 /* Sidebar styles */
 .sidebar { width: 200px; background: #f8f9fa; padding: 20px 10px; }
+/* --- Sidebar --- */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 60px;
+  width: 200px;
+  height: calc(100% - 60px);
+  background: #f0f0f0;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width 0.3s ease;
+  padding: 0px 10px;
+  justify-content: space-between;
+}
+.sidebar.collapsed {
+  width: 64px;
+  min-width: 64px;
+  padding: 0 6px;
+  overflow: hidden;
+}
+.sidebar-footer {
+  margin-top: auto;
+  padding-bottom: 10px;
+}
+.signout-link, .logout-link {
+  color: #e74c3c;
+  font-weight: bold;
+  text-decoration: none;
+  display: block;
+  padding: 10px 0;
+  text-align: center;
+}
+.signout-link:hover, .logout-link:hover {
+  background: #ffeaea;
+  color: #c0392b;
+}
+
+/* The toggle button INSIDE the sidebar */
+.sidebar-arrow {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #fff;
+  border: 1px solid #007bff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+/* When collapsed, keep the toggle at the top-right of the narrow bar */
+.sidebar.collapsed .sidebar-arrow {
+  width: 32px;
+  height: 32px;
+  right: 16px;
+}
+
+/* Icon-only collapsed styles */
+.sidebar.collapsed ul,
+.sidebar.collapsed .logout-link,
+.sidebar.collapsed li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.sidebar.collapsed li {
+  padding: 12px 8px;
+  text-align: center;
+}
+.sidebar.collapsed .logout-link {
+  padding: 12px 8px;
+  text-align: center;
+}
+
+/* Hide text spans when sidebar is collapsed, show only icons */
+.sidebar.collapsed li span:last-child,
+.sidebar.collapsed .logout-link span:last-child {
+  display: none;
+}
+
+/* Show only the first span (icon) when collapsed */
+.sidebar.collapsed li span:first-child,
+.sidebar.collapsed .logout-link span:first-child {
+  display: inline-block;
+}
+
+
+
+/* --- Sidebar Hamburger --- */
+/*.sidebar-hamburger {
+  position: fixed; 
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background: #007bff;
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 60px;
+  font-size: 1.5em;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 300;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+.sidebar.collapsed ~ .sidebar-hamburger {
+  display: flex;
+}*/
+/* --- Utility --- */
+
+.sidebar ul {
+  list-style: none;
+  padding: 20px 0px;
+  margin: 0;
+  margin-top: 40px;
+}
+.sidebar li {
+  padding: 12px 16px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  color: #333;
+  font-size: 1.05em;
+}
+.sidebar li.active, .sidebar li:hover {
+  background-color: #007bff;
+  color: white;
+}
+.sidebar .logout-link {
+  color: #e74c3c !important;
+  font-weight: bold;
+  margin-top: auto;
+  padding: 12px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  background: none;
+  text-align: left;
+}
+.sidebar .logout-link:hover {
+  background: #ffeaea !important;
+  color: #c0392b !important;
+}
+
+
+
+
+
+
+
 .menu-title { font-weight: bold; margin-bottom: 10px; }
 .nav-link { padding: 12px 16px; border-radius: 5px; margin-bottom: 5px; cursor: pointer; color: #333; }
 .nav-link.active, .nav-link:hover { background-color: #007bff; color: white; }
@@ -10,7 +171,7 @@
 
 /* Table container and main content */
 .table-container { background: #fff; border-radius: 8px; margin: 30px 20px 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.main-content { margin-left: 200px; margin-top: 60px; padding: 30px 30px 0 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box;flex:1;overflow-y: auto; }
+.main-content { margin-left: 200px; margin-top: 60px; padding: 30px 30px 0 30px; background: #f8f9fa; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box;flex:1;overflow-y: auto; transition: margin-left 0.3s ease; }
 /*.main-content { margin-left: 200px; margin-top: 60px; padding: 40px 30px 0 30px; background: #e5e7eb; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }*/
 
 /* Buttons */
@@ -79,89 +240,11 @@ body, html {
   gap: 10px;
 }
 
-/* --- Sidebar --- */
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 60px;
-  width: 200px;
-  height: calc(100% - 60px);
-  background: #f0f0f0;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  transition: transform 0.3s, width 0.3s;
-  padding: 0px 10px;
-  justify-content: space-between;
-}
-.sidebar.collapsed {
-  transform: translateX(-100%);
-  width: 0;
-  min-width: 0;
-  padding: 0;
-  overflow: hidden;
-}
-.sidebar-footer {
-  margin-top: auto;
-  padding-bottom: 10px;
-}
-.signout-link, .logout-link {
-  color: #e74c3c;
-  font-weight: bold;
-  text-decoration: none;
-  display: block;
-  padding: 10px 0;
-  text-align: center;
-}
-.signout-link:hover, .logout-link:hover {
-  background: #ffeaea;
-  color: #c0392b;
-}
 
-/* --- Sidebar Arrow --- */
-.sidebar-arrow {
-  position: absolute;
-  right: -18px;
-  top: 30px;
-  background: #fff;
-  color: #007bff;
-  border: 1px solid #007bff;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 1.2em;
-  cursor: pointer;
-  z-index: 3;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-/* --- Sidebar Hamburger --- */
-.sidebar-hamburger {
-  position: fixed; /* Keep it pinned to screen center */
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  background: #007bff;
-  color: #fff;
-  border: none;
-  width: 40px;
-  height: 60px;
-  font-size: 1.5em;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 300;
-  display: none;
-  justify-content: center;
-  align-items: center;
-}
-.sidebar.collapsed ~ .sidebar-hamburger {
-  display: flex;
-}
 
 /* --- Main Content --- */
 .main-content {
-  margin-left: 220px;
+  margin-left: 200px;
   margin-top: 60px;
   padding: 30px 30px 0 30px;
   min-width: 0;
@@ -171,7 +254,7 @@ body, html {
   transition: margin-left 0.3s;
 }
 .sidebar.collapsed ~ .main-content {
-  margin-left: 20px;
+  margin-left: 64px;
 }
 
 /* --- Register Button and Topbar Buttons --- */
@@ -193,39 +276,7 @@ body, html {
   background: #e6f0ff;
 }
 
-/* --- Utility --- */
 
-.sidebar ul {
-  list-style: none;
-  padding: 20px 0px;
-  margin: 0;
-}
-.sidebar li {
-  padding: 12px 16px;
-  border-radius: 5px;
-  margin-bottom: 5px;
-  cursor: pointer;
-  color: #333;
-  font-size: 1.05em;
-}
-.sidebar li.active, .sidebar li:hover {
-  background-color: #007bff;
-  color: white;
-}
-.sidebar .logout-link {
-  color: #e74c3c !important;
-  font-weight: bold;
-  margin-top: auto;
-  padding: 12px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  background: none;
-  text-align: left;
-}
-.sidebar .logout-link:hover {
-  background: #ffeaea !important;
-  color: #c0392b !important;
-}
 /* Remove legacy main-panel, topbar, etc. styles that conflict */
 .main-panel, .table-container, .main-panel .topbar, .main-panel .search-panel {
   margin: 0;

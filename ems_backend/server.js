@@ -1419,7 +1419,7 @@ const fetchAndSaveTelemetry = async () => {
 };
 
 // setInterval(fetchAndSaveTelemetry, 60 * 1000); // Every minute
-let autoSaveEnabled = true; // Set to false to pause auto-saving
+let autoSaveEnabled = false; // Set to false to pause auto-saving
 
 setInterval(() => {
   if (autoSaveEnabled) {
@@ -1495,147 +1495,220 @@ app.get('/api/logs/download-selected', async (req, res) => {
   if (deviceIds.length > 10) {
     return res.status(400).json({ error: 'You can download logs for a maximum of 10 devices at a time.' });
   }
+  
   const isZip = deviceIds.length > 1;
+  
   if (isZip) {
+    // Multi-device ZIP download
     res.setHeader('Content-disposition', 'attachment; filename=selected_logs.zip');
     res.set('Content-Type', 'application/zip');
-  }
-  let archive;
-  if (isZip) {
-    archive = archiver('zip', { zlib: { level: 9 } });
+    
+    const archive = archiver('zip', { zlib: { level: 9 } });
     archive.pipe(res);
-  }
-  for (const tb_device_id of deviceIds) {
-    // Fetch logs for this device
-    const [rows] = await db.execute(`
-      SELECT d.*, u.address
-      FROM device_logs d
-      LEFT JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
-      LEFT JOIN users u ON ud.user_id = u.id
-      WHERE d.tb_device_id = ? AND d.log_time BETWEEN ? AND ?
-      ORDER BY d.log_time
-    `, [tb_device_id, from, to]);
-    if (!rows.length) {
-      // No logs → write empty file with inactive message
-      const inactivityNote = `Device was inactive from ${from} to ${to}`;
-      
-      if (format === 'csv') {
-        const csvContent = `Device ID: ${tb_device_id}\nNote: ${inactivityNote}`;
-        if (isZip) {
+    
+    archive.on('error', (err) => {
+      console.error('Zip stream error:', err);
+      try { res.end(); } catch {}
+    });
+    
+    // Process each device
+    for (const tb_device_id of deviceIds) {
+      try {
+        // Stream logs for this device
+        const [rows] = await db.execute(`
+          SELECT d.*, u.address
+          FROM device_logs d
+          LEFT JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
+          LEFT JOIN users u ON ud.user_id = u.id
+          WHERE d.tb_device_id = ? AND d.log_time BETWEEN ? AND ?
+          ORDER BY d.log_time
+        `, [tb_device_id, from, to]);
+        
+        if (!rows.length) {
+          // No logs - create inactive message file
+          const inactivityNote = `Device was inactive from ${from} to ${to}`;
+          const csvContent = `Device ID: ${tb_device_id}\nNote: ${inactivityNote}`;
           archive.append(csvContent, { name: `${tb_device_id}_inactive.csv` });
-        } else {
+          continue;
+        }
+        
+        const address = rows[0].address || '-';
+        const header = ['Date and Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'];
+        
+        if (format === 'csv') {
+          // Stream CSV content
+          const csvRows = [
+            [address, tb_device_id],
+            [],
+            header,
+            ...rows.map(r => [
+              formatDateTime(r.log_time),
+              r.CUR == null ? 0 : r.CUR,
+              r.VBUS == null ? 0 : r.VBUS,
+              r.SPD == null ? 0 : r.SPD,
+              r.RPM == null ? 0 : r.RPM,
+              r.POS == null ? 0 : r.POS
+            ])
+          ];
+          const csvContent = csvRows.map(row => row.join(',')).join('\n');
+          archive.append(csvContent, { name: `${tb_device_id}_logs.csv` });
+          
+        } else if (format === 'xls') {
+          // Stream XLSX content
+          const ExcelJS = require('exceljs');
+          const workbook = new ExcelJS.Workbook();
+          const ws = workbook.addWorksheet('Logs');
+          
+          // Add header
+          ws.addRow([address, tb_device_id]);
+          ws.mergeCells('A1:F1');
+          ws.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+          ws.addRow([]);
+          ws.addRow(header);
+          
+          // Add data rows
+          rows.forEach(r => {
+            ws.addRow([
+              formatDateTime(r.log_time),
+              r.CUR == null ? 0 : r.CUR,
+              r.VBUS == null ? 0 : r.VBUS,
+              r.SPD == null ? 0 : r.SPD,
+              r.RPM == null ? 0 : r.RPM,
+              r.POS == null ? 0 : r.POS
+            ]);
+          });
+          
+          // Auto-size columns
+          ws.columns.forEach(col => {
+            col.alignment = { horizontal: 'center', vertical: 'middle' };
+            let maxLength = 10;
+            col.eachCell({ includeEmpty: true }, cell => {
+              const len = (cell.value ? cell.value.toString().length : 0);
+              if (len > maxLength) maxLength = len;
+            });
+            col.width = maxLength + 2;
+          });
+          
+          const buffer = await workbook.xlsx.writeBuffer();
+          archive.append(buffer, { name: `${tb_device_id}_logs.xlsx` });
+        }
+      } catch (err) {
+        console.error(`Error processing device ${tb_device_id}:`, err);
+        // Continue with other devices
+      }
+    }
+    
+    archive.finalize();
+    
+  } else {
+    // Single device download - stream directly
+    const tb_device_id = deviceIds[0];
+    
+    try {
+      const [rows] = await db.execute(`
+        SELECT d.*, u.address
+        FROM device_logs d
+        LEFT JOIN user_devices ud ON d.tb_device_id = ud.tb_device_id
+        LEFT JOIN users u ON ud.user_id = u.id
+        WHERE d.tb_device_id = ? AND d.log_time BETWEEN ? AND ?
+        ORDER BY d.log_time
+      `, [tb_device_id, from, to]);
+      
+      if (!rows.length) {
+        const inactivityNote = `Device was inactive from ${from} to ${to}`;
+        const csvContent = `Device ID: ${tb_device_id}\nNote: ${inactivityNote}`;
+        
+        if (format === 'csv') {
           res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_inactive.csv`);
           res.set('Content-Type', 'text/csv');
           return res.send(csvContent);
-        }
-      } else if (format === 'xls') {
-        const ExcelJS = require('exceljs');
-        const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('Logs');
-        ws.addRow([`Device ${tb_device_id} was inactive from ${from} to ${to}`]);
-        const buffer = await workbook.xlsx.writeBuffer();
-        if (isZip) {
-          archive.append(buffer, { name: `${tb_device_id}_inactive.xlsx` });
-        } else {
+        } else if (format === 'xls') {
           res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_inactive.xlsx`);
           res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+          const ExcelJS = require('exceljs');
+          const workbook = new ExcelJS.Workbook();
+          const ws = workbook.addWorksheet('Logs');
+          ws.addRow([`Device ${tb_device_id} was inactive from ${from} to ${to}`]);
+          const buffer = await workbook.xlsx.writeBuffer();
           return res.send(Buffer.from(buffer));
         }
       }
-      continue;
-    }
-    
-    const address = rows[0].address || '-';
-    const header = ['Date and Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'];
-    const dataRows = rows.map(r => [
-      formatDateTime(r.log_time),
-      r.CUR == null ? 0 : r.CUR,
-      r.VBUS == null ? 0 : r.VBUS,
-      r.SPD == null ? 0 : r.SPD,
-      r.RPM == null ? 0 : r.RPM,
-      r.POS == null ? 0 : r.POS
-    ]);
-    let fileName = `${tb_device_id}_logs`;
-    if (format === 'csv') {
-      const csvRows = [
-        [address, tb_device_id],
-        [],
-        header,
-        ...dataRows
-      ];
-      const csvContent = csvRows.map(row => row.join(',')).join('\n');
-      if (isZip) {
-        archive.append(csvContent, { name: `${fileName}.csv` });
-      } else {
-        res.setHeader('Content-disposition', `attachment; filename=${fileName}.csv`);
+      
+      const address = rows[0].address || '-';
+      const header = ['Date and Time', 'Current', 'DC Bus', 'Speed', 'RPM', 'Position'];
+      
+      if (format === 'csv') {
+        // Stream CSV content
+        res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_logs.csv`);
         res.set('Content-Type', 'text/csv');
-        return res.send(csvContent);
-      }
-    } else if (format === 'xls') {
-      const ExcelJS = require('exceljs');
-      const workbook = new ExcelJS.Workbook();
-      const ws = workbook.addWorksheet('Logs');
-      ws.addRow([address, tb_device_id]);
-      ws.mergeCells('A1:F1');
-      ws.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.addRow([]);
-      ws.addRow(header);
-      dataRows.forEach(row => ws.addRow(row));
-      ws.columns.forEach(col => {
-        col.alignment = { horizontal: 'center', vertical: 'middle' };
-        let maxLength = 10;
-        col.eachCell({ includeEmpty: true }, cell => {
-          const len = (cell.value ? cell.value.toString().length : 0);
-          if (len > maxLength) maxLength = len;
-        });
-        col.width = maxLength + 2;
-      });
-      const buffer = await workbook.xlsx.writeBuffer();
-      if (isZip) {
-        archive.append(buffer, { name: `${fileName}.xlsx` });
-      } else {
-        res.setHeader('Content-disposition', `attachment; filename=${fileName}.xlsx`);
+        
+        // Write header
+        res.write(`${address},${tb_device_id}\n\n`);
+        res.write(header.join(',') + '\n');
+        
+        // Stream data rows
+        for (const r of rows) {
+          const row = [
+            formatDateTime(r.log_time),
+            r.CUR == null ? 0 : r.CUR,
+            r.VBUS == null ? 0 : r.VBUS,
+            r.SPD == null ? 0 : r.SPD,
+            r.RPM == null ? 0 : r.RPM,
+            r.POS == null ? 0 : r.POS
+          ];
+          res.write(row.join(',') + '\n');
+        }
+        
+        res.end();
+        
+      } else if (format === 'xls') {
+        // Stream XLSX content
+        res.setHeader('Content-disposition', `attachment; filename=${tb_device_id}_logs.xlsx`);
         res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        return res.send(Buffer.from(buffer));
-      }
-    // } else if (format === 'pdf') {
-    //   const PDFDocument = require('pdfkit');
-    //   const doc = new PDFDocument({ margin: 30, size: 'A4' });
-    //   let buffers = [];
-    //   doc.on('data', buffers.push.bind(buffers));
-    //   doc.on('end', () => {
-    //     const pdfBuffer = Buffer.concat(buffers);
-    //     if (isZip) {
-    //       archive.append(pdfBuffer, { name: `${fileName}.pdf` });
-    //     } else {
-    //       res.setHeader('Content-disposition', `attachment; filename=${fileName}.pdf`);
-    //       res.set('Content-Type', 'application/pdf');
-    //       res.send(pdfBuffer);
-    //     }
-    //   });
-      doc.fontSize(16).text(`${address} | ${tb_device_id}`, { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(12);
-      header.forEach(h => {
-        doc.text(h, { continued: true, align: 'center', width: 80 });
-      });
-      doc.text('');
-      dataRows.forEach(row => {
-        row.forEach(cell => {
-          doc.text(cell == null ? '' : cell.toString(), { continued: true, align: 'center', width: 80 });
+        
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('Logs');
+        
+        // Add header
+        ws.addRow([address, tb_device_id]);
+        ws.mergeCells('A1:F1');
+        ws.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        ws.addRow([]);
+        ws.addRow(header);
+        
+        // Add data rows
+        rows.forEach(r => {
+          ws.addRow([
+            formatDateTime(r.log_time),
+            r.CUR == null ? 0 : r.CUR,
+            r.VBUS == null ? 0 : r.VBUS,
+            r.SPD == null ? 0 : r.SPD,
+            r.RPM == null ? 0 : r.RPM,
+            r.POS == null ? 0 : r.POS
+          ]);
         });
-        doc.text('');
-      });
-      doc.end();
-      if (!isZip) {
-        await new Promise(resolve => doc.on('finish', resolve));
-        return;
-      } else {
-        await new Promise(resolve => doc.on('finish', resolve));
+        
+        // Auto-size columns
+        ws.columns.forEach(col => {
+          col.alignment = { horizontal: 'center', vertical: 'middle' };
+          let maxLength = 10;
+          col.eachCell({ includeEmpty: true }, cell => {
+            const len = (cell.value ? cell.value.toString().length : 0);
+            if (len > maxLength) maxLength = len;
+          });
+          col.width = maxLength + 2;
+        });
+        
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.send(Buffer.from(buffer));
       }
+      
+    } catch (err) {
+      console.error(`Error processing device ${tb_device_id}:`, err);
+      res.status(500).json({ error: 'Download error', details: err.message });
     }
   }
-  if (isZip) archive.finalize();
 });
 
 // 5. API: Download all logs in date range

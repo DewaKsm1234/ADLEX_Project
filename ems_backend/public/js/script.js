@@ -50,33 +50,8 @@ function navi(url) {
 }
 
 
-// Sidebar toggle logic for hamburger and arrow (Updated to include superadmin)
-const sidebar = document.getElementById('sidebar-normal');
-const sidebarSupervisor = document.getElementById('sidebar-supervisor');
-const sidebarSuperadmin = document.getElementById('sidebar-superadmin');
-const sidebarArrow = document.getElementById('sidebarArrow');
-const sidebarHamburger = document.getElementById('sidebarHamburger');
-
-if (sidebarArrow && sidebar && sidebarHamburger && sidebarSupervisor && sidebarSuperadmin) {
-  sidebarArrow.addEventListener('click', function() {
-    sidebar.classList.add('collapsed');
-    sidebarSupervisor.classList.add('collapsed');
-    sidebarSuperadmin.classList.add('collapsed');
-    sidebarHamburger.style.display = 'block';
-  });
-  sidebarHamburger.addEventListener('click', function() {
-    sidebar.classList.remove('collapsed');
-    sidebarSupervisor.classList.remove('collapsed');
-    sidebarSuperadmin.classList.remove('collapsed');
-    sidebarHamburger.style.display = 'none';
-  });
-  // Hide hamburger by default if sidebar is visible
-  if (!sidebar.classList.contains('collapsed')) {
-    sidebarSupervisor.classList.remove('collapsed');
-    sidebarSuperadmin.classList.remove('collapsed');
-    sidebarHamburger.style.display = 'none';
-  }
-}
+// Sidebar toggle using only the in-sidebar arrow button
+// Hamburger logic removed by requirement
 
 function logout() {
   const confirmLogout = confirm("Are you sure you want to log out?");
@@ -133,7 +108,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const sidebarArrowSupervisor = document.getElementById('sidebarArrowSupervisor');
   const sidebarArrowSuperadmin = document.getElementById('sidebarArrowSuperadmin');
   const sidebarArrowCommon = document.getElementById('sidebarArrowCommon');
-  const sidebarHamburger = document.getElementById('sidebarHamburger');
 
   function getActiveArrowButton() {
     // Check for specific arrow buttons first
@@ -174,13 +148,11 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
-  if (activeArrowButton && sidebarHamburger) {
+  if (activeArrowButton) {
     console.log('✅ DEBUG: Adding event listeners to sidebar toggle buttons');
 
-    // Test if buttons are clickable
+    // Ensure arrow button is clickable
     activeArrowButton.style.pointerEvents = 'auto';
-    sidebarHamburger.style.pointerEvents = 'auto';
-    console.log('  Set pointer-events to auto for both buttons');
 
     activeArrowButton.addEventListener('click', function(e) {
       e.preventDefault();
@@ -189,40 +161,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const activeSidebar = getActiveSidebar();
       console.log('  Active sidebar found:', !!activeSidebar);
       if (activeSidebar) {
-        activeSidebar.classList.add('collapsed');
+        // Toggle collapsed state on each click
+        activeSidebar.classList.toggle('collapsed');
       }
-      sidebarHamburger.style.display = 'block';
     });
-
-    sidebarHamburger.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const activeSidebar = getActiveSidebar();
-      console.log('  Active sidebar found:', !!activeSidebar);
-      if (activeSidebar) {
-        activeSidebar.classList.remove('collapsed');
-      }
-      sidebarHamburger.style.display = 'none';
-    });
-
-    // Hide hamburger by default if sidebar is visible
-    const activeSidebar = getActiveSidebar();
-    console.log('🔍 DEBUG: Initial sidebar state -');
-    console.log('  Active sidebar:', activeSidebar ? activeSidebar.id : 'none');
-    console.log('  Active sidebar has collapsed class:', activeSidebar ? activeSidebar.classList.contains('collapsed') : 'N/A');
-
-    if (activeSidebar && !activeSidebar.classList.contains('collapsed')) {
-      console.log('  Hiding hamburger button (sidebar is visible)');
-      sidebarHamburger.style.display = 'none';
-    } else {
-      console.log('  Showing hamburger button (sidebar is collapsed or not found)');
-      sidebarHamburger.style.display = 'block';
-    }
   } else {
     console.log('❌ DEBUG: Sidebar toggle buttons not found!');
     console.log('  activeArrowButton:', activeArrowButton);
-    console.log('  sidebarHamburger:', sidebarHamburger);
   }
 });
 
@@ -238,18 +183,18 @@ function isSupervisor() {
 }
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof isSupervisor === 'function' && isSupervisor()) {
-    // Disable all checkboxes
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-      console.log(cb);
-      cb.disabled = true;
-      cb.style.display = 'none';
-    });
-    // Hide or disable edit buttons
-    document.querySelectorAll('.edit-user-btn, .edit-device-btn ').forEach(btn => {
-      btn.disabled = true;
-      //btn.style.display = 'none'; 
-      // or just disable if you want them visible but not clickable
-    });
+    const isLogsPage = /(^|\/)logs\.html(\?|$)/i.test(window.location.pathname);
+    if (!isLogsPage) {
+      // On non-logs pages, hide or disable action checkboxes for supervisors
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.disabled = true;
+        cb.style.display = 'none';
+      });
+      // Hide or disable edit buttons
+      document.querySelectorAll('.edit-user-btn, .edit-device-btn ').forEach(btn => {
+        btn.disabled = true;
+      });
+    }
   }
 });
 
