@@ -1,0 +1,30 @@
+<!-- Topbar/Header -->
+<header class="topbar">
+  <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+    <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
+    <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;" id="pageTitle">Dashboard</h2>
+                <span class="user-role-container">
+              <span class="user-icon" id="userIcon">👤</span>
+              <span class="userRoleDisplay" id="userRoleDisplay"></span>
+            </span>
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle mobile menu">☰</button>
+  </div>
+  </header>
+  
+  <!-- Logout Confirmation Modal -->
+  <div id="logoutModal" class="logout-modal" style="display: none;">
+    <div class="logout-modal-content">
+      <div class="logout-modal-header">
+        <span class="logout-modal-icon">🚪</span>
+        <h3>Confirm Logout</h3>
+      </div>
+      <div class="logout-modal-body">
+        <p>Are you sure you want to log out?</p>
+        <p class="logout-modal-subtitle">You will be redirected to the login page.</p>
+      </div>
+      <div class="logout-modal-actions">
+        <button class="logout-modal-btn cancel-btn" id="logoutCancelBtn">Cancel</button>
+        <button class="logout-modal-btn confirm-btn" id="logoutConfirmBtn">Logout</button>
+      </div>
+    </div>
+  </div>

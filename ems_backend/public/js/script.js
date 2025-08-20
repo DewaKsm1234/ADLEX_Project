@@ -1,4 +1,4 @@
-// script.js - Shared navigation and sidebar logic for EMS dashboard
+// script.js - Shared navigation and utility functions for EMS dashboard
 
 // Navigation helper
 function navigate(page) {
@@ -15,14 +15,14 @@ function navigate(page) {
 // Global navigate function for use by other scripts
 window.navigate = navigate;
 
-// }
-
+// Password toggle utility
 function togglePassword() {
   const passwordInput = document.getElementById("password");
   const isHidden = passwordInput.type === "password";
   passwordInput.type = isHidden ? "text" : "password";
 }
-// ... existing code ...
+
+// Supervisor-specific navigation with URL parameter handling
 function navi(url) {
   // Try to get role and username from authManager first, then fallback to localStorage
   let role = null;
@@ -49,128 +49,21 @@ function navi(url) {
   window.location.href = url;
 }
 
-
-// Sidebar toggle using only the in-sidebar arrow button
-// Hamburger logic removed by requirement
-
+// Logout function - now uses modal confirmation
 function logout() {
-  const confirmLogout = confirm("Are you sure you want to log out?");
-  if (confirmLogout) {
-    // Use authManager logout if available, otherwise fallback to simple redirect
-    if (window.authManager && typeof window.authManager.logout === 'function') {
-      window.authManager.logout().then(() => {
-        window.location.href = "login.html";
-      }).catch(() => {
-        window.location.href = "login.html";
-      });
-    } else {
-      window.location.href = "login.html";
-    }
+  // Show logout modal instead of alert
+  if (window.componentLoader && typeof window.componentLoader.showLogoutModal === 'function') {
+    window.componentLoader.showLogoutModal();
+  } else {
+    // Fallback to simple redirect if modal system not available
+    window.location.href = "login.html";
   }
 }
 
 // Global logout function for use by other scripts
 window.logout = logout;
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Try to get role from authManager first, then fallback to localStorage
-  let role = null;
-  if (window.authManager && window.authManager.user) {
-    role = window.authManager.user.role;
-  } else {
-    role = localStorage.getItem('userRole');
-  }
-  
-  const sidebarNormal = document.getElementById('sidebar-normal');
-  const sidebarSupervisor = document.getElementById('sidebar-supervisor');
-  const sidebarSuperadmin = document.getElementById('sidebar-superadmin');
-  
-  if (sidebarNormal && sidebarSupervisor && sidebarSuperadmin) {
-    // Hide all sidebars first
-    sidebarNormal.style.display = 'none';
-    sidebarSupervisor.style.display = 'none';
-    sidebarSuperadmin.style.display = 'none';
-    
-    // Show appropriate sidebar based on role
-    if (role === 'supervisor') {
-      sidebarSupervisor.style.display = '';
-    } else if (role === 'superadmin') {
-      sidebarSuperadmin.style.display = '';
-    } else {
-      sidebarNormal.style.display = '';
-    }
-  }
-  
-  console.log('userRole', role);
-
-  // Set up sidebar toggle logic AFTER visibility is set
-  const sidebarArrowNormal = document.getElementById('sidebarArrowNormal');
-  const sidebarArrowSupervisor = document.getElementById('sidebarArrowSupervisor');
-  const sidebarArrowSuperadmin = document.getElementById('sidebarArrowSuperadmin');
-  const sidebarArrowCommon = document.getElementById('sidebarArrowCommon');
-
-  function getActiveArrowButton() {
-    // Check for specific arrow buttons first
-    if (sidebarNormal && sidebarNormal.style.display !== 'none' && sidebarArrowNormal) {
-      return sidebarArrowNormal;
-    }
-    if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none' && sidebarArrowSupervisor) {
-      return sidebarArrowSupervisor;
-    }
-    if (sidebarSuperadmin && sidebarSuperadmin.style.display !== 'none' && sidebarArrowSuperadmin) {
-      return sidebarArrowSuperadmin;
-    }
-    
-    // Fallback: use common arrow button if available
-    if (sidebarArrowCommon) {
-      return sidebarArrowCommon;
-    }
-    
-    // Final fallback: find any sidebar arrow button that's visible
-    const allArrowButtons = document.querySelectorAll('.sidebar-arrow');
-    for (let button of allArrowButtons) {
-      if (button.offsetParent !== null) { // Check if button is visible
-        return button;
-      }
-    }
-    
-    return null;
-  }
-
-  const activeArrowButton = getActiveArrowButton();
-  console.log('  Active arrow button:', activeArrowButton);
-
-  function getActiveSidebar() {
-    // Only one sidebar is visible at a time
-    if (sidebarNormal && sidebarNormal.style.display !== 'none') return sidebarNormal;
-    if (sidebarSupervisor && sidebarSupervisor.style.display !== 'none') return sidebarSupervisor;
-    if (sidebarSuperadmin && sidebarSuperadmin.style.display !== 'none') return sidebarSuperadmin;
-    return null;
-  }
-
-  if (activeArrowButton) {
-    console.log('✅ DEBUG: Adding event listeners to sidebar toggle buttons');
-
-    // Ensure arrow button is clickable
-    activeArrowButton.style.pointerEvents = 'auto';
-
-    activeArrowButton.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const activeSidebar = getActiveSidebar();
-      console.log('  Active sidebar found:', !!activeSidebar);
-      if (activeSidebar) {
-        // Toggle collapsed state on each click
-        activeSidebar.classList.toggle('collapsed');
-      }
-    });
-  } else {
-    console.log('❌ DEBUG: Sidebar toggle buttons not found!');
-    console.log('  activeArrowButton:', activeArrowButton);
-  }
-});
-
+// Utility function to check if user is supervisor
 function isSupervisor() {
   // Try to get role from authManager first, then fallback to localStorage
   let role = null;
@@ -181,38 +74,11 @@ function isSupervisor() {
   }
   return role === 'supervisor';
 }
-document.addEventListener('DOMContentLoaded', function() {
-  if (typeof isSupervisor === 'function' && isSupervisor()) {
-    const isLogsPage = /(^|\/)logs\.html(\?|$)/i.test(window.location.pathname);
-    if (!isLogsPage) {
-      // On non-logs pages, hide or disable action checkboxes for supervisors
-      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.disabled = true;
-        cb.style.display = 'none';
-      });
-      // Hide or disable edit buttons
-      document.querySelectorAll('.edit-user-btn, .edit-device-btn ').forEach(btn => {
-        btn.disabled = true;
-      });
-    }
-  }
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Try to get user info from authManager first, then fallback to localStorage
-  let username = null;
-  if (window.authManager && window.authManager.user) {
-    username = window.authManager.user.username;
-  } else {
-    username = localStorage.getItem('userId');
-  }
-  
-  const roleDisplay = document.getElementById('userRoleDisplay');
-  if (roleDisplay && username) {
-    // Capitalize first letter for display
-    roleDisplay.textContent = username.charAt(0).toUpperCase() + username.slice(1);
-  }
-});
+// Global isSupervisor function for use by other scripts
+window.isSupervisor = isSupervisor;
+
+// User role display is now handled by the component system (components.js)
 
 // Dark mode Logic
 // document.getElementById('darkModeToggle').addEventListener('click', function() {

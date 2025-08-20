@@ -1,0 +1,52 @@
+<!-- Sidebar for normal users/admins -->
+<aside class="sidebar" id="sidebar-normal" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link" data-page="users.html"><span>📍</span><span>Location</span></li>
+    <li class="nav-link" data-page="supervisors.html"><span>🧑‍💼</span><span>User</span></li>
+    <li class="nav-link" data-page="devices.html"><span>💻</span><span>Devices</span></li>
+    <li class="nav-link" data-page="logs.html"><span>📜</span><span>Logs</span></li>
+    <li class="nav-link" data-page="support.html"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+</aside>
+
+<!-- Sidebar for supervisors (read-only) -->
+<aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link" data-page="super_device_overview.html"><span>📍</span><span>My Locations</span></li>
+    <li class="nav-link" data-page="logs.html"><span>📜</span><span>Logs</span></li>
+    <li class="nav-link" data-page="support.html"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+</aside>
+
+<!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link" data-page="superadmin-dashboard.html"><span>📊</span><span>Dashboard</span></li>
+    <li class="nav-link" data-page="users.html"><span>📍</span><span>Location Management</span></li>
+    <li class="nav-link" data-page="supervisors.html"><span>🧑‍💼</span><span>User Management</span></li>
+    <li class="nav-link" data-page="devices.html"><span>💻</span><span>Device Management</span></li>
+    <li class="nav-link" data-page="logs.html"><span>📜</span><span>System Logs</span></li>
+    <li class="nav-link" data-page="support.html"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+</aside>

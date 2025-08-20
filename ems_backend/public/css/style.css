@@ -1,7 +1,5 @@
 /* style.css - Main dashboard and table styles for EMS */
 
-/* Sidebar styles */
-.sidebar { width: 200px; background: #f8f9fa; padding: 20px 10px; }
 /* --- Sidebar --- */
 .sidebar {
   position: fixed;
@@ -218,6 +216,140 @@ body, html {
   padding: 0 30px;
   box-sizing: border-box;
 }
+
+/* Mobile menu button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5em;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Logout Modal Styles */
+.logout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.logout-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.logout-modal-header {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: #fff;
+  padding: 24px 24px 20px 24px;
+  border-radius: 12px 12px 0 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.logout-modal-icon {
+  font-size: 2em;
+}
+
+.logout-modal-header h3 {
+  margin: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+.logout-modal-body {
+  padding: 24px;
+  text-align: center;
+}
+
+.logout-modal-body p {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 1.1em;
+}
+
+.logout-modal-subtitle {
+  color: #666 !important;
+  font-size: 0.95em !important;
+  margin-top: 12px !important;
+}
+
+.logout-modal-actions {
+  padding: 0 24px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.logout-modal-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.logout-modal-btn.cancel-btn {
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.logout-modal-btn.cancel-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.logout-modal-btn.confirm-btn {
+  background: #dc3545;
+  color: #fff;
+}
+
+.logout-modal-btn.confirm-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Active navigation link styling - already exists in .nav-link.active */
 .topbar-logo-title {
   display: flex;
   align-items: center;
@@ -274,7 +406,7 @@ body, html {
 }
 .register-btn:hover, .add-btn:hover, .topbar button:hover {
   background: #e6f0ff;
-}
+} 
 
 
 /* Remove legacy main-panel, topbar, etc. styles that conflict */
@@ -800,6 +932,60 @@ html.dark-mode {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  /* Show mobile menu button on mobile */
+  .mobile-menu-btn {
+    display: block;
+  }
+  
+  /* Mobile sidebar behavior */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  
+  /* Main content full width on mobile */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 20px 15px 0 15px;
+  }
+  
+  /* Topbar adjustments for mobile */
+  .topbar {
+    padding: 0 15px;
+  }
+  
+  .topbar-title {
+    font-size: 1.5em;
+  }
+  
+  /* Logout modal mobile adjustments */
+  .logout-modal-content {
+    width: 95%;
+    max-width: 350px;
+  }
+  
+  .logout-modal-header {
+    padding: 20px 20px 16px 20px;
+  }
+  
+  .logout-modal-body {
+    padding: 20px;
+  }
+  
+  .logout-modal-actions {
+    padding: 0 20px 20px 20px;
+    flex-direction: column;
+  }
+  
+  .logout-modal-btn {
+    width: 100%;
+    margin: 0;
+  }
+  
   .help-widget {
     bottom: 20px;
     right: 20px;
@@ -1108,6 +1294,22 @@ body.dark-mode .contact-card button:hover {
 
 .admin-btn.success {
   background: #28a745;
+}
+
+.admin-btn.success:hover {
+  background: #1e7e34;
+}
+
+.form-group-horizontal {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-btn.success:hover {

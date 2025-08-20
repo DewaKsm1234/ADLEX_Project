@@ -2349,6 +2349,64 @@ app.post('/api/supervisors/:id/change-password', authenticateToken, requireSuper
 });
 
 /**
+ * Update supervisor (superadmin only)
+ * PUT /api/supervisors/:id/update
+ */
+app.put('/api/supervisors/:id/update', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
+    
+    // Get current supervisor details
+    const [supervisor] = await db.execute('SELECT supervisor_id as current_supervisor_id FROM supervisors WHERE id = ?', [id]);
+    if (supervisor.length === 0) {
+      return res.status(404).json({ success: false, message: 'Supervisor not found' });
+    }
+    
+    const currentSupervisorId = supervisor[0].current_supervisor_id;
+    
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    
+    // Update supervisors table
+    await connection.execute(
+      'UPDATE supervisors SET supervisor_id = ?, first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?',
+      [supervisor_id, first_name, last_name, email, phone, id]
+    );
+    
+    // Update users_login table
+    await connection.execute(
+      'UPDATE users_login SET username = ? WHERE username = ? AND role = "supervisor"',
+      [supervisor_id, currentSupervisorId]
+    );
+    
+    // Update password if provided
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await connection.execute(
+        'UPDATE users_login SET password = ? WHERE username = ? AND role = "supervisor"',
+        [hashedPassword, supervisor_id]
+      );
+    }
+    
+    await connection.commit();
+    
+    res.json({ success: true, message: 'Supervisor updated successfully' });
+  } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error('Error updating supervisor:', error);
+    res.status(500).json({ success: false, message: 'Failed to update supervisor' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+/**
  * Get system statistics (superadmin only)
  * GET /api/system-stats
  */

@@ -1,0 +1,46 @@
+<!--
+  example-page.html - Example page demonstrating the component system
+  - Shows how easy it is to create new pages with reusable sidebar and topbar
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="css/style.css" />
+  <title>Example Page</title>
+</head>
+
+<body class="dashboard-body">
+  <main class="main-content">
+    <h1>Example Page</h1>
+    <p>This page demonstrates how easy it is to create new pages with the component system.</p>
+    <p>The sidebar and topbar are loaded dynamically and all functionality is preserved:</p>
+    <ul>
+      <li>✅ Role-based sidebar display</li>
+      <li>✅ Sidebar toggle functionality</li>
+      <li>✅ Active navigation highlighting</li>
+      <li>✅ User role display in topbar</li>
+      <li>✅ Navigation between pages</li>
+    </ul>
+    
+    <div style="margin-top: 20px; padding: 20px; background-color: #f5f5f5; border-radius: 8px;">
+      <h3>How to use:</h3>
+      <ol>
+        <li>Include the components.js script</li>
+        <li>Call loadPageComponents(title, currentPage) in DOMContentLoaded</li>
+        <li>That's it! All functionality is automatically set up</li>
+      </ol>
+    </div>
+  </main>
+
+  <script src="js/script.js"></script>
+  <script src="js/components.js"></script>
+  <script>
+    // Initialize components for this page
+    document.addEventListener('DOMContentLoaded', function() {
+      loadPageComponents('Example Page', 'example-page.html');
+    });
+  </script>
+</body>
+</html>
