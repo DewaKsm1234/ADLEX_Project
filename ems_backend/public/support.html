@@ -5,73 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Support - ADLEX EMS</title>
   <link rel="stylesheet" href="css/style.css" />
-  <style>
-    body, html { background: #e5e7eb; margin: 0; padding: 0; }
-    .dashboard-body { min-height: 100vh; }
-    .main-content { margin-left: 200px; margin-top: 60px; padding: 40px 30px 0 30px; background: #e5e7eb; min-width: 0; min-height: calc(100vh - 60px); box-sizing: border-box; }
-    .support-header { text-align: center; margin-bottom: 4px; }
-    .support-logo { height: 40px; margin-bottom: 8px; }
-    .support-title { font-size: 2em; font-weight: 700; color: #007bff; margin-bottom: 8px; }
-    .support-center-row { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 40px; margin-top: 24px; }
-    .cards-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 32px;
-    padding: 40px;
-    max-width: 1600px;
-    margin: auto;
-    }
-    .faq-card, .contact-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 32px 28px; min-width: 200px; max-width: 100%; flex: 1 1 380px; }
-    .faq-card h3, .contact-card h3 { margin-top: 0; font-size: 1.2em; font-weight: 600; margin-bottom: 18px; }
-    .faq-card ul { list-style: none; padding: 0; margin: 0; }
-    .faq-card li { margin-bottom: 12px; font-size: 1em; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-    .contact-card p, .contact-card form { margin: 0 0 12px 0; }
-    .contact-card input, .contact-card textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 12px; font-size: 1em; }
-    .contact-card button { background: #6c63ff; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; float: right; }
-    .contact-card button:hover { background: #4f46e5; }
-    @media (max-width: 900px) {
-      .support-center-row { flex-direction: column; gap: 24px; }
-      .faq-card, .contact-card { max-width: 100%; min-width: 0; }
-    }
-  </style>
+  
 </head>
 <body class="dashboard-body">
   <header class="topbar">
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Support Center</h2>
       <span class="user-role-container">
         <span class="user-icon">👤</span>
         <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </span>
     </div>
-    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
+    <!-- <button id="darkModeToggle" style="margin-left:20px;">🌙</button> -->
   </header>
   <!-- Sidebar for normal users/admins -->
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
+    <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="7" height="16" rx="1" />
+        <rect x="14" y="4" width="7" height="16" rx="1" />
+      </svg>
+    </button>
     <ul>
-    <li class="nav-link" onclick="navigate('users.html')">Location</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">User</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>  
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>  
-    <li class="nav-link active" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link" onclick="navigate('users.html')"><span>📍</span><span>Location</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Devices</span></li>  
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>  
+    <li class="nav-link active" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
     </ul>
-    <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+    <!-- <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button> -->
 </aside>
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
     <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link" onclick="navi('super_device_overview.html')"><span>📍</span><span>My Locations</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>
+    <li class="nav-link active" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
     </ul>
-    <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+    <!-- <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button> -->
 </aside>
-  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+  <!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link " onclick="navigate('superadmin-dashboard.html')"><span>📊</span><span>Dashboard</span></li>
+    <li class="nav-link" onclick="navigate('users.html')"><span>📍</span><span>Location Management</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User Management</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Device Management</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>System Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+  <!-- <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button> -->
+</aside>
+  <!-- <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button> -->
   <main class="main-content">
     <div class="support-header">
       <img src="assets/SAMSAN_logo.png" alt="SAMSAN Logo" class="support-logo">
@@ -98,7 +100,9 @@
       </div>
     </div>
   </main>
+  <script src="js/auth.js"></script>
   <script src="js/script.js"></script>
+  
   <div class="footer-text">
     Powered by Samsan | © 2025 Revision
   </div>

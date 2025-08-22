@@ -11,43 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* Table and layout styles for user management */
-    .user-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 8px; overflow: hidden; }
-    .user-table th, .user-table td { padding: 16px 18px; border-bottom: 1px solid #eee; text-align: left; font-size: 1em; }
-    .user-table th { background: #ffffff; color: #333; font-weight: 600; }
-    .user-table tr:last-child td { border-bottom: none; }
-    .user-table td a { color: #007bff; text-decoration: none; font-weight: 500; }
-    .user-table td a:hover { text-decoration: underline; }
-    .user-table td .add-device-link { color: #007bff; text-decoration: underline; cursor: pointer; }
-    .user-table td .add-device-link:hover { color: #0056b3; }
-    .user-table td .user-link { cursor: pointer; color: #222; font-weight: 500; }
-    .user-table td .user-link:hover { color: #fff; text-decoration: underline; }
-    .user-table tr:hover { background: #007bff !important; color: #fff; }
-    .user-table tr:hover td, .user-table tr:hover a { color: #fff !important; }
-    th.action-col, td.action-col { display: none; }
-    .show-action-col th.action-col, .show-action-col td.action-col { display: table-cell !important; }
-    #delete-all-btn { display: none; margin: 10px 0; background: #e74c3c; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; }
-    #delete-all-btn:hover { background: #c0392b; }
-    .confirm-delete-btn, .cancel-delete-btn { display: inline-block; border: none; background: none; font-size: 1.2em; cursor: pointer; margin-left: 4px; }
-    .confirm-delete-btn { color: #28a745 !important; }
-    .cancel-delete-btn { color: #e74c3c; }
-    @media (max-width: 900px) {
-      .user-table th, .user-table td { padding: 10px 6px; font-size: 0.95em; }
-    }
-    .assign-device-dropdown {
-      height: 28px;         /* Makes the dropdown less tall */
-      font-size: 0.95em;    /* Slightly smaller text */
-      padding: 2px 8px;     /* Less padding for compactness */
-      border-radius: 5px;
-      max-width: 220px;     /* Optional: limit width */
-    }
-    .assign-supervisor-dropdown {
-      height: 28px;         /* Makes the dropdown less tall */
-      font-size: 0.95em;    /* Slightly smaller text */
-      padding: 2px 8px;     /* Less padding for compactness */
-      border-radius: 5px;
-      max-width: 220px;     /* Optional: limit width */
-    }
+
   </style>
 
 </head>
@@ -56,51 +20,82 @@
   <!-- Topbar/Header -->
   <header class="topbar">
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Location List</h2>
       <span class="user-role-container">
         <span class="user-icon">👤</span>
         <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </span>
     </div>
-    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
+    <!-- <button id="darkModeToggle" style="margin-left:20px;">🌙</button> -->
   </header>
   <!-- Sidebar for normal users/admins -->
 <aside class="sidebar" id="sidebar-normal" style="display:none;">
-  
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
   <ul>
-    <li class="nav-link active" onclick="navigate('users.html')">Location</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">User</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link active" onclick="navigate('users.html')"> <span>📍</span><span>Location</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"> <span>🧑‍💼</span><span>User</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"> <span>💻</span><span>Devices</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"> <span>📜</span><span>Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"> <span>🆘</span><span>Support Center</span></li>
     
   </ul>
-  <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+  
+  
 </aside>
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
   <ul>
-    <li class="nav-link active" onclick="navigate('super_device_overview.html')">My Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link active" onclick="navigate('super_device_overview.html')"><span>📍</span><span>My Locations</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
   </ul>
-  <div class="logout-link" onclick="logout()">Logout</div>
-  <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
 </aside>
-  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+
+<!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link" onclick="navigate('superadmin-dashboard.html')"><span>📊</span><span>Dashboard</span></li>
+    <li class="nav-link active" onclick="navigate('users.html')"><span>📍</span><span>Location Management</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User Management</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Device Management</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>System Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+
+</aside>
+
   <main class="main-content">
     <!-- Top actions: search and register -->
     <div class="top-actions-bar" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px;">
       <div class="search-panel">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Search" oninput="filterUsers()" />
+          <input type="text" id="searchInput" placeholder="Search" oninput="filterUsers()" maxlength="30"/>
           <span class="search-icon">🔍</span>
         </div>
       </div>
-      <button class="register-btn" onclick="navigate('register.html')">Add User</button>
+      <button class="register-btn" onclick="navigate('register.html')">Add Location</button>
     </div>
     <!-- User table -->
     <div class="table-container">
@@ -124,6 +119,8 @@
       Powered by Samsan | © 2025 Revision
     </div>
   </main>
+  <script src="js/auth.js"></script>
+  <script src="js/script.js"></script>
   <script>
     let allUsers = [];
     let allSupervisors = [];
@@ -142,6 +139,8 @@
       } catch (error) {
         document.getElementById('user-table-body').innerHTML = '<tr><td colspan="4">Error loading users</td></tr>';
       }
+      
+          
     }
   
     async function renderUsers(users, supervisors) {
@@ -150,35 +149,41 @@
   
       for (const user of users) {
         let supervisorCell = '';
-  
+
         if (user.supervisor_first_name || user.supervisor_last_name) {
           const supervisorName = `${user.supervisor_first_name || ''} ${user.supervisor_last_name || ''}`.trim();
           supervisorCell = supervisorName;
         } else {
-          supervisorCell = `<select class="assign-supervisor-dropdown" data-username="${user.username}">
+          supervisorCell = `<select class="assign-supervisor-dropdown" data-address="${user.address}">
             <option value="">Assign Supervisor</option>
             ${supervisors.map(s => `<option value="${s.supervisor_id}">${s.first_name} ${s.last_name}</option>`).join('')}
           </select>`;
         }
-  
+
         let deviceCount = 0;
         try {
-          const devRes = await fetch(`/api/user-devices/${user.username}`, { headers: { 'x-user-role': 'admin' } });
+          const devRes = await fetch(`/api/user-devices/${user.address}`, { headers: { 'x-user-role': 'admin' } });
           const devices = await devRes.json();
           deviceCount = devices.length;
         } catch {}
-  
+
         const row = document.createElement('tr');
         let deviceCell = '';
         if (deviceCount > 0) {
-          deviceCell = `<a href="user_device_overview.html?username=${user.username}">${deviceCount}</a>`;
+          deviceCell = `<a href="user_device_overview.html?address=${user.address}">${deviceCount}</a>`;
         } else {
-          deviceCell = `<select class="assign-device-dropdown" data-username="${user.username}"><option value="">Add Device</option></select>`;
+          deviceCell = `<select class="assign-device-dropdown" data-address="${user.address}"><option value="">Add Device</option></select>`;
         }
-  
+            // Make the row clickable to view user_device_overview.html
+          row.style.cursor = 'pointer';
+          row.addEventListener('click', function(e) {
+            if (e.target.tagName.toLowerCase() === 'input') return;
+              window.location.href = `user_device_overview.html?address=${user.address}`;
+          });
+            table.appendChild(row);
         row.innerHTML = `
           <td><input type="checkbox" class="user-row-checkbox" /></td>
-          <td><span class="user-link" onclick="goToUserDevices('${user.username}')">${user.username}</span></td>
+          <td><span class="user-link" onclick="goToUserDevices('${user.address}')">${user.address}</span></td>
           <td>${deviceCell}</td>
           <td>${supervisorCell}</td>
           <td class="action-col">
@@ -190,13 +195,54 @@
             </span>
           </td>
         `;
-  
+
+        // Add clickable row functionality (but exclude checkboxes and action buttons)
+        row.addEventListener('click', function(e) {
+          // Don't trigger navigation if clicking on:
+          // - Checkboxes
+          // - Action buttons (edit, delete, confirm, cancel)
+          // - Dropdowns
+          // - Links that already have their own click handlers
+          if (e.target.tagName.toLowerCase() === 'input' || 
+              e.target.classList.contains('edit-user-btn') ||
+              e.target.classList.contains('delete-user-btn') ||
+              e.target.classList.contains('confirm-delete-btn') ||
+              e.target.classList.contains('cancel-delete-btn') ||
+              e.target.tagName.toLowerCase() === 'select' ||
+              e.target.tagName.toLowerCase() === 'a' ||
+              e.target.classList.contains('user-link')) {
+            return;
+          }
+          
+          // Navigate to user device overview
+          window.location.href = `user_device_overview.html?address=${user.address}`;
+        });
+
+        // Make the row look clickable
+        row.style.cursor = 'pointer';
+
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+          this.style.backgroundColor = '#f5f5f5';
+        });
+
+        row.addEventListener('mouseleave', function() {
+          this.style.backgroundColor = '';
+        });
+
+        // Prevent event bubbling for interactive elements
+        row.querySelector('.user-row-checkbox').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.edit-user-btn').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.delete-user-btn').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.confirm-delete-btn').addEventListener('click', e => e.stopPropagation());
+        row.querySelector('.cancel-delete-btn').addEventListener('click', e => e.stopPropagation());
+
         const supervisorDropdown = row.querySelector('.assign-supervisor-dropdown');
         if (supervisorDropdown) {
           supervisorDropdown.addEventListener('change', async function () {
             const supervisor_id = this.value;
-            const username = this.dataset.username;
-            if (supervisor_id && username) {
+            const address = this.dataset.address;
+            if (supervisor_id && address) {
               // Call backend to assign supervisor
               try {
                 const res = await fetch('/api/assign-supervisor', {
@@ -205,7 +251,7 @@
                     'Content-Type': 'application/json',
                     'x-user-role': 'admin'
                   },
-                  body: JSON.stringify({ username, supervisor_id })
+                  body: JSON.stringify({ address, supervisor_id })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -230,7 +276,7 @@
             }
           });
         }
-  
+
         const deviceDropdown = row.querySelector('.assign-device-dropdown');
         if (deviceDropdown) {
           fetch('/api/unassigned-devices', { headers: { 'x-user-role': 'admin' } })
@@ -246,50 +292,48 @@
                 deviceDropdown.appendChild(opt);
               });
             });
-  
+
           deviceDropdown.addEventListener('change', function () {
           const tb_device_id = this.value;
-          const username = this.dataset.username;
+          const address = this.dataset.address;
           const cell = row.querySelector('td:nth-child(3)');
 
-          if (tb_device_id && username) {
+          if (tb_device_id && address) {
             // 🚀 Immediately update UI
-            cell.innerHTML = `<a href="user_device_overview.html?username=${username}">1</a>`;
+            cell.innerHTML = `<a href="user_device_overview.html?address=${address}">1</a>`;
 
             // 🔄 Assign device in background
             fetch('/api/assign-device', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              headers: { 'x-user-role': 'admin' },
-              body: JSON.stringify({ username, tb_device_id })
+              headers: { 'Content-Type': 'application/json', 'x-user-role': 'admin' },
+              body: JSON.stringify({ address, tb_device_id })
             })
             .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, body: data })))
             .then(({ ok, body }) => {
               if (!ok) {
                 console.error('Error assigning device:', body.error);
-                alert(`Failed to assign device to ${username}: ${body.error}`);
+                alert(`Failed to assign device to ${address}: ${body.error}`);
                 // Optionally: revert UI change if needed
                 // location.reload(); // or reset the dropdown
               }
             })
             .catch(err => {
               console.error('Network error during assignment:', err);
-              alert(`Network error assigning device to ${username}`);
+              alert(`Network error assigning device to ${address}`);
             });
           }
         });
+        }
 
-                }
-  
         row.querySelector('.user-row-checkbox').addEventListener('click', e => e.stopPropagation());
-  
+
         row.querySelector('.edit-user-btn').addEventListener('click', async e => {
           e.stopPropagation();
           const res = await fetch('/api/supervisors', { headers: { 'x-user-role': 'admin' } });
           const supervisors = await res.json();
         
           const currentSupervisor = String(user.supervisor_id || '');
-          const username = user.username;
+          const address = user.address;
         
           const dropdown = document.createElement('select');
           dropdown.className = 'edit-supervisor-dropdown';
@@ -325,7 +369,7 @@
                 'Content-Type': 'application/json',
                 'x-user-role': 'admin'
               },
-              body: JSON.stringify({ username, supervisor_id })
+              body: JSON.stringify({ address, supervisor_id })
             });
         
             const result = await assignRes.json();
@@ -339,36 +383,33 @@
             }
           });
         });
-        
-        
-        
-        
+
         row.querySelector('.delete-user-btn').addEventListener('click', e => {
           e.stopPropagation();
           hideAllDeleteConfirmations();
           row.querySelector('.delete-user-btn').style.display = 'none';
           row.querySelector('.delete-confirmation').style.display = '';
         });
-  
+
         row.querySelector('.confirm-delete-btn').addEventListener('click', e => {
           e.stopPropagation();
           row.remove();
           updateActionColumnVisibility();
         });
-  
+
         row.querySelector('.cancel-delete-btn').addEventListener('click', e => {
           e.stopPropagation();
           row.querySelector('.delete-confirmation').style.display = 'none';
           row.querySelector('.delete-user-btn').style.display = '';
         });
-  
+
         row.querySelector('.user-row-checkbox').addEventListener('change', function () {
           row.querySelector('.delete-user-btn').style.display = this.checked ? '' : 'none';
           row.querySelector('.edit-user-btn').style.display = this.checked ? '' : 'none';
           if (!this.checked) row.querySelector('.delete-confirmation').style.display = 'none';
           updateActionColumnVisibility();
         });
-  
+
         table.appendChild(row);
       }
       updateActionColumnVisibility();
@@ -391,8 +432,8 @@
       document.getElementById('delete-all-btn').style.display = allChecked ? '' : 'none';
     }
   
-    function goToUserDevices(username) {
-      window.location.href = `user_device_overview.html?username=${username}`;
+    function goToUserDevices(address) {
+      window.location.href = `user_device_overview.html?address=${address}`;
     }
   
     function navigate(page) {
@@ -401,7 +442,7 @@
   
     function filterUsers() {
       const val = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allUsers.filter(u => u.username.toLowerCase().includes(val));
+      const filtered = allUsers.filter(u => u.address.toLowerCase().includes(val));
       renderUsers(filtered, allSupervisors);
     }
   
@@ -451,6 +492,5 @@
     loadUsers();
   </script>
   
-  <script src="js/script.js"></script>
 </body>
 </html>

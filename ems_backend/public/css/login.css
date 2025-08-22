@@ -40,7 +40,8 @@
 form input[type="text"],
 form input[type="password"] {
   padding: 12px;
-  margin-bottom: 16px;
+  /* margin-bottom: 10px; */
+  margin-top: 16px ;
   border-radius: 8px;
   border: 1px solid #ccc;
   font-size: 1.1em;
@@ -51,6 +52,7 @@ form input[type="password"] {
 /* Button + Forgot Password container */
 .form-footer {
   display: flex;
+  margin-top: 16px;
   justify-content: space-between;
   align-items: center;
 }
@@ -83,7 +85,6 @@ form button:hover {
   width: 400px;
   height: 420px;
   background: #444;
-  border-radius: 18px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   overflow: hidden;
   display: flex;
@@ -102,12 +103,10 @@ form button:hover {
 }
 .left-door {
   left: 0;
-  border-radius: 18px 0 0 18px;
   transform: translateX(0);
 }
 .right-door {
   right: 0;
-  border-radius: 0 18px 18px 0;
   transform: translateX(0);
 }
 .open-left {
@@ -134,3 +133,63 @@ form button:hover {
 .footer-text { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #333; text-align: center; z-index: 10; }
 
 /* Responsive adjustments */
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 16px; /* Move margin to wrapper instead of input */
+  /* Ensure perfect alignment */
+  justify-content: center;
+}
+.password-wrapper input[type="password"],
+.password-wrapper input[type="text"] {
+  padding-right: 36px;
+  height: 44px;
+  line-height: 1.4;
+  font-size: 16px;
+  margin-top: 0; /* Remove margin from input since it's on wrapper */
+}
+
+.toggle-password-icon {
+  position: absolute;
+  right: 10px;
+  /* Calculate exact center position */
+  top: calc(50% - 11px); /* 50% minus half the icon height (22px/2 = 11px) */
+  height: 22px;
+  width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #888;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.toggle-password-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Validation error styling */
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  font-weight: 500;
+  display: none;
+}
+
+/* Input field styling when validation fails */
+input.error {
+  border: 2px solid #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Input field styling when validation passes */
+/* input.valid {
+  border: 2px solid #28a745 !important;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+} */

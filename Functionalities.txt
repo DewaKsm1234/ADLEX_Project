@@ -1,8 +1,0 @@
-1) register user working
-2) assign device and supervisor working 
-3) user devices page is loading
-4) add device float window working
-5) supervisors page working
-6) register new supervisor working
-7) specific supervisor page working
-8) support and log page done

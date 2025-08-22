@@ -6,83 +6,98 @@
     <title>Specific User Device | EMS</title>
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
-    <style>
-    body,html{margin:0;padding:0;background:#f5f7fa;}
-    .dashboard-body{display:flex;}
-    .main-content{flex:1;padding:0px 30px 30px 30px;transition:margin-left 0.3s;margin-left:200px;}
-    .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:10px 0 20px 0;padding:8px 26px 12px 26px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
-    .device-card-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;}
-    .device-card-body{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;width:100%;}
-    .device-field{flex:1 1 180px;min-width:160px;color:#fff;font-size:0.8em;}
-    .device-field span{font-weight:600;display:inline-block;margin-top:4px;font-size: 1.2em;}
-    .device-tabs{display:flex;gap:2px;margin:20px 0;}
-    .device-tab{flex:1;background:#f8f9fa;color:#333;border:none;border-radius:8px 8px 0 0;padding:12px 0;font-size:1.1em;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;margin-right:2px;}
-    .device-tab.active,.device-tab:hover{background:#43a047;color:#fff;}
-    .device-map iframe{width:100%;height:250px;border-radius:12px;border:none;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;}
-    .stat-item{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
-    .stat-icon{width:32px;height:32px;background:#007bff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;margin-right:12px;}
-    .stat-label{font-size:0.9em;color:#555;}
-    .stat-value{font-size:1.3em;font-weight:600;color:#000;}
-    @media(max-width:768px){.sidebar{position:fixed;top:0;left:-220px;z-index:1000;transition:left 0.3s ease;}.sidebar.show{left:0;}.main-content{margin-left:0;}.sidebar-hamburger{display:block;}}
-    </style>
+    <link rel="stylesheet" href="css/stats.css" />
     </head>
     <body class="dashboard-body">
     <header class="topbar">
       <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-        <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+        <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
         <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Elevator Data</h2>
         <span class="user-role-container">
         <span class="user-icon">👤</span>
         <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </span>
       </div>
-      <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
+      <!-- <button id="darkModeToggle" style="margin-left:20px;">🌙</button> -->
     </header>
 
     <!-- Sidebar for normal users/admins -->
     <aside class="sidebar" id="sidebar-normal" style="display:none;">
+      <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="7" height="16" rx="1" />
+          <rect x="14" y="4" width="7" height="16" rx="1" />
+        </svg>
+      </button>
       <ul>
-      <li class="nav-link" onclick="navigate('users.html')">Location</li>
-      <li class="nav-link" onclick="navigate('supervisors.html')">User</li>
-      <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
-      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+      <li class="nav-link active" onclick="navigate('users.html')"><span>📍</span><span>Location</span></li>
+      <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User</span></li>
+      <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Devices</span></li>
+      <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>
+      <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
       
       </ul>
-      <div class="logout-link" onclick="logout()">Logout</div>
-      <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+      <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+      <!-- <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button> -->
   </aside>
   
   <!-- Sidebar for supervisors (read-only) -->
   <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+    <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="7" height="16" rx="1" />
+        <rect x="14" y="4" width="7" height="16" rx="1" />
+      </svg>
+    </button>
       <ul>
-      <li class="nav-link" onclick="navi('super_device_overview.html')">My Devices</li>
-      <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-      <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+      <li class="nav-link active" onclick="navi('super_device_overview.html')"><span>📍</span><span>My Locations</span></li>
+      <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>
+      <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
       </ul>
-      <div class="logout-link" onclick="logout()">Logout</div>
-      <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+      <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+      <!-- <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button> -->
   </aside>
-    <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+  <!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link " onclick="navigate('superadmin-dashboard.html')"><span>📊</span><span>Dashboard</span></li>
+    <li class="nav-link active" onclick="navigate('users.html')"><span>📍</span><span>Location Management</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User Management</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Device Management</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>System Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+  <!-- <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button> -->
+</aside>
+    <!-- <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button> -->
     <div class="main-content">
         <!-- Device Info Bar -->
-        <div id="deviceInfoBar" style="background:#f8f9fa;padding:10px 40px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:0.8em;font-weight:500;">
+        <div id="deviceInfoBar" class="deviceInfoBar">
         <span>Status: <span id="deviceStatus">-</span></span>
         <span>Last Upload: <span id="deviceLastUpload">-</span></span>
-        <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
       </div>
       <section class="device-detail-section">
         <div class="device-card" id="deviceCard">
-          <div class="device-card-header">
+          <!-- <div class="device-card-header">
             <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">-</div>
-          </div>
+          </div> -->
           <div class="device-card-body">
-            <div class="device-field">User Name<br><span id="deviceUser">-</span></div>
+            <div class="device-field">Location Name<br><span id="deviceUser">-</span></div>
             <div class="device-field">MAC Address<br><span id="deviceMac">-</span></div>
             <div class="device-field">Device ID<br><span id="deviceIdValue">-</span></div>
             <div class="device-field">Serial Number<br><span id="deviceSerial">-</span></div>
             <div class="device-field">City<br><span id="deviceLocation">-</span></div>
+          </div>
+          <div class="device-user-info">
+            <div class="user-info-field">User Name<br><span id="deviceUserName">-</span></div>
+            <div class="user-info-field">Contact Info<br><span id="deviceUserContact">-</span></div>
           </div>
         </div>
         <div class="device-tabs">
@@ -97,21 +112,22 @@
       <div id="map" style="width:100%; height:250px; margin-top:20px;"></div>
       <div class="stats-grid">
         <div class="stat-item"><div class="stat-icon">🔁</div><div class="stat-label">Direction Count</div><div class="stat-value" id="stat-DirCount">-</div></div>
-        <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Distance Travel</div><div class="stat-value" id="stat-TotalDistanceTravelled">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🔁</div><div class="stat-label">Direction Change Count</div><div class="stat-value" id="stat-DirChangeCount">-</div></div>
+        <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Work Count</div><div class="stat-value" id="stat-TotalWorkCount">-</div></div>
+        <!-- <div class="stat-item"><div class="stat-icon">📏</div><div class="stat-label">Total Direction Travelled</div><div class="stat-value" id="stat-TotalDistanceTravelled">-</div></div> -->
         <div class="stat-item"><div class="stat-icon">⏱️</div><div class="stat-label">Total Time Work</div><div class="stat-value" id="stat-TotalWorkTime">-</div></div>
         <div class="stat-item"><div class="stat-icon">🚦</div><div class="stat-label">Total Travel Time</div><div class="stat-value" id="stat-TotalTravelTime">-</div></div>
+        <div class="stat-item"><div class="stat-icon">🚦</div><div class="stat-label">Total Road Time</div><div class="stat-value" id="stat-TotalRoadTime">-</div></div>
         <div class="stat-item"><div class="stat-icon">🛑</div><div class="stat-label">Total Stop Count</div><div class="stat-value" id="stat-TotalStopCount">-</div></div>
         <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door A Status</div><div class="stat-value" id="stat-DoorAStatus">-</div></div>
         <div class="stat-item"><div class="stat-icon">🚪</div><div class="stat-label">Door B Status</div><div class="stat-value" id="stat-DoorBStatus">-</div></div>
-        <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">Last Signal Date</div><div class="stat-value" id="stat-LastSignalDate">-</div></div>
+        <!-- <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">Last Signal Date</div><div class="stat-value" id="stat-LastSignalDate">-</div></div> -->
         <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-label">Emergency Alarm</div><div class="stat-value" id="stat-EmergencyAlarm">-</div></div>
-        <div class="stat-item"><div class="stat-icon">🕒</div><div class="stat-label">Speed</div><div class="stat-value" id="stat-Speed">-</div></div>
-        <div class="stat-item"><div class="stat-icon">📅</div><div class="stat-label">RPM</div><div class="stat-value" id="stat-Rpm">-</div></div>
-        <div class="stat-item"><div class="stat-icon">🚨</div><div class="stat-label">Position</div><div class="stat-value" id="stat-Position">-</div></div>
       </div>
     </div>
     
     <script>
+    // Get deviceId from URL (declare only once at the top)
     const urlParams = new URLSearchParams(window.location.search);
     const deviceId = urlParams.get('deviceId');
     const username = sessionStorage.getItem('selectedUsername') || 'NA';
@@ -119,8 +135,8 @@
     
     async function renderMapFromTelemetry(telemetry) {
       // Convert coordinates safely
-      const lat = parseFloat(telemetry.GNSS_Latitude || telemetry.latitude);
-      const lng = parseFloat(telemetry.GNSS_Longitude || telemetry.longitude);
+      const lat = parseFloat(telemetry.LAT );
+      const lng = parseFloat(telemetry.LNG );
     
       const mapContainer = document.getElementById('map');
     
@@ -147,31 +163,87 @@
       });
     }
     
-    // Use this in your page load and sync button
-async function syncAndRenderTelemetry() {
-  if (!deviceId) return;
-  try {
-    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-    if (!res.ok) throw new Error('Failed to sync telemetry');
-    const telemetry = await res.json();
-    renderTelemetryToUI(telemetry);
-    await fetchAndRenderUser(telemetry.tb_device_id); // ← call this
-  } catch (e) {
-    console.error('Error syncing telemetry:', e);
-    alert('Error syncing telemetry: ' + e.message);
-  }
-}
-async function fetchAndRenderUser(tb_device_id) {
-  try {
-    const res = await fetch(`/api/device-user/${tb_device_id}`);
-    if (!res.ok) throw new Error('No user assigned');
-    const user = await res.json();
-    document.getElementById('deviceUser').textContent = user.username || `${user.first_name} ${user.last_name}`;
-  } catch (e) {
-    console.error('Error loading user info:', e.message);
-    document.getElementById('deviceUser').textContent = 'NA';
-  }
-}
+    // --- Optimized and cleaned up script for telemetry and status loading ---
+
+
+
+    // --- Main function to load device info and status from backend ---
+    async function loadDeviceAndTelemetry(tb_device_id) {
+      try {
+        const res = await fetch(`/api/device/${tb_device_id}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
+        if (!res.ok) throw new Error('Failed to sync telemetry');
+        const device = await res.json();
+        document.getElementById('deviceIdValue').textContent = device.DeviceId || '-';
+        document.getElementById('deviceMac').textContent = device.MacAddress || '-';
+        document.getElementById('deviceSerial').textContent = device.SerialNum || '-';
+        document.getElementById('deviceLocation').textContent = device.Location || '-';
+        document.getElementById('deviceStatus').textContent = device.active === true ? 'Active' : 'Inactive';
+        
+        // Debug logging for active status
+        console.log(`🔍 DEBUG: Frontend received device data:`);
+        console.log(`  device.active value:`, device.active);
+        console.log(`  device.active type:`, typeof device.active);
+        console.log(`  device.active === true:`, device.active === true);
+        console.log(`  device.active === false:`, device.active === false);
+        console.log(`  device.active == true:`, device.active == true);
+        console.log(`  device.active == false:`, device.active == false);
+        console.log(`  Final status text:`, device.active === true ? 'Active' : 'Inactive');
+        // Last upload time
+        if (device.log_time) {
+          const t = new Date(device.log_time);
+          // Format as 'YYYY-MM-DD HH:mm:ss'
+          const dateStr = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+          const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          document.getElementById('deviceLastUpload').textContent = `${dateStr} ${timeStr}`;
+        } else {
+          document.getElementById('deviceLastUpload').textContent = 'NA';
+        }
+        // Stats
+        document.getElementById('stat-DirCount').textContent = device.DIRCNT || 'NA';
+        document.getElementById('stat-DirChangeCount').textContent = device.DIRCHG || 'NA';
+        document.getElementById('stat-TotalWorkCount').textContent = device.TWCOUNT || 'NA';
+        document.getElementById('stat-TotalRoadTime').textContent = device.RDTIME || 'NA';
+        document.getElementById('stat-TotalWorkTime').textContent = device.TWTIME || 'NA';
+        document.getElementById('stat-TotalTravelTime').textContent = device.TRVTIME || 'NA';
+        document.getElementById('stat-TotalStopCount').textContent = device.STPCNT || 'NA';
+        document.getElementById('stat-DoorAStatus').textContent = device.DOORA || 'NA';
+        document.getElementById('stat-DoorBStatus').textContent = device.DOORB || 'NA';
+        document.getElementById('stat-EmergencyAlarm').textContent = device.ERR || 'NA';
+        // ... add more fields as needed ...
+      } catch (e) {
+        console.error('Error loading device and telemetry:', e);
+      }
+    }
+
+    // --- User info loader (keep this if you want user info to update on sync) ---
+    async function fetchAndRenderUser(tb_device_id) {
+      try {
+        const res = await fetch(`/api/device-user/${tb_device_id}`);
+        if (!res.ok) throw new Error('No user assigned');
+        const user = await res.json();
+        document.getElementById('deviceUser').textContent = user.address || 'NA';
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+        document.getElementById('deviceUserName').textContent = fullName || 'NA';
+        const contactInfo = user.phone || user.email || 'NA';
+        document.getElementById('deviceUserContact').textContent = contactInfo;
+      } catch (e) {
+        console.error('Error loading user info:', e.message);
+        document.getElementById('deviceUser').textContent = 'NA';
+        document.getElementById('deviceUserName').textContent = 'NA';
+        document.getElementById('deviceUserContact').textContent = 'NA';
+      }
+    }
+
+    // --- On page load, update device info and user info, and auto-sync every minute ---
+    window.addEventListener('DOMContentLoaded', async function() {
+      await loadDeviceAndTelemetry(deviceId);
+      await fetchAndRenderUser(deviceId);
+      setInterval(() => {
+        loadDeviceAndTelemetry(deviceId);
+        fetchAndRenderUser(deviceId);
+      }, 60000);
+    });
+    // --- All other legacy/unused code remains commented for clarity ---
 
     document.getElementById('tabStats').onclick=function(){};
     document.getElementById('tabAlarms').onclick=function(){if(deviceId) window.location.href=`elevatorerror.html?deviceId=${deviceId}`;};
@@ -180,91 +252,131 @@ async function fetchAndRenderUser(tb_device_id) {
 
     // Telemetry keys to display (should match backend)
     const telemetryKeys = [
-      'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-      'latitude','Location','Longitude','MacAddress','position','rpm','SerialNum','speed','Status',
-      'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','DeviceId'
-    ];
+    'MacAddress','Location','LastSignalDate','SerialNum','DeviceName','DeviceId',
+    'ERR', 'CFL', 'POS', 'SPD', 'RPM', 'VBUS', 'CUR', 'ID', 'CSQ', 'LAT', 'LNG',
+    'TWTIME', 'TWCOUNT', 'DIRCHG', 'DIRCNT', 'TRVTIME', 'DOORA', 'DOORB', 'RDTIME', 'STPCNT'
+  ];
     
     document.getElementById("deviceUser").textContent = username || 'NA';
     
+
+
+    
     // Handle Sync button click
     // Render telemetry data into device card and stats cards
-    function renderTelemetryToUI(telemetry) {
-      try {
-        // Device Card
-        //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
-        document.getElementById('deviceId').textContent = telemetry.DeviceName || 'NA';
-        document.getElementById('deviceIdValue').textContent = telemetry.DeviceId || telemetry.tb_device_id || 'NA';
-        document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
-        document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
-        document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
-        document.getElementById('deviceStatus').textContent = telemetry.Status || 'NA';
-        document.getElementById('deviceLastUpload').textContent = telemetry.LastSignalDate || 'NA';
-        // Stats cards
-        document.getElementById('stat-DirCount').textContent = telemetry.DirCount || 'NA';
-        document.getElementById('stat-TotalDistanceTravelled').textContent = telemetry.TotalDistanceTravelled || 'NA';
-        document.getElementById('stat-TotalWorkTime').textContent = telemetry.TotalWorkTime || 'NA';
-        document.getElementById('stat-TotalTravelTime').textContent = telemetry.TotalTravelTime || 'NA';
-        document.getElementById('stat-TotalStopCount').textContent = telemetry.TotalStopCount || 'NA';
-        document.getElementById('stat-DoorAStatus').textContent = telemetry.DoorAStatus || 'NA';
-        document.getElementById('stat-DoorBStatus').textContent = telemetry.DoorBStatus || 'NA';
-        document.getElementById('stat-LastSignalDate').textContent = telemetry.LastSignalDate || 'NA';
-        document.getElementById('stat-EmergencyAlarm').textContent = telemetry.EmergencyAlarm || 'NA';
-        document.getElementById('stat-Speed').textContent = telemetry.speed || 'NA';
-        document.getElementById('stat-Rpm').textContent = telemetry.rpm || 'NA';
-        document.getElementById('stat-Position').textContent = telemetry.position || 'NA';
-      } catch (err) {
-        console.error('Error rendering telemetry:', err);
-        alert('Could not update UI with telemetry data.');
-      }
-    }
+    // async function renderTelemetryToUI(telemetry) {
+    //   try {
+    //     // Device Card
+    //     //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
+    //     //document.getElementById('deviceName').textContent = telemetry.DeviceName || 'NA';
+    //     //document.getElementById('deviceStatus').textContent = dev.active===true?'Active':'Inactive';
+    //     document.getElementById('deviceIdValue').textContent = telemetry.ID || telemetry.DeviceId || 'NA';
+    //     document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
+    //     document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
+    //     document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
+    //     // Status is now set globally
+    //     //document.getElementById('deviceStatus').textContent = deviceActiveStatus;
+    //     // Show only time for log_time
+    //     if (telemetry.log_time) {
+    //       const t = new Date(telemetry.log_time);
+    //       const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    //       document.getElementById('deviceLastUpload').textContent = timeStr;
+    //     } else {
+    //       document.getElementById('deviceLastUpload').textContent = 'NA';
+    //     }
+    //     // Stats cards
+    //     document.getElementById('stat-DirCount').textContent = telemetry.DIRCNT || 'NA';
+    //     //document.getElementById('stat-TotalDistanceTravelled').textContent = telemetry.TotalDistanceTravelled || 'NA';
+    //     document.getElementById('stat-DirChangeCount').textContent = telemetry.DIRCHG || 'NA';
+    //     document.getElementById('stat-TotalWorkCount').textContent = telemetry.TWCOUNT || 'NA';
+    //     document.getElementById('stat-TotalRoadTime').textContent = telemetry.RDTIME || 'NA';
+    //     document.getElementById('stat-TotalWorkTime').textContent = telemetry.TWTIME || 'NA';
+    //     document.getElementById('stat-TotalTravelTime').textContent = telemetry.TRVTIME || 'NA';
+    //     document.getElementById('stat-TotalStopCount').textContent = telemetry.STPCNT || 'NA';
+    //     document.getElementById('stat-DoorAStatus').textContent = telemetry.DOORA || 'NA';
+    //     document.getElementById('stat-DoorBStatus').textContent = telemetry.DOORB || 'NA';
+    //     //document.getElementById('stat-LastSignalDate').textContent = telemetry.LastSignalDate || 'NA';
+    //     document.getElementById('stat-EmergencyAlarm').textContent = telemetry.ERR || 'NA';
+    //     //document.getElementById('stat-Speed').textContent = telemetry.SPD || 'NA';
+    //     //document.getElementById('stat-Rpm').textContent = telemetry.RPM || 'NA';
+    //     //document.getElementById('stat-Position').textContent = telemetry.POS || 'NA';
+    //   } catch (err) {
+    //     console.error('Error rendering telemetry:', err);
+    //     alert('Could not update UI with telemetry data.');
+    //   }
+    // }
     
 
     // When telemetry is fetched or synced, call this function
     // Example usage after sync:
     // renderTelemetryToUI(telemetry);
 
-    // Update sync button logic to call renderTelemetryToUI
-    const syncBtn = document.getElementById('syncTelemetryBtn');
-    syncBtn.addEventListener('click', async function() {
-      if (!deviceId) return alert('No device ID found!');
-      syncBtn.disabled = true;
-      syncBtn.textContent = 'Syncing...';
-      try {
-        // Call backend to sync telemetry
-        const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-        if (!res.ok) throw new Error('Failed to sync telemetry');
-        const telemetry = await res.json();
-        renderTelemetryToUI(telemetry);
-        alert('Telemetry synced and displayed!');
-      } catch (e) {
-        alert('Error syncing telemetry: ' + e.message);
-      } finally {
-        syncBtn.disabled = false;
-        syncBtn.textContent = 'Sync';
-      }
-    });
+    // Update auto-sync to fetch both telemetry and active status every minute
+    // async function autoSyncTelemetryAndStatus() {
+    //   if (!deviceId) return;
+      
+    //   // Fetch and render telemetry first
+    //   try {
+    //     const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
+    //     if (!res.ok) throw new Error('Failed to sync telemetry');
+    //     const telemetry = await res.json();
+    //     renderTelemetryToUI(telemetry);
+        
+    //     // Use tb_device_id from telemetry for status check
+    //     const tbDeviceId = telemetry.tb_device_id || deviceId;
+    //     console.log(`[DEBUG] Auto-sync using tb_device_id: ${tbDeviceId} for status check`);
+        
+    //     // Fetch and set active status using correct tb_device_id
+    //     //await fetchAndSetDeviceActiveStatus(tbDeviceId);
+    //     // Fetch and render user information
+    //     await fetchAndRenderUser(tbDeviceId);
+    //   } catch (e) {
+    //     console.error('Error auto-syncing telemetry:', e.message);
+    //   }
+    // }
+    // Start auto-sync on page load and every minute
+    // window.addEventListener('DOMContentLoaded', async function() {
+    //   let tbDeviceId = deviceId; // Default to deviceId if we can't get tb_device_id
+      
+    //   // --- Comment out all /api/device-details usage ---
+    //   // (Old code commented out below for reference)
+    //   // try {
+    //   //   const res = await fetch(`/api/device-details/${deviceId}`);
+    //   //   if (res.ok) {
+    //   //     const device = await res.json();
+    //   //     tbDeviceId = device.tb_device_id || deviceId;
+    //   //     console.log(`[DEBUG] Using tb_device_id: ${tbDeviceId} for status check`);
+    //   //   }
+    //   // } catch (e) {
+    //   //   console.error('[DEBUG] Could not fetch device details:', e);
+    //   // }
+    //   // ...
+    //   // (End of /api/device-details usage)
 
-    // Auto-sync telemetry when the page loads
-    window.addEventListener('DOMContentLoaded', async function() {
-      if (!deviceId) return;
-      syncBtn.disabled = true;
-      syncBtn.textContent = 'Syncing...';
-      try {
-        // Call backend to sync telemetry
-        const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-        if (!res.ok) throw new Error('Failed to sync telemetry');
-        const telemetry = await res.json();
-        renderTelemetryToUI(telemetry);
-        renderMapFromTelemetry(telemetry);
-      } catch (e) {
-        // Optionally show an error or fallback
-        console.error('Error auto-syncing telemetry:', e.message);
-      } finally {
-        syncBtn.disabled = false;
-        syncBtn.textContent = 'Sync';
-      }
-    });
+    //   // --- Fill all device info from sync-telemetry ---
+    //   async function loadDeviceAndTelemetry(tb_device_id) {
+    //     try {
+    //       const res = await fetch(`/api/device/${tb_device_id}/sync-telemetry`, { method: 'POST', headers: { 'x-user-role': 'admin' } });
+    //       if (!res.ok) throw new Error('Failed to sync telemetry');
+    //       const device = await res.json();
+    //       document.getElementById('deviceIdValue').textContent = device.DeviceId || '-';
+    //       document.getElementById('deviceMac').textContent = device.MacAddress || '-';
+    //       document.getElementById('deviceSerial').textContent = device.SerialNum || '-';
+    //       console.log('Device ID:', device.DeviceId);
+    //       document.getElementById('deviceLocation').textContent = device.Location || '-';
+    //       console.log('Device active status:', device.active);
+    //       document.getElementById('deviceStatus').textContent = device.active === true ? 'Active' : 'Inactive';
+    //       // ... fill other telemetry/stat fields as needed ...
+    //     } catch (e) {
+    //       console.error('Error loading device and telemetry:', e);
+    //     }
+    //   }
+    //   // Call this function on page load and on sync, passing the correct tb_device_id.
+      
+    //   autoSyncTelemetryAndStatus();
+    //   setInterval(autoSyncTelemetryAndStatus, 60000); // 60,000 ms = 1 minute
+    // });
+
     function navi(url) {
       const role = localStorage.getItem('userRole');
       const username = localStorage.getItem('username'); // this is supervisor_id
@@ -284,10 +396,39 @@ async function fetchAndRenderUser(tb_device_id) {
       window.location.href = url;
     }
     
-    
+    window.addEventListener('DOMContentLoaded', () => {
+      const grid = document.querySelector('.stats-grid');
+      if (!grid) return;
+      // Assign a unique data-key to each stat-item based on its stat-value id
+      grid.querySelectorAll('.stat-item').forEach(item => {
+        const statValue = item.querySelector('.stat-value');
+        if (statValue && statValue.id) {
+          item.setAttribute('data-key', statValue.id);
+        }
+      });
+      // Restore order from localStorage
+      const savedOrder = JSON.parse(localStorage.getItem('telemetryStatOrder') || '[]');
+      if (savedOrder.length) {
+        const items = Array.from(grid.children);
+        savedOrder.forEach(key => {
+          const item = items.find(i => i.getAttribute('data-key') === key);
+          if (item) grid.appendChild(item);
+        });
+      }
+      // Enable drag-and-drop
+      Sortable.create(grid, {
+        animation: 150,
+        onEnd: function () {
+          const ids = Array.from(grid.children).map(card => card.getAttribute('data-key'));
+          localStorage.setItem('telemetryStatOrder', JSON.stringify(ids));
+        }
+      });
+    });
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAEkRLsky3llbZBK44ifns1l84_Wbtz8v4"></script>
+    <script src="js/auth.js"></script>
     <script src="js/script.js"></script>
-    
+    <!-- Add SortableJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     </body>
     </html>

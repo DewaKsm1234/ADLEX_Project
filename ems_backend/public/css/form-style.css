@@ -114,3 +114,58 @@ form input:focus {
   top: 60px;
   right: -90px;
 }
+
+/* Dark mode for form styles */
+body.dark-mode {
+  background-color: #25293c !important;
+  color: #cdd4f6 !important;
+}
+
+body.dark-mode .register-container {
+  background-color: #25293c !important;
+}
+
+body.dark-mode .form-container {
+  background: #2f3349 !important;
+  box-shadow: 0 4px 12px rgba(78, 79, 130, 0.3) !important;
+}
+
+body.dark-mode h2 {
+  color: #fff !important;
+  text-shadow: 1px 1px 1px #4e4f82 !important;
+}
+
+body.dark-mode form input {
+  background: #25293c !important;
+  border: 1px solid #4e4f82 !important;
+  color: #fff !important;
+}
+
+body.dark-mode form input:focus {
+  border: 1.5px solid #7367f0 !important;
+  background: #2f3349 !important;
+}
+
+body.dark-mode .cancel-btn {
+  background-color: #4e4f82 !important;
+  color: #cdd4f6 !important;
+}
+
+body.dark-mode .cancel-btn:hover {
+  background-color: #5a5c8a !important;
+}
+
+body.dark-mode .register-btn {
+  background-color: #7367f0 !important;
+  color: #fff !important;
+}
+
+body.dark-mode .register-btn:hover {
+  background-color: #4e4f82 !important;
+}
+
+body.dark-mode .register-bg-shape {
+  background: #4e4f82 !important;
+  opacity: 0.3 !important;
+}
+

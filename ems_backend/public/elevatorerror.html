@@ -6,99 +6,89 @@
   <title>Elevator Errors | EMS</title>
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
-  <style>
-    body, html { background: #f5f7fa; margin: 0; padding: 0; }
-    .dashboard-body { display: flex; }
-    .main-content { margin-left: 200px; padding: 0px 30px 30px 30px; background: #f8f9fa; min-width: 0;overflow-y: auto;}
-    .device-card{background:#2196f3;color:#fff;border-radius:10px;margin:10px 0 20px 0;padding:8px 26px 12px 26px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:10px;}
-    .device-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-    .device-card-body {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: space-between;
-      width: 100%;
-    }
-    
-    .device-field {
-      flex: 1 1 180px;
-      min-width: 160px;
-      color: #fff;
-      font-size: 0.8em;
-    } 
-    
-    .device-field span {
-      font-weight: 600;
-      display: inline-block;
-      margin-top: 4px;
-      font-size: 1.2em;
-    }
-    
-    .device-tabs { display: flex; margin-bottom: 0; }
-    .device-tab { flex: 1; background: #f8f9fa; color: #333; border: none; border-radius: 8px 8px 0 0; padding: 12px 0; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; margin-right: 2px; }
-    .device-tab.active, .device-tab:hover { background: #43a047; color: #fff; }
-    .device-info-panel { background: #fff; border-radius: 0 0 8px 8px; margin: 0 0 30px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 28px 32px;overflow-y: auto; }
-    .device-info-title { font-size: 1.2em; font-weight: 600; margin-bottom: 0px; color: #007bff; display: flex; align-items: center; }
-    .error-entry { border-bottom: 1px solid #eee; padding: 12px 0px 0px 0px; }
-    .error-entry h4 { margin: 0 0 6px 0; font-size: 1em; color: #222; }
-    .error-entry p { margin: 0; color: #666; font-size: 0.95em; }
-    @media(max-width:768px){ .sidebar{ position:fixed; top:0; left:-220px; z-index:1000; transition:left 0.3s ease; } .sidebar.show{ left:0; } .main-content{ margin-left:0; } .sidebar-hamburger{ display:block; } }
-  </style>
+  <link rel="stylesheet" href="css/stats.css" />
 </head>
 <body class="dashboard-body">
   <header class="topbar">
     <div class="topbar-logo-title" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-      <img src="assets/adlex_logo.png" alt="ADLEX Logo" class="topbar-logo">
+      <img src="assets/logoadlex.png" alt="ADLEX Logo" class="topbar-logo">
       <h2 class="topbar-title" style="margin:0;flex:1;text-align:center;">Elevator Error</h2>
       <span class="user-role-container">
         <span class="user-icon">👤</span>
         <span class="userRoleDisplay" id="userRoleDisplay"></span>
       </span>
     </div>
-    <button id="darkModeToggle" style="margin-left:20px;">🌙</button>
+    <!-- <button id="darkModeToggle" style="margin-left:20px;">🌙</button> -->
   </header>
   <!-- Sidebar for normal users/admins -->
   <aside class="sidebar" id="sidebar-normal" style="display:none;">
+    <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="7" height="16" rx="1" />
+        <rect x="14" y="4" width="7" height="16" rx="1" />
+      </svg>
+    </button>
     <ul>
-    <li class="nav-link" onclick="navigate('users.html')">Location</li>
-    <li class="nav-link" onclick="navigate('supervisors.html')">User</li>
-    <li class="nav-link" onclick="navigate('devices.html')">Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link active" onclick="navigate('users.html')"><span>📍</span><span>Location</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Devices</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
     </ul>
-    <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+    <!-- <button class="sidebar-arrow" id="sidebarArrowNormal" aria-label="Hide menu">&#8592;</button> -->
 </aside>
 
 <!-- Sidebar for supervisors (read-only) -->
 <aside class="sidebar" id="sidebar-supervisor" style="display:none;">
+    <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
     <ul>
-    <li class="nav-link" onclick="navigate('super_device_overview.html')">My Devices</li>
-    <li class="nav-link" onclick="navigate('logs.html')">Logs</li>
-    <li class="nav-link" onclick="navigate('support.html')">Support Center</li>
+    <li class="nav-link active" onclick="navi('super_device_overview.html')"><span>📍</span><span>My Locations</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
     </ul>
-    <div class="logout-link" onclick="logout()">Logout</div>
-    <button class="sidebar-arrow" id="sidebarArrow" aria-label="Hide menu">&#8592;</button>
+    <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+    <!-- <button class="sidebar-arrow" id="sidebarArrowSupervisor" aria-label="Hide menu">&#8592;</button> -->
 </aside>
-  <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button>
+<!-- Sidebar for superadmin -->
+<aside class="sidebar" id="sidebar-superadmin" style="display:none;">
+  <button class="sidebar-arrow" id="sidebarToggle" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#007bff" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <rect x="14" y="4" width="7" height="16" rx="1" />
+    </svg>
+  </button>
+  <ul>
+    <li class="nav-link" onclick="navigate('superadmin-dashboard.html')"><span>📊</span><span>Dashboard</span></li>
+    <li class="nav-link active" onclick="navigate('users.html')"><span>📍</span><span>Location Management</span></li>
+    <li class="nav-link" onclick="navigate('supervisors.html')"><span>🧑‍💼</span><span>User Management</span></li>
+    <li class="nav-link" onclick="navigate('devices.html')"><span>💻</span><span>Device Management</span></li>
+    <li class="nav-link" onclick="navigate('logs.html')"><span>📜</span><span>System Logs</span></li>
+    <li class="nav-link" onclick="navigate('support.html')"><span>🆘</span><span>Support Center</span></li>
+  </ul>
+  <div class="logout-link" onclick="logout()"><span>🚪</span><span>Logout</span></div>
+  <!-- <button class="sidebar-arrow" id="sidebarArrowSuperadmin" aria-label="Hide menu">&#8592;</button> -->
+</aside>
+  <!-- <button class="sidebar-hamburger" id="sidebarHamburger" aria-label="Show menu">&#9776;</button> -->
   <main class="main-content">
     <!-- Device Info Bar -->
-    <div id="deviceInfoBar" style="background:#f8f9fa;padding:10px 40px 0px 0px;margin:0 0 0 0;display:flex;gap:40px;align-items:center;justify-content:flex-end;font-size:0.8em;font-weight:500;">
+    <div id="deviceInfoBar" class="deviceInfoBar">
       <span>Status: <span id="deviceStatus">-</span></span>
       <span>Last Upload: <span id="deviceLastUpload">-</span></span>
-      <button id="syncTelemetryBtn" style="margin-left:40px;padding:8px 18px;font-size:1em;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sync</button>
-    </div>
+      </div>
     <section class="device-detail-section">
       <div class="device-card" id="deviceCard">
-        <div class="device-card-header">
-            <div class="device-id" id="deviceId" style="font-size:1.5em;font-weight:bold;">-</div>
-            <!-- <div class="device-serial" id="deviceSerial">PMRLR24001</div> -->
-        </div>
+        
         <div class="device-card-body" ">
           <div class="device-card-body">
             <div class="device-field">
-              User Name<br>
-              <span id="deviceUser">km</span>
+              Location Name<br>
+              <span id="deviceUser">-</span>
             </div>
             <div class="device-field">
               MAC Address<br>
@@ -117,7 +107,10 @@
               <span id="deviceLocation">-</span>
             </div>
           </div>
-          
+          <div class="device-user-info">
+            <div class="user-info-field">User Name<br><span id="deviceUserName">-</span></div>
+            <div class="user-info-field">Contact Info<br><span id="deviceUserContact">-</span></div>
+          </div>
             
           </div>
     </div>
@@ -135,127 +128,155 @@
           <div class="error-entry"><h4>Error Code: E03</h4><p>Description: Emergency stop triggered.</p></div>
         </div>
       </div>
+      </div>
     </section>
   </main>
+  <script src="js/auth.js"></script>
   <script src="js/script.js"></script>
   <script>
+    // Get device ID from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const deviceId = urlParams.get('deviceId');
-    const username = sessionStorage.getItem('selectedUsername') || 'NA';
-    document.getElementById("deviceUser").textContent = username;
-    async function syncAndRenderTelemetry() {
-      if (!deviceId) return;
-      try {
-      const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-      if (!res.ok) throw new Error('Failed to sync telemetry');
-      const telemetry = await res.json();
-      renderTelemetryToUI(telemetry);
-      await fetchAndRenderUser(telemetry.tb_device_id); // ← call this
-      } catch (e) {
-      console.error('Error syncing telemetry:', e);
-      alert('Error syncing telemetry: ' + e.message);
-      }
-      }
-      async function fetchAndRenderUser(tb_device_id) {
-      try {
-      const res = await fetch(`/api/device-user/${tb_device_id}`);
-      if (!res.ok) throw new Error('No user assigned');
-      const user = await res.json();
-      document.getElementById('deviceUser').textContent = user.username || `${user.first_name} ${user.last_name}`;
-      } catch (e) {
-      console.error('Error loading user info:', e.message);
-      document.getElementById('deviceUser').textContent = 'NA';
-      }
-      }
-      const telemetryKeys = [
-  'DeviceName','DirCount','DoorAStatus','DoorBStatus','EmergencyAlarm','LastSignalDate','LastSignalTime',
-  'Latitude','Location','Longitude','MacAddress','Position','Rpm','SerialNum','Speed','Status',
-  'TotalDistanceTravelled','TotalStopCount','TotalTravelTime','TotalWorkTime','AlarmActive','DeviceId'
-];
-    function renderTelemetryToUI(telemetry) {
-      try {
-        // Device Card
-        //document.getElementById('deviceUser').textContent = telemetry.username || 'NA'; 
-        document.getElementById('deviceId').textContent = telemetry.DeviceName || 'NA';
-        document.getElementById('deviceIdValue').textContent = telemetry.DeviceId || telemetry.tb_device_id || 'NA';
-        document.getElementById('deviceMac').textContent = telemetry.MacAddress || 'NA';
-        document.getElementById('deviceSerial').textContent = telemetry.SerialNum || 'NA';
-        document.getElementById('deviceLocation').textContent = telemetry.Location || 'NA';
-        document.getElementById('deviceStatus').textContent = telemetry.Status || 'NA';
-        document.getElementById('deviceLastUpload').textContent = telemetry.LastSignalDate || 'NA';
-        
-      } catch (err) {
-        console.error('Error rendering telemetry:', err);
-        alert('Could not update UI with telemetry data.');
-      }
-    }
-    // Update sync button logic to call renderTelemetryToUI
-const syncBtn = document.getElementById('syncTelemetryBtn');
-syncBtn.addEventListener('click', async function() {
-  if (!deviceId) return alert('No device ID found!');
-  syncBtn.disabled = true;
-  syncBtn.textContent = 'Syncing...';
-  try {
-    // Call backend to sync telemetry
-    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-    if (!res.ok) throw new Error('Failed to sync telemetry');
-    const telemetry = await res.json();
-    renderTelemetryToUI(telemetry);
-    alert('Telemetry synced and displayed!');
-  } catch (e) {
-    alert('Error syncing telemetry: ' + e.message);
-  } finally {
-    syncBtn.disabled = false;
-    syncBtn.textContent = 'Sync';
-  }
-});
 
-// Auto-sync telemetry when the page loads
-window.addEventListener('DOMContentLoaded', async function() {
-  if (!deviceId) return;
-  syncBtn.disabled = true;
-  syncBtn.textContent = 'Syncing...';
-  try {
-    // Call backend to sync telemetry
-    const res = await fetch(`/api/device/${deviceId}/sync-telemetry`, { method: 'POST' });
-    if (!res.ok) throw new Error('Failed to sync telemetry');
-    const telemetry = await res.json();
-    renderTelemetryToUI(telemetry);
-  } catch (e) {
-    // Optionally show an error or fallback
-    console.error('Error auto-syncing telemetry:', e.message);
-  } finally {
-    syncBtn.disabled = false;
-    syncBtn.textContent = 'Sync';
-  }
-});
-    async function loadDeviceInfo() {
-      if (!deviceId) return;
-      try {
-        const res = await fetch(`/api/device/${deviceId}`);
-        if (!res.ok) throw new Error('Device not found');
-        const deviceData = await res.json();
-        document.getElementById('deviceId').textContent = deviceData.elevator_number || deviceId;
-        document.getElementById('deviceUser').textContent = deviceData.username || '';
-        document.getElementById('deviceMac').textContent = deviceData.mac_address || '';
-      } catch (error) {
-        // fallback to static
-      }
-    }
-    loadDeviceInfo();
+    // Tab navigation functions
     document.getElementById('tabStats').onclick = function() {
       if (deviceId) window.location.href = `specific_userdevice.html?deviceId=${deviceId}`;
     };
     document.getElementById('tabAlarms').onclick = function() {
-      // Already here
+      // Already on alarms page
     };
     document.getElementById('tabMode').onclick = function() {
       if (deviceId) window.location.href = `totaldevicestats.html?deviceId=${deviceId}`;
     };
-    function navigate(page) { window.location.href = page; }
-    function logout() { alert("Logout logic here"); }
 
+    function navigate(page) { 
+      window.location.href = page; 
+    }
     
+    function logout() { 
+      alert("Logout logic here"); 
+    }
+
+    // --- Main function to load device info and telemetry from backend ---
+    async function loadDeviceAndTelemetry(tb_device_id) {
+      try {
+        const res = await fetch(`/api/device/${tb_device_id}/sync-telemetry`, { 
+          method: 'POST', 
+          headers: { 'x-user-role': 'admin' } 
+        });
+        if (!res.ok) throw new Error('Failed to sync telemetry');
+        const device = await res.json();
+        
+        // Update device card fields
+        document.getElementById('deviceIdValue').textContent = device.DeviceId || '-';
+        document.getElementById('deviceMac').textContent = device.MacAddress || '-';
+        document.getElementById('deviceSerial').textContent = device.SerialNum || '-';
+        document.getElementById('deviceLocation').textContent = device.Location || '-';
+        document.getElementById('deviceStatus').textContent = device.active === true ? 'Active' : 'Inactive';
+        
+        // Update last upload time with date
+        if (device.log_time) {
+          const t = new Date(device.log_time);
+          const dateStr = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+          const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          document.getElementById('deviceLastUpload').textContent = `${dateStr} ${timeStr}`;
+        } else {
+          document.getElementById('deviceLastUpload').textContent = 'NA';
+        }
+        
+        // Update error logs based on telemetry data
+        updateErrorLogs(device);
+        
+      } catch (e) {
+        console.error('Error loading device and telemetry:', e);
+      }
+    }
+
+    // --- Function to fetch and render user information ---
+    async function fetchAndRenderUser(tb_device_id) {
+      try {
+        const res = await fetch(`/api/device-user/${tb_device_id}`);
+        if (!res.ok) throw new Error('No user assigned');
+        const user = await res.json();
+        
+        document.getElementById('deviceUser').textContent = user.address || 'NA';
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+        document.getElementById('deviceUserName').textContent = fullName || 'NA';
+        const contactInfo = user.phone || user.email || 'NA';
+        document.getElementById('deviceUserContact').textContent = contactInfo;
+        
+      } catch (e) {
+        console.error('Error loading user info:', e.message);
+        document.getElementById('deviceUser').textContent = 'NA';
+        document.getElementById('deviceUserName').textContent = 'NA';
+        document.getElementById('deviceUserContact').textContent = 'NA';
+      }
+    }
+
+    // --- Function to update error logs based on telemetry data ---
+    function updateErrorLogs(device) {
+      const errorLogsContainer = document.getElementById('errorLogs');
+      let errorEntries = [];
+
+      // Check for various error conditions based on telemetry data
+      if (device.ERR && device.ERR !== 'NA' && device.ERR !== '0') {
+        errorEntries.push({
+          code: 'E01',
+          description: `Emergency alarm active: ${device.ERR}`
+        });
+      }
+
+      if (device.DOORA && device.DOORA !== 'NA' && device.DOORA !== '0') {
+        errorEntries.push({
+          code: 'E02',
+          description: `Door A status issue: ${device.DOORA}`
+        });
+      }
+
+      if (device.DOORB && device.DOORB !== 'NA' && device.DOORB !== '0') {
+        errorEntries.push({
+          code: 'E03',
+          description: `Door B status issue: ${device.DOORB}`
+        });
+      }
+
+      // If no errors found, show a message
+      if (errorEntries.length === 0) {
+        errorEntries.push({
+          code: 'OK',
+          description: 'No active errors detected'
+        });
+      }
+
+      // Update the error logs display
+      errorLogsContainer.innerHTML = errorEntries.map(error => 
+        `<div class="error-entry">
+          <h4>Error Code: ${error.code}</h4>
+          <p>Description: ${error.description}</p>
+        </div>`
+      ).join('');
+    }
+
+    // --- Page load and auto-sync setup ---
+    window.addEventListener('DOMContentLoaded', async function() {
+      if (!deviceId) return;
+      
+      // Initial load
+      await loadDeviceAndTelemetry(deviceId);
+      await fetchAndRenderUser(deviceId);
+      
+      // Set up auto-sync every minute
+      setInterval(async () => {
+        try {
+          console.log('🔄 Auto-refreshing elevator error data...');
+          await loadDeviceAndTelemetry(deviceId);
+          await fetchAndRenderUser(deviceId);
+          console.log('✅ Auto-refresh completed successfully');
+        } catch (e) {
+          console.error('❌ Error in auto-sync:', e.message);
+        }
+      }, 60000); // 60000ms = 1 minute
+    });
   </script>
   
 </body>

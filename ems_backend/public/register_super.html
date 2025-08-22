@@ -48,7 +48,7 @@
           form input {
             width: 100%;
             padding: 10px 12px;
-            margin-bottom: 16px;
+            margin-bottom: 0px; /* Remove gap below input */
             border: 1px solid #d0d7e2;
             border-radius: 6px;
             font-size: 16px;
@@ -60,16 +60,20 @@
             background: #fff; 
             outline: none; /* removes default blue outline */
           }
-          
+          .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 16px;
+          }
           .name-row {
             display: flex;
             gap: 12px;
+            margin-bottom: 16px;
           }
-          
-          .name-row input {
+          .name-row .input-group {
             flex: 1;
+            margin-bottom: 0;
           }
-          
           .button-row {
             display: flex;
             justify-content: right;
@@ -128,6 +132,79 @@
             top: 60px;
             right: -90px;
           }
+          /* validation.css - Visual feedback styles for form validation
+   Add this to both register.html and register_super.html */
+
+/* Validation states */
+.register-form input.valid,
+.form-container input.valid {
+  border-color: #28a745 !important;
+  background-color: #f8fff9 !important;
+}
+
+.register-form input.invalid,
+.form-container input.invalid {
+  border-color: #e74c3c !important;
+  background-color: #fff8f8 !important;
+}
+
+/* Error message styling */
+.error-message {
+  color: #e74c3c;
+  font-size: 0.8em;
+  margin-top: 2px;
+  margin-bottom: 0px;
+  font-weight: 500;
+  line-height: 1.2;
+  min-height: 0;
+  position: static;
+  background: transparent;
+  padding: 0;
+  display: block;
+}
+.input-group input.invalid + .error-message {
+  display: block;
+}
+.input-group input:focus + .error-message {
+  display: block;
+}
+
+/* Loading state */
+.register-form input:disabled,
+.form-container input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Success message */
+.success-message {
+  color: #28a745;
+  font-size: 0.9em;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Dark mode support */
+body.dark-mode .register-form input.valid,
+body.dark-mode .form-container input.valid {
+  border-color: #28a745 !important;
+  background-color: #1a2e1a !important;
+}
+
+body.dark-mode .register-form input.invalid,
+body.dark-mode .form-container input.invalid {
+  border-color: #e74c3c !important;
+  background-color: #2e1a1a !important;
+}
+
+body.dark-mode .error-message {
+  color: #ff6b6b;
+  background: transparent;
+}
+
+body.dark-mode .success-message {
+  color: #51cf66;
+}
           
     </style>
 </head>
@@ -147,13 +224,31 @@
         <h2>Register Supervisor</h2>
         <form id="supervisorForm">
       <div class="name-row">
-        <input type="text" name="first_name" placeholder="First Name*" required />
-        <input type="text" name="last_name" placeholder="Last Name*" required />
+        <div class="input-group">
+          <input type="text" name="first_name" id="firstNameInput" placeholder="First Name*" required maxlength="15"/>
+          <div class="error-message" id="firstNameInput-error"></div>
+        </div>
+        <div class="input-group">
+          <input type="text" name="last_name" id="lastNameInput" placeholder="Last Name*" required maxlength="15"/>
+          <div class="error-message" id="lastNameInput-error"></div>
+        </div>
       </div>
-      <input type="email" name="email" placeholder="Email ID*" required />
-      <input type="tel" name="phone" placeholder="Mobile Number*" required />
-      <input type="text" name="supervisor_id" placeholder="Supervisor ID*" required />
-      <input type="password" name="password" placeholder="Password*" required />
+      <div class="input-group">
+        <input type="email" name="email" id="emailInput" placeholder="Email ID*" required maxlength="50"/>
+        <div class="error-message" id="emailInput-error"></div>
+      </div>
+      <div class="input-group">
+        <input type="tel" name="phone" id="phoneInput" placeholder="Mobile Number*" required maxlength="10"/>
+        <div class="error-message" id="phoneInput-error"></div>
+      </div>
+      <div class="input-group">
+        <input type="text" name="supervisor_id" id="supervisorIdInput" placeholder="Supervisor ID*" required maxlength="10"/>
+        <div class="error-message" id="supervisorIdInput-error"></div>
+      </div>
+      <div class="input-group">
+        <input type="text" name="password" id="passwordInput" placeholder="Password*" required maxlength="16"/>
+        <div class="error-message" id="passwordInput-error"></div>
+      </div>
       <div class="button-row">
         <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
         <button type="submit" class="register-btn">Register</button>
@@ -161,7 +256,7 @@
     </form>
   </div>
 </div>
-
+<script src="js/validation.js"></script>
     <script>
         document.getElementById('supervisorForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -203,6 +298,153 @@
         document.getElementById('cancelBtn').onclick = function() {
             window.history.back();
         };
+
+
+        // validation.js - For register_super.html
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('supervisorForm');
+  const fields = {
+    firstName: {
+      el: document.getElementById('firstNameInput'),
+      error: document.getElementById('firstNameInput-error'),
+      regex: /^[A-Za-z]{2,15}$/,
+      msg: 'First name: 2-15 letters, no spaces or symbols.'
+    },
+    lastName: {
+      el: document.getElementById('lastNameInput'),
+      error: document.getElementById('lastNameInput-error'),
+      regex: /^[A-Za-z]{2,15}$/,
+      msg: 'Last name: 2-15 letters, no spaces or symbols.'
+    },
+    email: {
+      el: document.getElementById('emailInput'),
+      error: document.getElementById('emailInput-error'),
+      regex: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      msg: 'Enter a valid email address.'
+    },
+    phone: {
+      el: document.getElementById('phoneInput'),
+      error: document.getElementById('phoneInput-error'),
+      regex: /^\d{10}$/,
+      msg: 'Enter a 10-digit mobile number.'
+    },
+    supervisorId: {
+      el: document.getElementById('supervisorIdInput'),
+      error: document.getElementById('supervisorIdInput-error'),
+      regex: /^[A-Za-z0-9]{3,10}$/,
+      msg: 'Supervisor ID: 3-10 letters or numbers, no spaces.'
+    },
+    password: {
+      el: document.getElementById('passwordInput'),
+      error: document.getElementById('passwordInput-error'),
+      regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,16}$/,
+      msg: 'Password: 8+ chars,1 upper, 1 lower,1 number, 1 special char.'
+    }
+  };
+
+  function showError(field, message) {
+    field.error.textContent = message;
+    field.el.classList.add('invalid');
+  }
+  function clearError(field) {
+    field.error.textContent = '';
+    field.el.classList.remove('invalid');
+  }
+
+  // Phone: Only allow digits as input, show error only if non-digit is entered
+  fields.phone.el.addEventListener('input', (e) => {
+    let value = fields.phone.el.value;
+    // Remove non-digits
+    const digitsOnly = value.replace(/\D/g, '');
+    if (value !== digitsOnly) {
+      showError(fields.phone, 'Only digits allowed');
+      fields.phone.el.value = digitsOnly;
+    } else {
+      clearError(fields.phone);
+    }
+  });
+
+  // Supervisor ID: Only show error if not empty and invalid
+  fields.supervisorId.el.addEventListener('input', () => {
+    const value = fields.supervisorId.el.value;
+    if (value === '' || fields.supervisorId.regex.test(value)) {
+      clearError(fields.supervisorId);
+    } else {
+      showError(fields.supervisorId, fields.supervisorId.msg);
+    }
+  });
+
+  // Password: Only show error if not empty and invalid
+  fields.password.el.addEventListener('input', () => {
+    const value = fields.password.el.value;
+    if (value === '' || fields.password.regex.test(value)) {
+      clearError(fields.password);
+    } else {
+      showError(fields.password, fields.password.msg);
+    }
+  });
+
+  // First Name, Last Name, Email: Real-time validation as before
+  [fields.firstName, fields.lastName, fields.email].forEach(field => {
+    field.el.addEventListener('input', () => {
+      if (field.el.value === '' || field.regex.test(field.el.value)) {
+        clearError(field);
+      } else {
+        showError(field, field.msg);
+      }
+    });
+  });
+
+  // --- AJAX uniqueness checks ---
+  async function checkUnique(type, value) {
+    if (!value) return false;
+    try {
+      const res = await fetch(`/api/check-unique?type=${type}&value=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      return data.exists;
+    } catch (e) { return false; }
+  }
+
+  fields.email.el.addEventListener('blur', async () => {
+    const value = fields.email.el.value.trim();
+    if (value && fields.email.regex.test(value)) {
+      if (await checkUnique('email', value)) {
+        showError(fields.email, 'Email already exists in the system.');
+      }
+    }
+  });
+  fields.phone.el.addEventListener('blur', async () => {
+    const value = fields.phone.el.value.trim();
+    if (value && fields.phone.regex.test(value)) {
+      if (await checkUnique('phone', value)) {
+        showError(fields.phone, 'Phone already exists in the system.');
+      }
+    }
+  });
+  fields.supervisorId.el.addEventListener('blur', async () => {
+    const value = fields.supervisorId.el.value.trim();
+    if (value && fields.supervisorId.regex.test(value)) {
+      if (await checkUnique('username', value)) {
+        showError(fields.supervisorId, 'Supervisor ID already exists in the system.');
+      }
+    }
+  });
+
+  // On submit
+  form.addEventListener('submit', e => {
+    let valid = true;
+    Object.values(fields).forEach(field => {
+      if (!field.el.value || !field.regex.test(field.el.value)) {
+        showError(field, field.msg);
+        valid = false;
+      } else {
+        clearError(field);
+      }
+    });
+    if (!valid) e.preventDefault();
+  });
+});
     </script>
     
 </body>
