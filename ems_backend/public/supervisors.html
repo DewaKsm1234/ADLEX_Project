@@ -37,6 +37,7 @@
             <th>Assigned Admin</th>
             <th>Assigned Location</th>
             <th>Assigned Device</th>
+            <th>Remark</th>
             <th class="action-col">Actions</th>
           </tr>
         </thead>
@@ -81,6 +82,10 @@
             <option value="">Select a supervisor...</option>
           </select>
           <div id="newSupervisorSelect-error" class="error-message"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="suspendRemark">Remark (reason for suspension)</label>
+          <textarea id="suspendRemark" class="form-input" rows="3" placeholder="Add a brief reason..."></textarea>
         </div>
         <div class="modal-actions">
           <button type="button" class="admin-btn" onclick="closeSuspendModal()">Cancel</button>
@@ -170,6 +175,8 @@
     // State for all supervisors
     let allSupervisors = [];
     let isEditMode = false;
+    let currentSupervisorUsername = null;
+    const suspensionRemarksBySupervisorId = {};
 
     // Fetch supervisors summary and render the table
     async function loadSupervisors() {
@@ -218,6 +225,7 @@
           <td>${sup.admin_id ? sup.admin_id : 'Unassigned'}</td>
           <td>${sup.assigned_users}</td>
           <td>${sup.assigned_devices}</td>
+          <td>${suspensionRemarksBySupervisorId[sup.supervisor_id] || ''}</td>
           <td class="action-col">
             <div class="action-buttons">
               <button class="action-btn edit-btn" onclick="editSupervisor('${sup.supervisor_id}')" title="Edit">Edit</button>
@@ -279,18 +287,23 @@
     // Suspend supervisor
     async function suspendSupervisor(supervisorId, newSupervisorId = null) {
       try {
+        const remarkEl = document.getElementById('suspendRemark');
+        const remark = remarkEl ? remarkEl.value : null;
         const response = await fetch(`/api/supervisors/${supervisorId}/suspend`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           credentials: 'include',
-          body: JSON.stringify({ newSupervisorId })
+          body: JSON.stringify({ newSupervisorId, remark })
         });
         
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
+            if (currentSupervisorUsername && remark) {
+              suspensionRemarksBySupervisorId[currentSupervisorUsername] = remark;
+            }
             alert(result.message);
             closeSuspendModal();
             loadSupervisors();
@@ -396,7 +409,7 @@
         }
 
         document.getElementById('suspendModal').style.display = 'flex';
-        currentSupervisorId = supervisorId;
+        currentSupervisorUsername = supervisorUsername;
       } catch (error) {
         console.error('Error loading suspend modal data:', error);
         alert('Error loading suspend modal data');
@@ -508,6 +521,7 @@
         
         const reassignment = document.querySelector('input[name="reassignment"]:checked').value;
         const newSupervisorId = reassignment === 'reassign' ? document.getElementById('newSupervisorSelect').value : null;
+        const remark = document.getElementById('suspendRemark').value;
         
         if (reassignment === 'reassign' && !newSupervisorId) {
           alert('Please select a supervisor for reassignment');
@@ -515,7 +529,7 @@
         }
 
         try {
-          await suspendSupervisor(currentSupervisorId, newSupervisorId);
+          await suspendSupervisor(currentSupervisorId, newSupervisorId, remark);
         } catch (error) {
           console.error('Error in suspend form submission:', error);
         }

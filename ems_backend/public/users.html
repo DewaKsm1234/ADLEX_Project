@@ -105,13 +105,7 @@
         } else {
           deviceCell = `<select class="assign-device-dropdown" data-address="${user.address}"><option value="">Add Device</option></select>`;
         }
-            // Make the row clickable to view user_device_overview.html
-          row.style.cursor = 'pointer';
-          row.addEventListener('click', function(e) {
-            if (e.target.tagName.toLowerCase() === 'input') return;
-              window.location.href = `user_device_overview.html?address=${user.address}`;
-          });
-            table.appendChild(row);
+
         row.innerHTML = `
           <td><input type="checkbox" class="user-row-checkbox" /></td>
           <td><span class="user-link" onclick="goToUserDevices('${user.address}')">${user.address}</span></td>
@@ -167,6 +161,9 @@
         row.querySelector('.delete-user-btn').addEventListener('click', e => e.stopPropagation());
         row.querySelector('.confirm-delete-btn').addEventListener('click', e => e.stopPropagation());
         row.querySelector('.cancel-delete-btn').addEventListener('click', e => e.stopPropagation());
+        //row.querySelector('.assign-device-dropdown').addEventListener('click', e => e.stopPropagation());
+        table.appendChild(row);
+        
 
         const supervisorDropdown = row.querySelector('.assign-supervisor-dropdown');
         if (supervisorDropdown) {
@@ -223,7 +220,7 @@
                 deviceDropdown.appendChild(opt);
               });
             });
-
+          
           deviceDropdown.addEventListener('change', function () {
           const tb_device_id = this.value;
           const address = this.dataset.address;

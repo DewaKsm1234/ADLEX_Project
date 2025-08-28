@@ -28,5 +28,13 @@ module.exports = {
     baseUrl: 'https://thingsboard.cloud',
     username: 'rutuja.arekar@samsanlabs.com',
     password: 'Rutuja@Samsan113'
+  },
+  email: {
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    user: 'abc.fake004@gmail.com',
+    pass: 'hfymlbehpvsantcg',
+    from: 'Samsan Labs EMS Support <abc.fake004@gmail.com>'
   }
 }; 

@@ -77,6 +77,7 @@
             <th>Contact</th>
             <th>Status</th>
             <th>Supervisors</th>
+            <th>Remark</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -202,6 +203,10 @@
           <label class="form-label">Supervisors to be reassigned</label>
           <div class="supervisor-list" id="supervisorList"></div>
         </div>
+        <div class="form-group">
+          <label class="form-label" for="suspendRemark">Remark (reason for suspension)</label>
+          <textarea id="suspendRemark" class="form-input" rows="3" placeholder="Add a brief reason..."></textarea>
+        </div>
         <div class="modal-actions">
           <button type="button" class="admin-btn" onclick="closeSuspendModal()">Cancel</button>
           <button type="submit" class="admin-btn warning">Suspend Admin</button>
@@ -269,7 +274,9 @@
   
   <script>
     let currentAdminId = null;
+    let currentAdminUsername = null;
     let isEditMode = false;
+    const suspensionRemarksByAdminId = {};
 
     // Initialize dashboard
     document.addEventListener('DOMContentLoaded', function() {
@@ -377,7 +384,8 @@
           <td>${(admin.first_name || '') + ' ' + (admin.last_name || '')}</td>
           <td>${(admin.email || '-') + (admin.phone ? ' / ' + admin.phone : '')}</td>
           <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-          <td class="supervisor-count" data-admin-id="${admin.admin_id}"><a href="#" onclick="viewSupervisorsForAdmin('${admin.admin_id}')">${count}</a></td>
+          <td class="supervisor-count" data-admin-id="${admin.admin_id}"><a href="javascript:void(0)" onclick="viewSupervisorsForAdmin('${admin.admin_id}')">${count}</a></td>
+          <td>${admin.remarks || suspensionRemarksByAdminId[admin.admin_id] || ''}</td>
           <td>
             <div class="action-buttons">
               ${status === 'active' ? 
@@ -460,35 +468,31 @@
     }
 
     // Suspend admin
-    async function suspendAdmin(adminId, newAdminId = null) {
+    async function suspendAdmin(adminId, newAdminId, remark) {
       try {
-        const response = await fetch(`/api/admins/${adminId}/suspend`, {
+        const res = await fetch(`/api/admins/${adminId}/suspend`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ newAdminId })
+          body: JSON.stringify({
+            newAdminId,
+            remark,
+            status: 'suspended'   // explicitly send status
+          })
         });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            alert(result.message);
-            closeSuspendModal();
-            loadAdminList();
-          } else {
-            alert('Error suspending admin: ' + result.message);
-          }
+        const data = await res.json();
+        if (data.success) {
+          alert('Admin suspended successfully');
+          location.reload();
         } else {
-          const error = await response.json();
-          alert('Error suspending admin: ' + (error.message || error.error || 'Unknown error'));
+          alert(data.error || 'Failed to suspend admin');
         }
-      } catch (error) {
-        console.error('Error suspending admin:', error);
+      } catch (err) {
+        console.error('Suspend error:', err);
         alert('Error suspending admin');
       }
     }
+    
 
     // Reactivate admin
     async function reactivateAdmin(adminId) {
@@ -524,6 +528,7 @@
     // Show suspend modal
     async function showSuspendModal(adminId, adminUsername) {
       try {
+        currentAdminUsername = adminUsername;
         // Get admin details
         const adminResponse = await fetch('/api/admins', {
           credentials: 'include'
@@ -703,13 +708,15 @@
         
         const reassignment = document.querySelector('input[name="reassignment"]:checked').value;
         const newAdminId = reassignment === 'reassign' ? document.getElementById('newAdminSelect').value : null;
+        const remarkEl = document.getElementById('suspendRemark');
+        const remark = remarkEl ? remarkEl.value : '';
         
         if (reassignment === 'reassign' && !newAdminId) {
           alert('Please select an admin to reassign supervisors to');
           return;
         }
-
-        await suspendAdmin(currentAdminId, newAdminId);
+        
+        await suspendAdmin(currentAdminId, newAdminId, remark);
       });
 
       // Handle reassignment radio button changes
