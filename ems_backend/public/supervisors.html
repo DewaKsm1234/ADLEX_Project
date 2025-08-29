@@ -37,7 +37,7 @@
             <th>Assigned Admin</th>
             <th>Assigned Location</th>
             <th>Assigned Device</th>
-            <th>Remark</th>
+            <th id="remarksHeader">Remark</th>
             <th class="action-col">Actions</th>
           </tr>
         </thead>
@@ -225,7 +225,7 @@
           <td>${sup.admin_id ? sup.admin_id : 'Unassigned'}</td>
           <td>${sup.assigned_users}</td>
           <td>${sup.assigned_devices}</td>
-          <td>${suspensionRemarksBySupervisorId[sup.supervisor_id] || ''}</td>
+          <td class="remark-cell">${sup.remarks || suspensionRemarksBySupervisorId[sup.supervisor_id] || ''}</td>
           <td class="action-col">
             <div class="action-buttons">
               <button class="action-btn edit-btn" onclick="editSupervisor('${sup.supervisor_id}')" title="Edit">Edit</button>
@@ -257,6 +257,17 @@
         table.appendChild(row);
       });
       updateActionColumnVisibility();
+
+      // Toggle remarks column visibility
+      const anyRemark = Array.isArray(supervisors) && supervisors.some(s => {
+        const fromApi = s && s.remarks && String(s.remarks).trim().length > 0;
+        const fromSession = s && suspensionRemarksBySupervisorId && suspensionRemarksBySupervisorId[s.supervisor_id] && String(suspensionRemarksBySupervisorId[s.supervisor_id]).trim().length > 0;
+        return fromApi || fromSession;
+      });
+      const remarksHeader = document.getElementById('remarksHeader');
+      const remarkCells = document.querySelectorAll('#supervisor-table-body .remark-cell');
+      if (remarksHeader) remarksHeader.style.display = anyRemark ? '' : 'none';
+      remarkCells.forEach(td => { td.style.display = anyRemark ? '' : 'none'; });
     }
 
     // Update action column visibility for supervisor table
@@ -295,7 +306,7 @@
             'Content-Type': 'application/json'
           },
           credentials: 'include',
-          body: JSON.stringify({ newSupervisorId, remark })
+          body: JSON.stringify({ newSupervisorId, remark, status: 'suspended' })
         });
         
         if (response.ok) {
@@ -410,6 +421,7 @@
 
         document.getElementById('suspendModal').style.display = 'flex';
         currentSupervisorUsername = supervisorUsername;
+        currentSupervisorId = supervisorId;
       } catch (error) {
         console.error('Error loading suspend modal data:', error);
         alert('Error loading suspend modal data');

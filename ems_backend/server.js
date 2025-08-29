@@ -816,7 +816,8 @@ app.get('/api/supervisors-summary', authenticateToken, requireSuperAdminOrAdmin,
         assigned_devices,
         admin_id: sup.admin_id,
         status: sup.status || 'active',
-        id: sup.id
+        id: sup.id,
+        remarks: sup.remarks || null
       };
     }));
 
@@ -2152,7 +2153,7 @@ app.post('/api/admins/:id/reactivate', authenticateToken, requireSuperAdmin, asy
     
     // Reactivate admin in admins table
     await connection.execute(
-      'UPDATE admins SET status = "active" WHERE id = ?',
+      'UPDATE admins SET status = "active", remarks = NULL WHERE id = ?',
       [id]
     );
     
@@ -2204,7 +2205,7 @@ app.post('/api/supervisors/:id/suspend', authenticateToken, requireSuperAdmin, a
     await connection.beginTransaction();
     
     const { id } = req.params;
-    const { newSupervisorId } = req.body;
+    const { newSupervisorId, status, remark } = req.body || {};
     
     // Get supervisor details
     const [supervisor] = await connection.execute('SELECT supervisor_id, admin_id FROM supervisors WHERE id = ? AND status = "active"', [id]);
@@ -2249,10 +2250,10 @@ app.post('/api/supervisors/:id/suspend', authenticateToken, requireSuperAdmin, a
       );
     }
     
-    // Suspend supervisor in supervisors table
+    // Suspend supervisor in supervisors table (persist optional remark)
     await connection.execute(
-      'UPDATE supervisors SET status = "suspended" WHERE id = ?',
-      [id]
+      'UPDATE supervisors SET status = ?, remarks = ? WHERE id = ?',
+      [status || 'suspended', remark || '', id]
     );
     
     // Suspend supervisor in users_login table
@@ -2296,9 +2297,9 @@ app.post('/api/supervisors/:id/reactivate', authenticateToken, requireSuperAdmin
     
     const supervisorId = supervisor[0].supervisor_id;
     
-    // Reactivate supervisor in supervisors table
+    // Reactivate supervisor in supervisors table and clear remarks
     await connection.execute(
-      'UPDATE supervisors SET status = "active" WHERE id = ?',
+      'UPDATE supervisors SET status = "active", remarks = NULL WHERE id = ?',
       [id]
     );
     

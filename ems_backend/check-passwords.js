@@ -6,6 +6,12 @@ const db = mysql.createPool(config.database);
 
 async function checkPasswordStatus() {
   try {
+    //add hash password commented code
+    // const bcrypt = require('bcrypt');
+
+    // bcrypt.hash('Super123', 10, function(err, hash) {
+    //   console.log(hash);  // Copy this output
+    // });
     console.log('🔍 Checking password status in database...');
     
     // Get all users from the database

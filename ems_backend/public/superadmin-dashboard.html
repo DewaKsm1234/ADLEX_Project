@@ -77,7 +77,7 @@
             <th>Contact</th>
             <th>Status</th>
             <th>Supervisors</th>
-            <th>Remark</th>
+            <th id="remarksHeader">Remark</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -385,7 +385,7 @@
           <td>${(admin.email || '-') + (admin.phone ? ' / ' + admin.phone : '')}</td>
           <td><span class="status-badge ${statusClass}">${statusText}</span></td>
           <td class="supervisor-count" data-admin-id="${admin.admin_id}"><a href="javascript:void(0)" onclick="viewSupervisorsForAdmin('${admin.admin_id}')">${count}</a></td>
-          <td>${admin.remarks || suspensionRemarksByAdminId[admin.admin_id] || ''}</td>
+          <td class="remark-cell">${admin.remarks || suspensionRemarksByAdminId[admin.admin_id] || ''}</td>
           <td>
             <div class="action-buttons">
               ${status === 'active' ? 
@@ -403,6 +403,16 @@
         `;
         tbody.appendChild(row);
       });
+
+      const anyRemark = (filteredAdmins || admins).some(a => {
+        const fromApi = (a && a.remarks && String(a.remarks).trim().length > 0);
+        const fromSession = suspensionRemarksByAdminId && a && suspensionRemarksByAdminId[a.admin_id] && String(suspensionRemarksByAdminId[a.admin_id]).trim().length > 0;
+        return fromApi || fromSession;
+      });
+      const remarksHeader = document.getElementById('remarksHeader');
+      const remarkCells = tbody.querySelectorAll('.remark-cell');
+      if (remarksHeader) remarksHeader.style.display = anyRemark ? '' : 'none';
+      remarkCells.forEach(td => { td.style.display = anyRemark ? '' : 'none'; });
     }
 
     // Show create admin modal

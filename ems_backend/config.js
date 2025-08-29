@@ -1,40 +1,33 @@
-// Database Configuration
-// Change these settings to connect to different databases
+// config.js  is a bridge layer
+require('dotenv').config();
+console.log("DB_PASS loaded:", process.env.DB_PASS ? "yes" : "no");
+
 module.exports = {
-  // database: {
-  //   host: '192.168.1.40',     // IP of your main laptop
-  //   port: 3306,
-  //   user: 'testuser',
-  //   password: 'testpass',
-  //   database: 'ems_dbnew'
-  // },
   database: {
-    host: 'localhost',     // IP of your main laptop
-    port: 3306,
-    user: 'root',
-    password: '1234',
-    database: 'ems_dbnew'
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASS || '',
+    database: process.env.DB_NAME || 'ems_dbnew',
   },
   
-  // Server Configuration
   server: {
-    port: 3000,
-    host: '0.0.0.0'  // Listen on all network interfaces (localhost + network)
-    //host: '192.168.1.40'  // Listen on all network interfaces (localhost + network)
+    port: process.env.SERVER_PORT || 3000,
+    host: process.env.SERVER_HOST || '0.0.0.0',
   },
-  
-  // ThingsBoard Configuration
+
   thingsboard: {
-    baseUrl: 'https://thingsboard.cloud',
-    username: 'rutuja.arekar@samsanlabs.com',
-    password: 'Rutuja@Samsan113'
+    baseUrl: process.env.TB_BASE_URL || 'https://thingsboard.cloud',
+    username: process.env.TB_USERNAME || '',
+    password: process.env.TB_PASSWORD || '',
   },
+
   email: {
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    user: 'abc.fake004@gmail.com',
-    pass: 'hfymlbehpvsantcg',
-    from: 'Samsan Labs EMS Support <abc.fake004@gmail.com>'
-  }
-}; 
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: process.env.EMAIL_PORT || 587,
+    secure: process.env.EMAIL_SECURE === 'true', // convert string → boolean
+    user: process.env.EMAIL_USER || '',
+    pass: process.env.EMAIL_PASS || '',
+    from: process.env.EMAIL_FROM || '',
+  },
+};
