@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  backend:
+    build: .
+    container_name: ems_backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db     # service name, not localhost
+      - DB_PORT=3306
+
+  db:
+    image: mysql:8
+    container_name: ems_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root         # root pwd (only for admin)
+      MYSQL_DATABASE: ${DB_NAME}        # created db
+      MYSQL_USER: ${DB_USER}            # ems_user from .env
+      MYSQL_PASSWORD: ${DB_PASS}        # ems_pass from .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database_setup.sql:/docker-entrypoint-initdb.d/database_setup.sql
+
+volumes:
+  db_data:

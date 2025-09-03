@@ -1,0 +1,20 @@
+# Node.js dependencies
+node_modules
+
+# Env files (secrets, credentials)
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes / local DB
+db_data/
+
+# Prisma generated client (if unused)
+prisma/generated/
