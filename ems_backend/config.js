@@ -1,5 +1,29 @@
 // config.js  is a bridge layer
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+// Decide which .env file to load
+// Priority:
+// 1) Railway env when running on Railway
+// 2) Docker env (.env) when inside a container
+// 3) Local env (.env.local) for local development
+// 4) Fallback to default .env if nothing else matches
+const isDocker = fs.existsSync('/.dockerenv');
+const isRailway = Boolean(process.env.RAILWAY || process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_STATIC_URL);
+
+let selectedEnvPath = null;
+if (isRailway && fs.existsSync(path.join(__dirname, '.env.railway'))) {
+  selectedEnvPath = path.join(__dirname, '.env.railway');
+} else if (isDocker && fs.existsSync(path.join(__dirname, '.env'))) {
+  selectedEnvPath = path.join(__dirname, '.env');
+} else if (!isDocker && fs.existsSync(path.join(__dirname, '.env.local'))) {
+  selectedEnvPath = path.join(__dirname, '.env.local');
+} else if (fs.existsSync(path.join(__dirname, '.env'))) {
+  selectedEnvPath = path.join(__dirname, '.env');
+}
+
+require('dotenv').config(selectedEnvPath ? { path: selectedEnvPath } : undefined);
+console.log("Loaded env file:", selectedEnvPath ? path.basename(selectedEnvPath) : 'process environment only');
 console.log("DB_PASS loaded:", process.env.DB_PASS ? "yes" : "no");
 
 module.exports = {
