@@ -216,7 +216,7 @@ class ComponentLoader {
   setActiveTabByPageHierarchy(currentPage, role) {
     console.log('Setting active tab for page:', currentPage, 'for role:', role);
   
-    // Define which tab each page belongs to
+    // Define base mappings
     const pageToTab = {
       // Location tab - Users & Devices flow
       'users.html': 'users.html',
@@ -225,23 +225,30 @@ class ComponentLoader {
       'devices.html': 'devices.html',
       'elevatorerror.html': 'users.html',
       'totaldevicestats.html': 'users.html',
-      
-      // Supervisor tab - Supervisor flow
-      'supervisors.html': 'supervisors.html',
-      'super_device_overview.html': 'supervisors.html',
-      
+  
       // Logs tab
       'logs.html': 'logs.html',
-      
+  
       // Support tab
       'support.html': 'support.html',
-     
+  
       // Superadmin tab
       'superadmin-dashboard.html': 'superadmin-dashboard.html',
     };
   
-    // Find which navigation link should be active
-    const activeNavPage = pageToTab[currentPage];
+    // Determine which navigation link should be active
+    let activeNavPage = pageToTab[currentPage];
+
+    // Role-conditional mapping for super_device_overview.html
+    if (currentPage === 'super_device_overview.html') {
+      activeNavPage = (role === 'supervisor') ? 'super_device_overview.html' : 'supervisors.html';
+    }
+
+    // Supervisors do not have users.html; stick to super_device_overview.html
+    if (role === 'supervisor' && activeNavPage === 'users.html') {
+      activeNavPage = 'super_device_overview.html';
+    }
+
     console.log('Active nav page:', activeNavPage);
   
     if (activeNavPage) {

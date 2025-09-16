@@ -1104,7 +1104,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
       { headers: { Authorization: `Bearer ${tbToken}` } }
     );
     const tbData = response.data;
-    //console.log('ThingsBoard response:', JSON.stringify(tbData, null, 2));
+    console.log('ThingsBoard response:', JSON.stringify(tbData, null, 2));
 
     // Step 2: Prepare telemetry object
     const telemetry = {};

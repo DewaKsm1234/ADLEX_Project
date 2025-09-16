@@ -9,12 +9,10 @@ const path = require('path');
 // 3) Local env (.env.local) for local development
 // 4) Fallback to default .env if nothing else matches
 const isDocker = fs.existsSync('/.dockerenv');
-const isRailway = Boolean(process.env.RAILWAY || process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_STATIC_URL);
+// const isRailway = Boolean(process.env.RAILWAY || process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_STATIC_URL);
 
 let selectedEnvPath = null;
-if (isRailway && fs.existsSync(path.join(__dirname, '.env.railway'))) {
-  selectedEnvPath = path.join(__dirname, '.env.railway');
-} else if (isDocker && fs.existsSync(path.join(__dirname, '.env'))) {
+if (isDocker && fs.existsSync(path.join(__dirname, '.env'))) {
   selectedEnvPath = path.join(__dirname, '.env');
 } else if (!isDocker && fs.existsSync(path.join(__dirname, '.env.local'))) {
   selectedEnvPath = path.join(__dirname, '.env.local');
