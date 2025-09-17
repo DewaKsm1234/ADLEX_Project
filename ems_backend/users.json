@@ -1,7 +1,0 @@
-[
-  { "name": "Ravi Kumar", "devices": 3, "supervisor": "SP1" },
-  { "name": "Priya Sharma", "devices": 4, "supervisor": "SP2" },
-  { "name": "Amit Singh", "devices": 1, "supervisor": "SP3" },
-  { "name": "Vijaya Patel", "devices": 5, "supervisor": "SP4" },
-  { "name": "Anjali Mehta", "devices": "Add Device", "supervisor": "Assign" }
-]

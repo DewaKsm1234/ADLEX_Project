@@ -816,7 +816,8 @@ app.get('/api/supervisors-summary', authenticateToken, requireSuperAdminOrAdmin,
         assigned_devices,
         admin_id: sup.admin_id,
         status: sup.status || 'active',
-        id: sup.id
+        id: sup.id,
+        remarks: sup.remarks || null
       };
     }));
 
@@ -1103,7 +1104,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
       { headers: { Authorization: `Bearer ${tbToken}` } }
     );
     const tbData = response.data;
-    //console.log('ThingsBoard response:', JSON.stringify(tbData, null, 2));
+    console.log('ThingsBoard response:', JSON.stringify(tbData, null, 2));
 
     // Step 2: Prepare telemetry object
     const telemetry = {};
@@ -1419,7 +1420,7 @@ const fetchAndSaveTelemetry = async () => {
 };
 
 // setInterval(fetchAndSaveTelemetry, 60 * 1000); // Every minute
-let autoSaveEnabled = false; // Set to false to pause auto-saving
+let autoSaveEnabled = true; // Set to false to pause auto-saving
 
 setInterval(() => {
   if (autoSaveEnabled) {
@@ -2067,7 +2068,7 @@ app.post('/api/admins/:id/suspend', authenticateToken, requireSuperAdmin, async 
     await connection.beginTransaction();
     
     const { id } = req.params;
-    const { newAdminId } = req.body;
+    const { newAdminId, status, remark } = req.body || {};
     
     // Get admin details
     const [admin] = await connection.execute('SELECT admin_id FROM admins WHERE id = ? AND status = "active"', [id]);
@@ -2102,10 +2103,10 @@ app.post('/api/admins/:id/suspend', authenticateToken, requireSuperAdmin, async 
       );
     }
     
-    // Suspend admin in admins table
+    // Update admin status and remark (remarks column)
     await connection.execute(
-      'UPDATE admins SET status = "suspended" WHERE id = ?',
-      [id]
+      'UPDATE admins SET status = ?, remarks = ? WHERE id = ?',
+      [status || 'suspended', remark || '', id]
     );
     
     // Suspend admin in users_login table
@@ -2118,7 +2119,8 @@ app.post('/api/admins/:id/suspend', authenticateToken, requireSuperAdmin, async 
     
     res.json({ 
       success: true, 
-      message: `Admin suspended successfully${newAdminId ? ` and supervisors reassigned to ${newAdminId}` : ' and supervisors unassigned'}`
+      message: `Admin suspended successfully${newAdminId ? ` and supervisors reassigned to ${newAdminId}` : ' and supervisors unassigned'}`,
+      remarks: remark || ''
     });
   } catch (error) {
     await connection.rollback();
@@ -2151,7 +2153,7 @@ app.post('/api/admins/:id/reactivate', authenticateToken, requireSuperAdmin, asy
     
     // Reactivate admin in admins table
     await connection.execute(
-      'UPDATE admins SET status = "active" WHERE id = ?',
+      'UPDATE admins SET status = "active", remarks = NULL WHERE id = ?',
       [id]
     );
     
@@ -2203,7 +2205,7 @@ app.post('/api/supervisors/:id/suspend', authenticateToken, requireSuperAdmin, a
     await connection.beginTransaction();
     
     const { id } = req.params;
-    const { newSupervisorId } = req.body;
+    const { newSupervisorId, status, remark } = req.body || {};
     
     // Get supervisor details
     const [supervisor] = await connection.execute('SELECT supervisor_id, admin_id FROM supervisors WHERE id = ? AND status = "active"', [id]);
@@ -2248,10 +2250,10 @@ app.post('/api/supervisors/:id/suspend', authenticateToken, requireSuperAdmin, a
       );
     }
     
-    // Suspend supervisor in supervisors table
+    // Suspend supervisor in supervisors table (persist optional remark)
     await connection.execute(
-      'UPDATE supervisors SET status = "suspended" WHERE id = ?',
-      [id]
+      'UPDATE supervisors SET status = ?, remarks = ? WHERE id = ?',
+      [status || 'suspended', remark || '', id]
     );
     
     // Suspend supervisor in users_login table
@@ -2295,9 +2297,9 @@ app.post('/api/supervisors/:id/reactivate', authenticateToken, requireSuperAdmin
     
     const supervisorId = supervisor[0].supervisor_id;
     
-    // Reactivate supervisor in supervisors table
+    // Reactivate supervisor in supervisors table and clear remarks
     await connection.execute(
-      'UPDATE supervisors SET status = "active" WHERE id = ?',
+      'UPDATE supervisors SET status = "active", remarks = NULL WHERE id = ?',
       [id]
     );
     
@@ -2349,6 +2351,64 @@ app.post('/api/supervisors/:id/change-password', authenticateToken, requireSuper
 });
 
 /**
+ * Update supervisor (superadmin only)
+ * PUT /api/supervisors/:id/update
+ */
+app.put('/api/supervisors/:id/update', authenticateToken, requireSuperAdminOrAdmin, async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { supervisor_id, first_name, last_name, email, phone, password } = req.body;
+    
+    // Get current supervisor details
+    const [supervisor] = await db.execute('SELECT supervisor_id as current_supervisor_id FROM supervisors WHERE id = ?', [id]);
+    if (supervisor.length === 0) {
+      return res.status(404).json({ success: false, message: 'Supervisor not found' });
+    }
+    
+    const currentSupervisorId = supervisor[0].current_supervisor_id;
+    
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    
+    // Update supervisors table
+    await connection.execute(
+      'UPDATE supervisors SET supervisor_id = ?, first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?',
+      [supervisor_id, first_name, last_name, email, phone, id]
+    );
+    
+    // Update users_login table
+    await connection.execute(
+      'UPDATE users_login SET username = ? WHERE username = ? AND role = "supervisor"',
+      [supervisor_id, currentSupervisorId]
+    );
+    
+    // Update password if provided
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await connection.execute(
+        'UPDATE users_login SET password = ? WHERE username = ? AND role = "supervisor"',
+        [hashedPassword, supervisor_id]
+      );
+    }
+    
+    await connection.commit();
+    
+    res.json({ success: true, message: 'Supervisor updated successfully' });
+  } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error('Error updating supervisor:', error);
+    res.status(500).json({ success: false, message: 'Failed to update supervisor' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+/**
  * Get system statistics (superadmin only)
  * GET /api/system-stats
  */
@@ -2388,3 +2448,195 @@ app.post('/api/supervisors/:id/change-password', authenticateToken, requireSuper
 //     res.status(500).json({ error: err.message });
 //   }
 // });
+
+
+
+// Helpers for password reset
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+// ENV: process.env.APP_BASE_URL like "http://localhost:3000"
+const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:3000';
+
+// 1) fetch login + email by role (admin/supervisor)
+async function getLoginWithEmailByUsername(username) {
+  // users_login: id, username, password, role
+  const [rows] = await db.execute(
+    'SELECT id, username, role FROM users_login WHERE username = ? LIMIT 1',
+    [username]
+  );
+
+  console.log("🔎 users_login rows:", rows);
+
+  if (!rows.length) {
+    console.log("❌ No user found in users_login for:", username);
+    return null;
+  }
+
+  const user = rows[0];
+  console.log("✅ Found user:", user);
+
+  // Now fetch email depending on role
+  let emailQuery = "";
+  if (user.role === "admin" || user.role === "superadmin") {
+    emailQuery = "SELECT email FROM admins WHERE admin_id = ? LIMIT 1";
+  } else if (user.role === "supervisor") {
+    emailQuery = "SELECT email FROM supervisors WHERE supervisor_id = ? LIMIT 1";
+  }
+
+  if (!emailQuery) {
+    console.log("⚠️ No email query for role:", user.role);
+    return { ...user, email: null };
+  }
+
+  const [emailRows] = await db.execute(emailQuery, [user.username]);
+  console.log("📧 Email rows for role", user.role, ":", emailRows);
+
+  const email = emailRows.length ? emailRows[0].email : null;
+  console.log("👉 Final email resolved:", email);
+
+  return { ...user, email };
+}
+
+
+
+// 2) create token, store hash
+async function createPasswordReset(user_login_id) {
+  const token = crypto.randomBytes(32).toString('hex');      // raw token
+  const tokenHash = crypto.createHash('sha256').update(token).digest(); // Buffer(32)
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);   // 1 hour
+
+  await db.execute(
+    'INSERT INTO password_resets (user_login_id, token_hash, expires_at) VALUES (?, ?, ?)',
+    [user_login_id, tokenHash, expiresAt]
+  );
+  return token;
+}
+
+// 3) validate token, return row with user_login_id
+async function findValidResetByToken(rawToken) {
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest(); // Buffer
+  const [rows] = await db.execute(
+    'SELECT * FROM password_resets WHERE token_hash = ? AND used = 0 AND expires_at > NOW() LIMIT 1',
+    [tokenHash]
+  );
+  return rows[0] || null;
+}
+
+// 4) mark token used + clean up
+async function consumeResetToken(id) {
+  await db.execute('UPDATE password_resets SET used = 1 WHERE id = ?', [id]);
+}
+
+
+//3.3 Email config
+// Use environment variables for real creds
+
+const { email } = require('./config');
+
+const transporter = nodemailer.createTransport({
+  host: email.host,
+  port: email.port,
+  secure: email.secure,
+  auth: {
+    user: email.user,
+    pass: email.pass
+  }
+});
+
+
+async function sendResetEmail(to, resetUrl, username) {
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;">
+      <p>Hello ${username},</p>
+      <p>We received a request to reset your password. Click the button below to set a new password:</p>
+      <p><a href="${resetUrl}" 
+            style="display:inline-block;background:#3b6cff;color:#fff;padding:10px 16px;
+                   text-decoration:none;border-radius:8px;">Reset Password</a></p>
+      <p>Or paste this link into your browser:<br>${resetUrl}</p>
+      <p>This link will expire in 1 hour. If you didn't request this, you can ignore this email.</p>
+      <p>— Your Support Team</p>
+    </div>`;
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || `"Support" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'Reset your password',
+    html
+  });
+}
+
+
+//Routes: Request reset link
+// POST /api/auth/forgot-password  { username }
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { username } = req.body;
+    console.log("incoming request", req.body);
+
+    const login = await getLoginWithEmailByUsername(username);
+    console.log("login object returned:", login);
+
+    if (!login || !login.email) {
+      console.log("❌ login failed or no email for:", username);
+      return res.json({
+        success: false,
+        message: 'Username does not match any account with an email.'
+      });
+    }
+
+    console.log("✅ Success, user has email:", login.email);
+
+
+    // Generate reset token
+    const token = await createPasswordReset(login.id);
+    const resetUrl = `${APP_BASE_URL}/reset-password.html?token=${encodeURIComponent(token)}`;
+
+    // Send email
+    await sendResetEmail(login.email, resetUrl, login.username);
+
+    return res.json({
+      success: true,
+      // email: login.email,
+      message: `Password reset link sent to ${login.email}.`
+    });
+
+  } catch (err) {
+    console.error('forgot-password error:', err);
+    return res.status(500).json({ success: false, error: 'An error occurred while processing your request.' });
+  }
+});
+
+
+
+
+// Submit new password
+// POST /api/auth/reset-password  { token, newPassword }
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Missing token or password' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+    }
+
+    const reset = await findValidResetByToken(token);
+    if (!reset) return res.status(400).json({ error: 'Invalid or expired reset link.' });
+
+    // Update password
+    const saltRounds = 10;
+    const hashed = await bcrypt.hash(newPassword, saltRounds);
+    await db.execute('UPDATE users_login SET password = ? WHERE id = ?', [hashed, reset.user_login_id]);
+
+    // Mark token used + (optional) invalidate all older tokens
+    await consumeResetToken(reset.id);
+    await db.execute('UPDATE password_resets SET used = 1 WHERE user_login_id = ? AND id <> ?', [reset.user_login_id, reset.id]);
+
+    // (Optional) Invalidate existing sessions if you store them server-side.
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('reset-password error:', err);
+    return res.status(500).json({ error: 'Reset failed' });
+  }
+});
