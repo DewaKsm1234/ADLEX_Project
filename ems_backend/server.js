@@ -1122,7 +1122,7 @@ app.post('/api/device/:tb_device_id/sync-telemetry', async (req, res) => {
     const values = [tb_device_id, ...telemetryKeys.map(k => telemetry[k])];
     const updateClause = telemetryKeys.map(k => `${k} = VALUES(${k})`).join(', ');
     await db.execute(
-      `INSERT INTO Telemetry_Device (${columns.join(', ')}) VALUES (${columns.map(_ => '?').join(', ')})
+      `INSERT INTO telemetry_device (${columns.join(', ')}) VALUES (${columns.map(_ => '?').join(', ')})
        ON DUPLICATE KEY UPDATE ${updateClause}`,
       values
     );
@@ -1300,7 +1300,7 @@ app.get('/api/user-devices-details/:address', async (req, res) => {
       SELECT td.*, ud.tb_device_id
       FROM user_devices ud
       JOIN users u ON ud.user_id = u.id
-      JOIN Telemetry_Device td ON ud.tb_device_id = td.tb_device_id
+      JOIN telemetry_device td ON ud.tb_device_id = td.tb_device_id
       WHERE u.address = ?
     `, [address]);
 
